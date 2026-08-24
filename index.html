@@ -123,6 +123,19 @@ section{padding:6rem 2rem;position:relative}
 .btn-pay:disabled{pointer-events:none;opacity:.4;border-color:rgba(255,255,255,.15);background:none}
 .btn-back{display:block;width:100%;text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--muted);background:none;border:none;padding:.9rem 0 0;letter-spacing:.05em;cursor:pointer;transition:color .2s}
 .btn-back:hover{color:var(--pink)}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+
+/* CART */
+.cart-item{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:.9rem;padding:.9rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.cart-item-name{font-family:var(--display);font-size:.95rem;color:var(--white);letter-spacing:.03em}
+.cart-item-controls{display:flex;align-items:center;gap:.5rem}
+.qty-btn{width:24px;height:24px;font-family:var(--mono);font-size:.75rem;color:var(--text);background:none;border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:all .2s}
+.qty-btn:hover{border-color:var(--pink);color:var(--pink)}
+.qty-val{font-family:var(--mono);font-size:.75rem;color:var(--white);min-width:1.2em;text-align:center}
+.cart-item-price{font-family:var(--mono);font-size:.85rem;color:var(--white);white-space:nowrap}
+.cart-item-remove{font-family:var(--mono);font-size:.6rem;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:.04em;text-decoration:underline;transition:color .2s}
+.cart-item-remove:hover{color:var(--pink)}
+.cart-subtotal{font-family:var(--mono);font-size:.9rem;color:var(--white);text-align:right;padding:1rem 0;border-top:1px solid rgba(255,255,255,.1);margin-bottom:1rem}
 .modal-note{font-family:var(--mono);font-size:.62rem;color:var(--muted);line-height:1.6;letter-spacing:.02em;border-top:1px solid rgba(255,255,255,.06);padding-top:1.2rem}
 
 /* SPELLS */
@@ -235,7 +248,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
   </ul>
   <div class="nav-right">
     <a href="#readings" class="tarot-nav">book a reading</a>
-    <span class="cart-pill" onclick="showCart()">bag [<span class="cart-count" id="cartCount">0</span>]</span>
+    <span class="cart-pill" onclick="openCart()">bag [<span class="cart-count" id="cartCount">0</span>]</span>
   </div>
 </nav>
 
@@ -340,6 +353,73 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
   </div>
 </div>
 
+<!-- CART / CHECKOUT MODAL -->
+<div class="modal-bg" id="cartBg" onclick="closeCartOutside(event)">
+  <div class="modal" id="cartModal">
+    <button class="modal-close" onclick="closeCart()">✕ close</button>
+    <div class="modal-eyebrow">//new earth frequency — your bag//</div>
+    <div class="modal-title">Your Bag</div>
+
+    <div id="cartItemsStep">
+      <div id="cartItemsList"></div>
+      <div class="cart-subtotal" id="cartSubtotal"></div>
+      <div class="form-error" id="cartError"></div>
+      <button class="btn-pay" id="cartCheckoutBtn" onclick="startOrderCheckout()">proceed to checkout</button>
+    </div>
+
+    <div id="shippingStep" style="display:none">
+      <div class="form-group">
+        <label class="form-label" for="orderEmail">email</label>
+        <input class="form-input" type="email" id="orderEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shipName">full name</label>
+        <input class="form-input" type="text" id="shipName" placeholder="Jane Doe" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shipLine1">address</label>
+        <input class="form-input" type="text" id="shipLine1" placeholder="Street address" autocomplete="address-line1">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shipLine2">apt / suite (optional)</label>
+        <input class="form-input" type="text" id="shipLine2" autocomplete="address-line2">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="shipCity">city</label>
+          <input class="form-input" type="text" id="shipCity" autocomplete="address-level2">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="shipState">state</label>
+          <input class="form-input" type="text" id="shipState" autocomplete="address-level1">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="shipZip">zip</label>
+          <input class="form-input" type="text" id="shipZip" autocomplete="postal-code">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shipCountry">country (2-letter code)</label>
+        <input class="form-input" type="text" id="shipCountry" value="US" maxlength="2" autocomplete="country">
+      </div>
+      <div class="form-error" id="shippingError"></div>
+      <button class="btn-pay" id="continueOrderBtn" onclick="continueToOrderPayment()">continue to payment</button>
+      <button class="btn-back" onclick="backToCartItems()">‹ back to bag</button>
+    </div>
+
+    <div id="orderPaymentStep" style="display:none">
+      <div id="order-payment-element"></div>
+      <div class="form-error" id="orderPaymentError"></div>
+      <button class="btn-pay" id="confirmOrderPayBtn" onclick="submitOrderPayment()">pay $<span id="orderPayAmountLabel"></span></button>
+      <button class="btn-back" onclick="backToShipping()">‹ back</button>
+    </div>
+
+    <div class="modal-note">
+      Spell jars are made to order under the appropriate moon phase — allow extra time before shipping. All enchantments final sale.
+    </div>
+  </div>
+</div>
+
 <div class="divider"></div>
 
 <!-- ═══════════════ SPELL JARS ═══════════════ -->
@@ -408,12 +488,186 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
 </div>
 
 <script>
-/* ── CART ── */
-let cartTotal = 0;
-function addToCart(name,price){cartTotal++;document.getElementById('cartCount').textContent=cartTotal;showToast(`${name} — ${price}`)}
-function showCart(){showToast(cartTotal===0?'your bag is empty':`${cartTotal} item${cartTotal!==1?'s':''} in your bag`)}
+/* ── TOAST ── */
 let toastTimer;
 function showToast(msg){clearTimeout(toastTimer);document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
+
+/* ── SHARED CHECKOUT-API HELPER ──
+   Fails gracefully: a network error or a non-JSON response (e.g. the API
+   route isn't deployed yet, so this 404s to an HTML page) surfaces a
+   readable message instead of a raw parse error.
+── */
+async function postJSON(url, body){
+  let res;
+  try{
+    res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  }catch(err){
+    throw new Error('Could not reach checkout — check your connection and try again.');
+  }
+  let data;
+  try{
+    data = await res.json();
+  }catch(err){
+    throw new Error('Checkout isn’t available right now. Please try again shortly.');
+  }
+  if(!res.ok) throw new Error(data.error || 'Could not start checkout.');
+  return data;
+}
+
+/* ── CART / SPELL ORDER CHECKOUT ──
+   Real cart, kept in memory as { productName: quantity }. Prices are
+   display-only here — the source of truth is SPELL_PRICES_CENTS on the
+   Vercel backend (api/create-order-payment-intent.js), which recomputes
+   the total server-side so a tampered client request can't change what's
+   actually charged. Keep both price lists in sync when prices change.
+── */
+const SPELL_PRICE_CENTS = {
+  'Love Spell No. 4': 2899,
+  'Protection Spell': 1999,
+  'Success Spell': 3499,
+};
+
+let cart = {};
+let orderElements = null;
+
+function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function cartSubtotalCents(){ return Object.entries(cart).reduce((sum,[name,qty])=>sum+(SPELL_PRICE_CENTS[name]||0)*qty,0); }
+function updateCartBadge(){ document.getElementById('cartCount').textContent = cartCount(); }
+
+function handleSpell(btn,name){
+  cart[name] = (cart[name]||0) + 1;
+  updateCartBadge();
+  showToast(`${name} — added to bag`);
+  btn.textContent='added ✓';btn.classList.add('added');
+  setTimeout(()=>{btn.innerHTML='add to bag';btn.classList.remove('added')},2200);
+}
+
+function changeQty(name,delta){
+  cart[name]=(cart[name]||0)+delta;
+  if(cart[name]<=0) delete cart[name];
+  updateCartBadge();
+  renderCartItems();
+}
+function removeFromCart(name){ delete cart[name]; updateCartBadge(); renderCartItems(); }
+
+function renderCartItems(){
+  const list=document.getElementById('cartItemsList');
+  const entries=Object.entries(cart);
+  const btn=document.getElementById('cartCheckoutBtn');
+
+  if(entries.length===0){
+    list.innerHTML='<div class="form-error" style="color:var(--muted)">Your bag is empty.</div>';
+    document.getElementById('cartSubtotal').textContent='';
+  }else{
+    list.innerHTML=entries.map(([name,qty])=>{
+      const lineTotal=((SPELL_PRICE_CENTS[name]||0)*qty/100).toFixed(2);
+      return `<div class="cart-item">
+        <div class="cart-item-name">${name}</div>
+        <div class="cart-item-controls">
+          <button class="qty-btn" onclick="changeQty('${name}',-1)">−</button>
+          <span class="qty-val">${qty}</span>
+          <button class="qty-btn" onclick="changeQty('${name}',1)">+</button>
+        </div>
+        <div class="cart-item-price">$${lineTotal}</div>
+        <button class="cart-item-remove" onclick="removeFromCart('${name}')">remove</button>
+      </div>`;
+    }).join('');
+    document.getElementById('cartSubtotal').textContent=`subtotal: $${(cartSubtotalCents()/100).toFixed(2)}`;
+  }
+
+  if(!stripe){ btn.disabled=true; btn.textContent='checkout coming soon'; }
+  else if(entries.length===0){ btn.disabled=true; btn.textContent='proceed to checkout'; }
+  else{ btn.disabled=false; btn.textContent='proceed to checkout'; }
+}
+
+function openCart(){
+  document.getElementById('cartError').textContent='';
+  document.getElementById('shippingError').textContent='';
+  document.getElementById('orderPaymentError').textContent='';
+  document.getElementById('order-payment-element').innerHTML='';
+  orderElements=null;
+  renderCartItems();
+  showCartItemsStep();
+  document.getElementById('cartBg').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeCart(){document.getElementById('cartBg').classList.remove('open');document.body.style.overflow='';}
+function closeCartOutside(e){if(e.target===document.getElementById('cartBg'))closeCart();}
+
+function showCartItemsStep(){
+  document.getElementById('cartItemsStep').style.display='block';
+  document.getElementById('shippingStep').style.display='none';
+  document.getElementById('orderPaymentStep').style.display='none';
+}
+function showShippingStep(){
+  document.getElementById('cartItemsStep').style.display='none';
+  document.getElementById('shippingStep').style.display='block';
+  document.getElementById('orderPaymentStep').style.display='none';
+}
+function showOrderPaymentStep(){
+  document.getElementById('cartItemsStep').style.display='none';
+  document.getElementById('shippingStep').style.display='none';
+  document.getElementById('orderPaymentStep').style.display='block';
+}
+function backToCartItems(){ renderCartItems(); showCartItemsStep(); }
+function backToShipping(){ showShippingStep(); }
+
+function startOrderCheckout(){
+  if(Object.keys(cart).length===0) return;
+  document.getElementById('shippingError').textContent='';
+  showShippingStep();
+}
+
+async function continueToOrderPayment(){
+  const email=document.getElementById('orderEmail').value.trim();
+  const shipping={
+    name: document.getElementById('shipName').value.trim(),
+    line1: document.getElementById('shipLine1').value.trim(),
+    line2: document.getElementById('shipLine2').value.trim(),
+    city: document.getElementById('shipCity').value.trim(),
+    state: document.getElementById('shipState').value.trim(),
+    postal_code: document.getElementById('shipZip').value.trim(),
+    country: document.getElementById('shipCountry').value.trim().toUpperCase(),
+  };
+  const errEl=document.getElementById('shippingError');
+  errEl.textContent='';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent='Enter a valid email.'; return; }
+  if(!shipping.name||!shipping.line1||!shipping.city||!shipping.state||!shipping.postal_code||!shipping.country){
+    errEl.textContent='Fill in your full shipping address.'; return;
+  }
+  if(!stripe){ errEl.textContent='Payments aren’t connected yet — check back soon.'; return; }
+
+  const btn=document.getElementById('continueOrderBtn');
+  btn.disabled=true; btn.textContent='loading…';
+  try{
+    const items=Object.entries(cart).map(([name,qty])=>({name,qty}));
+    const data=await postJSON('/api/create-order-payment-intent',{items,email,shipping});
+    orderElements=stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
+    orderElements.create('payment').mount('#order-payment-element');
+    document.getElementById('orderPayAmountLabel').textContent=(data.amount/100).toFixed(2);
+    showOrderPaymentStep();
+  }catch(err){
+    errEl.textContent=err.message;
+  }finally{
+    btn.disabled=false; btn.textContent='continue to payment';
+  }
+}
+
+async function submitOrderPayment(){
+  const errEl=document.getElementById('orderPaymentError');
+  errEl.textContent='';
+  const btn=document.getElementById('confirmOrderPayBtn');
+  const amountLabel=document.getElementById('orderPayAmountLabel').textContent;
+  btn.disabled=true; btn.textContent='processing…';
+  const {error} = await stripe.confirmPayment({
+    elements: orderElements,
+    confirmParams: { return_url: window.location.origin + '/thank-you.html?type=order' }
+  });
+  if(error){
+    errEl.textContent=error.message;
+    btn.disabled=false; btn.textContent=`pay $${amountLabel}`;
+  }
+}
 
 /* ── MODAL / STRIPE CHECKOUT ──
    Fully on-site checkout via Stripe's Payment Element. The publishable
@@ -501,13 +755,7 @@ async function startCheckout(){
   const btn=document.getElementById('continueBtn');
   btn.disabled=true; btn.textContent='loading…';
   try{
-    const res=await fetch('/api/create-payment-intent',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({reading:currentReading,email,question})
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Could not start checkout.');
+    const data=await postJSON('/api/create-payment-intent',{reading:currentReading,email,question});
     checkoutElements = stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
     checkoutElements.create('payment').mount('#payment-element');
     document.getElementById('payAmountLabel').textContent=READING_PRICES[currentReading].toFixed(2);
@@ -577,7 +825,7 @@ const RC={common:'r-common',rare:'r-rare',legendary:'r-legendary'};
 const sg=document.getElementById('spellsGrid');
 spells.forEach(sp=>{
   const el=document.createElement('div');el.className='spell-card';
-  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${sp.img}" alt="${sp.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity ${RC[sp.rarity]}">${sp.rarity}</span><div class="spell-name">${sp.name}</div><div class="spell-desc">${sp.desc}</div><div class="spell-bundle">${sp.bundle}</div><div class="spell-tags">${sp.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="spell-footer"><span class="spell-price">${sp.price}</span><button class="btn-add" onclick="handleSpell(this,'${sp.name}','${sp.price}')">add to bag</button></div></div>`;
+  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${sp.img}" alt="${sp.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity ${RC[sp.rarity]}">${sp.rarity}</span><div class="spell-name">${sp.name}</div><div class="spell-desc">${sp.desc}</div><div class="spell-bundle">${sp.bundle}</div><div class="spell-tags">${sp.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="spell-footer"><span class="spell-price">${sp.price}</span><button class="btn-add" onclick="handleSpell(this,'${sp.name}')">add to bag</button></div></div>`;
   sg.appendChild(el);
 });
 (function(){
@@ -585,7 +833,6 @@ spells.forEach(sp=>{
   el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${comingSoon.img}" alt="${comingSoon.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity r-soon">coming soon</span><div class="spell-name">${comingSoon.name}</div><div class="spell-desc">${comingSoon.desc}</div><div class="soon-note">// follow the shop or check back — new jars post here first //</div></div>`;
   sg.appendChild(el);
 })();
-function handleSpell(btn,name,price){addToCart(name,price);btn.textContent='added ✓';btn.classList.add('added');setTimeout(()=>{btn.innerHTML='add to bag';btn.classList.remove('added')},2200)}
 
 /* ── SHIRTS
    `merchizeUrl` = your actual Merchize product page URL.

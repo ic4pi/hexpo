@@ -81,6 +81,32 @@ in `index.html` (for display) and `READING_PRICES_CENTS` in
 
 ---
 
+## Spell Jar Checkout (Stripe) — Same Deploy, One More Function
+
+The "add to bag" → bag icon flow is a real cart (in-memory, per page load),
+checked out the same on-site way as readings, plus a shipping address
+since these are physical products:
+
+1. **`index.html`** — `cart` tracks `{ productName: quantity }`. The bag
+   modal lets you adjust quantities, then collects email + shipping
+   address, then mounts a second Payment Element for the order total.
+2. **`api/create-order-payment-intent.js`** — recomputes the order total
+   server-side from `SPELL_PRICES_CENTS` (never trusts cart contents/prices
+   sent from the browser) and creates the PaymentIntent with the shipping
+   address attached.
+3. **`api/webhook.js`** — same endpoint as readings, already branches on
+   `metadata.kind` (`'reading'` vs `'spell_order'`) and logs orders with
+   their shipping address so you can fulfill them manually for now.
+
+No extra setup beyond what's above — it reuses the same
+`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / publishable key. Just keep
+prices in sync in **three** places when they change: `spells` (display
+price string) and `SPELL_PRICE_CENTS` in `index.html`, and
+`SPELL_PRICES_CENTS` in `api/create-order-payment-intent.js` (the one that
+actually charges the card).
+
+---
+
 ## The Game — What's In It (Current State)
 
 The game (`game.html`) uses **Three.js r128** (loaded from CDN) and is fully self-contained. It currently builds everything from primitives:

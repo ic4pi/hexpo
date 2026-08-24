@@ -39,13 +39,23 @@ module.exports = async (req, res) => {
     // durable, verified record in the Vercel function logs to follow up
     // from manually. Once a domain + mailbox exist, send the confirmation
     // email to `pi.receipt_email` right here.
-    console.log('Reading booked:', {
-      reading: pi.metadata.reading,
-      zoomEmail: pi.metadata.zoom_email,
-      question: pi.metadata.question,
-      amount: pi.amount,
-      paymentIntentId: pi.id,
-    });
+    if (pi.metadata.kind === 'spell_order') {
+      console.log('Spell order placed:', {
+        email: pi.metadata.order_email,
+        items: pi.metadata.items,
+        shipping: pi.shipping,
+        amount: pi.amount,
+        paymentIntentId: pi.id,
+      });
+    } else {
+      console.log('Reading booked:', {
+        reading: pi.metadata.reading,
+        zoomEmail: pi.metadata.zoom_email,
+        question: pi.metadata.question,
+        amount: pi.amount,
+        paymentIntentId: pi.id,
+      });
+    }
   }
 
   res.status(200).json({ received: true });

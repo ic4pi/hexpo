@@ -35,6 +35,7 @@ module.exports = async (req, res) => {
       receipt_email: email,
       automatic_payment_methods: { enabled: true },
       metadata: {
+        kind: 'reading',
         reading,
         zoom_email: email,
         question: typeof question === 'string' ? question.slice(0, 500) : '',

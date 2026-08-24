@@ -26,11 +26,19 @@ a.back:hover{background:rgba(232,25,106,.12)}
 </head>
 <body>
 <div class="box">
-  <span class="label">payment received</span>
-  <h1>Your Reading Is Booked</h1>
-  <p>We've got your payment and your question. Your written reading will land in the email you checked out with — the one tied to your Zoom account — within the turnaround window shown at booking.</p>
-  <p><strong>Confirmation emails aren't automated yet</strong>, so if you don't hear from us within that window, feel free to check in.</p>
+  <span class="label" id="pageLabel">payment received</span>
+  <h1 id="pageTitle">Your Reading Is Booked</h1>
+  <p id="pageBody1">We've got your payment and your question. Your written reading will land in the email you checked out with — the one tied to your Zoom account — within the turnaround window shown at booking.</p>
+  <p id="pageBody2"><strong>Confirmation emails aren't automated yet</strong>, so if you don't hear from us within that window, feel free to check in.</p>
   <a href="index.html" class="back">back to hexposed</a>
 </div>
+<script>
+if (new URLSearchParams(window.location.search).get('type') === 'order') {
+  document.getElementById('pageLabel').textContent = 'payment received';
+  document.getElementById('pageTitle').textContent = 'Your Spells Are Ordered';
+  document.getElementById('pageBody1').textContent = "We've got your payment and your shipping address. Your jars are made to order under the appropriate moon phase, then shipped to the address you provided.";
+  document.getElementById('pageBody2').innerHTML = "<strong>Confirmation emails aren't automated yet</strong>, so you may not hear from us right away — your order is recorded and will be fulfilled.";
+}
+</script>
 </body>
 </html>
