@@ -111,12 +111,12 @@ section{padding:6rem 2rem;position:relative}
 .step-num{font-family:var(--mono);font-size:.62rem;color:var(--pink);border:1px solid rgba(232,25,106,.35);width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.15rem}
 .step-text{font-family:var(--mono);font-size:.72rem;color:var(--text);line-height:1.6;letter-spacing:.02em}
 .step-text strong{color:var(--white)}
-.cashapp-block{background:rgba(0,0,0,.4);border:1px solid rgba(232,25,106,.2);padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}
-.cashapp-handle{font-family:var(--mono);font-size:1.1rem;color:var(--white);letter-spacing:.05em}
-.cashapp-handle span{color:var(--pink)}
-.cashapp-copy{font-family:var(--mono);font-size:.6rem;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:.3rem .7rem;cursor:pointer;transition:all .2s;white-space:nowrap}
-.cashapp-copy:hover{color:var(--white);border-color:rgba(255,255,255,.3)}
-.cashapp-copy.copied{color:#4ade80;border-color:#4ade80}
+.pay-block{background:rgba(0,0,0,.4);border:1px solid rgba(232,25,106,.2);padding:1.2rem 1.5rem;margin-bottom:1.5rem}
+.pay-block-label{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.9rem}
+.btn-pay{display:block;text-align:center;font-family:var(--mono);font-size:.85rem;color:var(--white);text-decoration:none;background:rgba(232,25,106,.15);border:1px solid var(--pink);padding:.9rem 1rem;letter-spacing:.06em;transition:all .3s}
+.btn-pay::before{content:'//';margin-right:.3em}.btn-pay::after{content:'//';margin-left:.3em}
+.btn-pay:hover{background:rgba(232,25,106,.25);box-shadow:var(--glow-pink)}
+.btn-pay.disabled{pointer-events:none;opacity:.4;border-color:rgba(255,255,255,.15);background:none}
 .modal-note{font-family:var(--mono);font-size:.62rem;color:var(--muted);line-height:1.6;letter-spacing:.02em;border-top:1px solid rgba(255,255,255,.06);padding-top:1.2rem}
 
 /* SPELLS */
@@ -264,7 +264,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
             <div class="reading-price">$45.00</div>
             <div class="reading-duration">// written delivery · 24hr turnaround //</div>
           </div>
-          <button class="btn-book" onclick="openModal('Celtic Cross Reading','$45.00','Ten-card spread. Written interpretation of all positions delivered within 24 hours.')">book session</button>
+          <button class="btn-book" onclick="openModal('Celtic Cross Reading','$45.00','Ten-card spread. Written interpretation of all positions delivered within 24 hours.')">book &amp; pay</button>
         </div>
       </div>
 
@@ -277,7 +277,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
             <div class="reading-price">$12.00</div>
             <div class="reading-duration">// same day //</div>
           </div>
-          <button class="btn-book" onclick="openModal('The Single Draw','$12.00','One card, one question. Same-day written response.')">book session</button>
+          <button class="btn-book" onclick="openModal('The Single Draw','$12.00','One card, one question. Same-day written response.')">book &amp; pay</button>
         </div>
       </div>
 
@@ -290,7 +290,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
             <div class="reading-price">$22.00</div>
             <div class="reading-duration">// written delivery · same day //</div>
           </div>
-          <button class="btn-book" onclick="openModal('Past · Present · Path','$22.00','Three-card spread. Written interpretation delivered same day.')">book session</button>
+          <button class="btn-book" onclick="openModal('Past · Present · Path','$22.00','Three-card spread. Written interpretation delivered same day.')">book &amp; pay</button>
         </div>
       </div>
 
@@ -309,24 +309,20 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
     <div class="modal-steps">
       <div class="step">
         <div class="step-num">1</div>
-        <div class="step-text">Send payment via CashApp to the handle below. Include your <strong>question or intention</strong> in the note field.</div>
+        <div class="step-text">Click <strong>pay with card</strong> below — secure Stripe checkout opens in a new tab. Add your <strong>question or intention</strong> in the note field at checkout.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <div class="step-text">After payment, <strong>DM us on Instagram</strong> or email us with your CashApp name so we can match your payment and begin.</div>
+        <div class="step-text">Use the <strong>email tied to your Zoom account</strong> as your checkout email — that's how we'll reach you.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <div class="step-text">Your reading is delivered <strong>via DM or email</strong> — whichever you prefer. Written, detailed, no fluff.</div>
+        <div class="step-text">Your reading is delivered <strong>via email</strong>, written and detailed, within the turnaround above. We're setting up automatic confirmation emails — until then we'll follow up personally after checkout.</div>
       </div>
     </div>
-    <div class="cashapp-block">
-      <div>
-        <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.3rem">// send payment to //</div>
-        <!-- REPLACE YourCashAppHandle WITH YOUR ACTUAL HANDLE (no $ in the JS string) -->
-        <div class="cashapp-handle"><span>$</span>YourCashAppHandle</div>
-      </div>
-      <button class="cashapp-copy" id="copyBtn" onclick="copyCashApp()">copy handle</button>
+    <div class="pay-block">
+      <div class="pay-block-label">// secure checkout via stripe //</div>
+      <a class="btn-pay" id="payBtn" href="#" target="_blank" rel="noopener">pay with card</a>
     </div>
     <div class="modal-note">
       Readings are non-refundable once begun. If you have no specific question, state an area of life — relationship, career, general guidance — and the cards will direct.
@@ -409,25 +405,37 @@ function showCart(){showToast(cartTotal===0?'your bag is empty':`${cartTotal} it
 let toastTimer;
 function showToast(msg){clearTimeout(toastTimer);document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
 
-/* ── MODAL ── */
+/* ── MODAL / STRIPE CHECKOUT ──
+   Create one Stripe Payment Link per reading (dashboard.stripe.com/payment-links)
+   and paste each URL in below. Until a link is filled in, its "pay with card"
+   button stays disabled so nothing broken ever goes live.
+── */
+const STRIPE_LINKS = {
+  'Celtic Cross Reading': '',   // ← paste the $45.00 Payment Link URL
+  'The Single Draw': '',        // ← paste the $12.00 Payment Link URL
+  'Past · Present · Path': ''   // ← paste the $22.00 Payment Link URL
+};
+
 function openModal(title,price,body){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalPrice').textContent=price;
   document.getElementById('modalBody').textContent=body;
+  const payBtn=document.getElementById('payBtn');
+  const link=STRIPE_LINKS[title];
+  if(link){
+    payBtn.href=link;
+    payBtn.classList.remove('disabled');
+    payBtn.textContent='pay with card';
+  }else{
+    payBtn.href='#';
+    payBtn.classList.add('disabled');
+    payBtn.textContent='checkout coming soon';
+  }
   document.getElementById('modalBg').classList.add('open');
   document.body.style.overflow='hidden';
 }
 function closeModal(){document.getElementById('modalBg').classList.remove('open');document.body.style.overflow='';}
 function closeModalOutside(e){if(e.target===document.getElementById('modalBg'))closeModal();}
-
-function copyCashApp(){
-  // ← Change 'YourCashAppHandle' to your actual handle (no $ sign in the string)
-  navigator.clipboard.writeText('$YourCashAppHandle').then(()=>{
-    const btn=document.getElementById('copyBtn');
-    btn.textContent='copied ✓';btn.classList.add('copied');
-    setTimeout(()=>{btn.textContent='copy handle';btn.classList.remove('copied')},2000);
-  });
-}
 
 /* ── SPELLS
    `sticker` field = the matching Merchize sticker product name.
