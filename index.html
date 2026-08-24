@@ -111,12 +111,18 @@ section{padding:6rem 2rem;position:relative}
 .step-num{font-family:var(--mono);font-size:.62rem;color:var(--pink);border:1px solid rgba(232,25,106,.35);width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.15rem}
 .step-text{font-family:var(--mono);font-size:.72rem;color:var(--text);line-height:1.6;letter-spacing:.02em}
 .step-text strong{color:var(--white)}
-.pay-block{background:rgba(0,0,0,.4);border:1px solid rgba(232,25,106,.2);padding:1.2rem 1.5rem;margin-bottom:1.5rem}
-.pay-block-label{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.9rem}
-.btn-pay{display:block;text-align:center;font-family:var(--mono);font-size:.85rem;color:var(--white);text-decoration:none;background:rgba(232,25,106,.15);border:1px solid var(--pink);padding:.9rem 1rem;letter-spacing:.06em;transition:all .3s}
+.form-group{margin-bottom:1.2rem}
+.form-label{display:block;font-family:var(--mono);font-size:.62rem;color:var(--purple);letter-spacing:.06em;margin-bottom:.5rem}
+.form-input{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(232,25,106,.2);color:var(--white);font-family:var(--serif);font-size:1rem;padding:.7rem .9rem;transition:border-color .2s;resize:vertical}
+.form-input:focus{outline:none;border-color:var(--pink)}
+.form-error{font-family:var(--mono);font-size:.68rem;color:var(--pink);margin-bottom:1rem;min-height:1em}
+#payment-element{margin-bottom:1.2rem}
+.btn-pay{display:block;width:100%;text-align:center;font-family:var(--mono);font-size:.85rem;color:var(--white);background:rgba(232,25,106,.15);border:1px solid var(--pink);padding:.9rem 1rem;letter-spacing:.06em;transition:all .3s;cursor:pointer}
 .btn-pay::before{content:'//';margin-right:.3em}.btn-pay::after{content:'//';margin-left:.3em}
 .btn-pay:hover{background:rgba(232,25,106,.25);box-shadow:var(--glow-pink)}
-.btn-pay.disabled{pointer-events:none;opacity:.4;border-color:rgba(255,255,255,.15);background:none}
+.btn-pay:disabled{pointer-events:none;opacity:.4;border-color:rgba(255,255,255,.15);background:none}
+.btn-back{display:block;width:100%;text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--muted);background:none;border:none;padding:.9rem 0 0;letter-spacing:.05em;cursor:pointer;transition:color .2s}
+.btn-back:hover{color:var(--pink)}
 .modal-note{font-family:var(--mono);font-size:.62rem;color:var(--muted);line-height:1.6;letter-spacing:.02em;border-top:1px solid rgba(255,255,255,.06);padding-top:1.2rem}
 
 /* SPELLS */
@@ -212,6 +218,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
   footer{flex-direction:column;text-align:center}
 }
 </style>
+<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -306,24 +313,27 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;a
     <div class="modal-title" id="modalTitle">Celtic Cross Reading</div>
     <div class="modal-price-line" id="modalPrice">$45.00</div>
     <div class="modal-body" id="modalBody">Written interpretation delivered within 24 hours of payment confirmation.</div>
-    <div class="modal-steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-text">Click <strong>pay with card</strong> below — secure Stripe checkout opens in a new tab. Add your <strong>question or intention</strong> in the note field at checkout.</div>
+
+    <div id="detailsStep">
+      <div class="form-group">
+        <label class="form-label" for="bookingEmail">// email tied to your zoom account — this is how we'll reach you //</label>
+        <input class="form-input" type="email" id="bookingEmail" placeholder="you@example.com" autocomplete="email">
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-text">Use the <strong>email tied to your Zoom account</strong> as your checkout email — that's how we'll reach you.</div>
+      <div class="form-group">
+        <label class="form-label" for="bookingQuestion">// your question or intention (optional) //</label>
+        <textarea class="form-input" id="bookingQuestion" rows="2" placeholder="What do you want the cards to speak to?"></textarea>
       </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-text">Your reading is delivered <strong>via email</strong>, written and detailed, within the turnaround above. We're setting up automatic confirmation emails — until then we'll follow up personally after checkout.</div>
-      </div>
+      <div class="form-error" id="detailsError"></div>
+      <button class="btn-pay" id="continueBtn" onclick="startCheckout()">continue to payment</button>
     </div>
-    <div class="pay-block">
-      <div class="pay-block-label">// secure checkout via stripe //</div>
-      <a class="btn-pay" id="payBtn" href="#" target="_blank" rel="noopener">pay with card</a>
+
+    <div id="paymentStep" style="display:none">
+      <div id="payment-element"></div>
+      <div class="form-error" id="paymentError"></div>
+      <button class="btn-pay" id="confirmPayBtn" onclick="submitPayment()">pay $<span id="payAmountLabel"></span></button>
+      <button class="btn-back" id="backBtn" onclick="backToDetails()">‹ back</button>
     </div>
+
     <div class="modal-note">
       Readings are non-refundable once begun. If you have no specific question, state an area of life — relationship, career, general guidance — and the cards will direct.
     </div>
@@ -406,36 +416,125 @@ let toastTimer;
 function showToast(msg){clearTimeout(toastTimer);document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
 
 /* ── MODAL / STRIPE CHECKOUT ──
-   Create one Stripe Payment Link per reading (dashboard.stripe.com/payment-links)
-   and paste each URL in below. Until a link is filled in, its "pay with card"
-   button stays disabled so nothing broken ever goes live.
+   Fully on-site checkout via Stripe's Payment Element. The publishable
+   key below is meant to be public — it's safe to ship in client-side
+   code. It is NOT the secret key: the secret key and webhook signing
+   secret live only as environment variables on the Vercel backend
+   (api/create-payment-intent.js, api/webhook.js) and are never present
+   here, in this repo, or anywhere client-side.
 ── */
-const STRIPE_LINKS = {
-  'Celtic Cross Reading': '',   // ← paste the $45.00 Payment Link URL
-  'The Single Draw': '',        // ← paste the $12.00 Payment Link URL
-  'Past · Present · Path': ''   // ← paste the $22.00 Payment Link URL
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_REPLACE_ME'; // ← paste your real publishable key
+const stripe = (window.Stripe && !STRIPE_PUBLISHABLE_KEY.includes('REPLACE_ME'))
+  ? Stripe(STRIPE_PUBLISHABLE_KEY) : null;
+
+const READING_PRICES = {
+  'Celtic Cross Reading': 45.00,
+  'The Single Draw': 12.00,
+  'Past · Present · Path': 22.00,
 };
 
+const STRIPE_APPEARANCE = {
+  theme: 'night',
+  variables: {
+    colorPrimary: '#e8196a',
+    colorBackground: '#0a0514',
+    colorText: '#c8bdd4',
+    colorTextPlaceholder: '#6b6080',
+    colorDanger: '#e8196a',
+    fontFamily: '"Space Mono", monospace',
+    borderRadius: '2px',
+    fontSizeBase: '14px',
+  },
+};
+
+let checkoutElements = null;
+let currentReading = '';
+
 function openModal(title,price,body){
+  currentReading = title;
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalPrice').textContent=price;
   document.getElementById('modalBody').textContent=body;
-  const payBtn=document.getElementById('payBtn');
-  const link=STRIPE_LINKS[title];
-  if(link){
-    payBtn.href=link;
-    payBtn.classList.remove('disabled');
-    payBtn.textContent='pay with card';
+  document.getElementById('bookingEmail').value='';
+  document.getElementById('bookingQuestion').value='';
+  document.getElementById('detailsError').textContent='';
+  document.getElementById('paymentError').textContent='';
+  document.getElementById('payment-element').innerHTML='';
+  checkoutElements=null;
+
+  const continueBtn=document.getElementById('continueBtn');
+  if(!stripe){
+    continueBtn.disabled=true;
+    continueBtn.textContent='checkout coming soon';
+    document.getElementById('detailsError').textContent='Payments aren’t connected yet — check back soon.';
   }else{
-    payBtn.href='#';
-    payBtn.classList.add('disabled');
-    payBtn.textContent='checkout coming soon';
+    continueBtn.disabled=false;
+    continueBtn.textContent='continue to payment';
   }
+
+  showDetailsStep();
   document.getElementById('modalBg').classList.add('open');
   document.body.style.overflow='hidden';
 }
 function closeModal(){document.getElementById('modalBg').classList.remove('open');document.body.style.overflow='';}
 function closeModalOutside(e){if(e.target===document.getElementById('modalBg'))closeModal();}
+
+function showDetailsStep(){
+  document.getElementById('detailsStep').style.display='block';
+  document.getElementById('paymentStep').style.display='none';
+}
+function showPaymentStep(){
+  document.getElementById('detailsStep').style.display='none';
+  document.getElementById('paymentStep').style.display='block';
+}
+function backToDetails(){ showDetailsStep(); }
+
+async function startCheckout(){
+  const email=document.getElementById('bookingEmail').value.trim();
+  const question=document.getElementById('bookingQuestion').value.trim();
+  const errEl=document.getElementById('detailsError');
+  errEl.textContent='';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent='Enter a valid email — the one tied to your Zoom account.';
+    return;
+  }
+  const btn=document.getElementById('continueBtn');
+  btn.disabled=true; btn.textContent='loading…';
+  try{
+    const res=await fetch('/api/create-payment-intent',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reading:currentReading,email,question})
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Could not start checkout.');
+    checkoutElements = stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
+    checkoutElements.create('payment').mount('#payment-element');
+    document.getElementById('payAmountLabel').textContent=READING_PRICES[currentReading].toFixed(2);
+    showPaymentStep();
+  }catch(err){
+    errEl.textContent=err.message;
+  }finally{
+    btn.disabled=false; btn.textContent='continue to payment';
+  }
+}
+
+async function submitPayment(){
+  const errEl=document.getElementById('paymentError');
+  errEl.textContent='';
+  const btn=document.getElementById('confirmPayBtn');
+  btn.disabled=true; btn.textContent='processing…';
+  const {error} = await stripe.confirmPayment({
+    elements: checkoutElements,
+    confirmParams: { return_url: window.location.origin + '/thank-you.html' }
+  });
+  // Only reached if confirmation fails immediately (e.g. card declined) —
+  // on success Stripe redirects the browser to return_url itself.
+  if(error){
+    errEl.textContent=error.message;
+    btn.disabled=false; btn.textContent=`pay $${READING_PRICES[currentReading].toFixed(2)}`;
+  }
+}
 
 /* ── SPELLS
    `sticker` field = the matching Merchize sticker product name.

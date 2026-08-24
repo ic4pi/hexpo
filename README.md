@@ -7,8 +7,13 @@
 
 ```
 hexposed/
-├── index.html       ← Storefront (spells, apparel, tarot CTA, game launch)
+├── index.html       ← Storefront (spells, apparel, tarot booking+checkout, game launch)
 ├── game.html        ← Broomstick Run (Three.js 3D game)
+├── thank-you.html   ← Post-payment confirmation page (Stripe redirects here)
+├── api/
+│   ├── create-payment-intent.js  ← Vercel serverless fn: starts a Stripe payment
+│   └── webhook.js                ← Vercel serverless fn: verifies Stripe payment events
+├── package.json      ← declares the `stripe` dependency the two functions above need
 ├── models/          ← Create this folder — put your .glb files here
 │   ├── witch.glb
 │   ├── broom.glb
@@ -21,8 +26,58 @@ hexposed/
 └── README.md        ← You are here
 ```
 
-To run locally: just open `index.html` in a browser. No build step needed.
-To deploy: drop the whole folder on Vercel, Netlify, or any static host.
+To preview the static pages: just open `index.html` in a browser (booking's
+"continue to payment" step needs the API routes below, so it'll show
+"checkout coming soon" until deployed on Vercel).
+
+---
+
+## Tarot Booking Checkout (Stripe) — Deploy on Vercel
+
+Booking a reading is a fully on-site checkout: the customer never leaves
+the page. It's built from three pieces:
+
+1. **`index.html`** — the booking modal collects the customer's email (the
+   one tied to their Zoom account — that's how you reach them) and an
+   optional question, then mounts Stripe's embedded Payment Element to
+   take the card.
+2. **`api/create-payment-intent.js`** — a Vercel serverless function that
+   looks up the reading's price *server-side* (never trusts a price sent
+   from the browser) and creates a Stripe PaymentIntent.
+3. **`api/webhook.js`** — a Vercel serverless function Stripe calls when a
+   payment succeeds, so you have a durable, verified record even if the
+   customer closes the tab before the confirmation page loads. Right now
+   it just logs the booking (reading, email, question) — once you have a
+   business domain + mailbox, send the confirmation email from here.
+
+### Setup steps
+
+1. **Create a Stripe account** (or use your existing one) at
+   [dashboard.stripe.com](https://dashboard.stripe.com).
+2. **Deploy this repo to Vercel** — import `ic4pi/hexpo` as a new Vercel
+   project. Vercel auto-detects the `api/` folder as serverless functions
+   and installs `package.json` dependencies at build time.
+3. **Set environment variables** in the Vercel project (Settings →
+   Environment Variables) — never in this repo, never in chat:
+   - `STRIPE_SECRET_KEY` — your Stripe secret key (`sk_live_…` or
+     `sk_test_…`). Used server-side only, in `api/*.js`.
+   - `STRIPE_WEBHOOK_SECRET` — from the webhook endpoint you register in
+     step 4 below (`whsec_…`).
+4. **Register the webhook** in the Stripe Dashboard (Developers →
+   Webhooks → Add endpoint): URL = `https://<your-vercel-domain>/api/webhook`,
+   event = `payment_intent.succeeded`. Stripe gives you the signing secret
+   for `STRIPE_WEBHOOK_SECRET` at this point.
+5. **Set the publishable key** — open `index.html`, find
+   `STRIPE_PUBLISHABLE_KEY = 'pk_live_REPLACE_ME'` near the top of the
+   `<script>` block, and paste in your real publishable key (`pk_live_…`
+   or `pk_test_…`). This key is meant to be public/client-side — it is
+   **not** the secret key.
+6. Redeploy. Until the publishable key is filled in, the "book & pay"
+   flow correctly shows **"checkout coming soon"** instead of breaking.
+
+Reading prices live in two places that must stay in sync: `READING_PRICES`
+in `index.html` (for display) and `READING_PRICES_CENTS` in
+`api/create-payment-intent.js` (the one that actually charges the card).
 
 ---
 

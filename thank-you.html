@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booked — Hexposed</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=Cinzel:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#000000; --pink:#e8196a; --purple:#7b2be2; --muted:#6b6080;
+  --text:#c8bdd4; --white:#f0eaf5;
+  --mono:'Space Mono',monospace; --serif:'Cormorant Garamond',Georgia,serif; --display:'Cinzel',Georgia,serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--black);color:var(--text);font-family:var(--serif);font-size:18px;font-weight:300;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;
+  background:radial-gradient(ellipse at 50% 40%,rgba(123,43,226,.12) 0%,transparent 60%),var(--black)}
+.box{max-width:480px}
+.label{font-family:var(--mono);font-size:.72rem;color:var(--pink);letter-spacing:.05em;margin-bottom:1.5rem;display:block}
+.label::before{content:'//';margin-right:.2em}.label::after{content:'//';margin-left:.2em}
+h1{font-family:var(--display);font-size:clamp(2rem,6vw,3rem);font-weight:300;letter-spacing:.15em;text-transform:uppercase;color:var(--white);margin-bottom:1.5rem}
+p{font-size:1.05rem;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:1rem}
+p strong{color:var(--text);font-style:normal}
+a.back{display:inline-block;margin-top:1.5rem;font-family:var(--mono);font-size:.8rem;color:var(--pink);text-decoration:none;border:1px solid var(--pink);padding:.9rem 2rem;letter-spacing:.08em;transition:all .3s}
+a.back:hover{background:rgba(232,25,106,.12)}
+</style>
+</head>
+<body>
+<div class="box">
+  <span class="label">payment received</span>
+  <h1>Your Reading Is Booked</h1>
+  <p>We've got your payment and your question. Your written reading will land in the email you checked out with — the one tied to your Zoom account — within the turnaround window shown at booking.</p>
+  <p><strong>Confirmation emails aren't automated yet</strong>, so if you don't hear from us within that window, feel free to check in.</p>
+  <a href="index.html" class="back">back to hexposed</a>
+</div>
+</body>
+</html>
