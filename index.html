@@ -423,7 +423,7 @@ function showToast(msg){clearTimeout(toastTimer);document.getElementById('toastM
    (api/create-payment-intent.js, api/webhook.js) and are never present
    here, in this repo, or anywhere client-side.
 ── */
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_REPLACE_ME'; // ← paste your real publishable key
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51ToemrALwINGiotHxPopQKKRxDRqvFy1HGJPG3Rps6UjbI1Vb2f0rrQu1KTzrAtQYnPyDXWrJZL82MMLYXYHDzRe00V7NPCZBp';
 const stripe = (window.Stripe && !STRIPE_PUBLISHABLE_KEY.includes('REPLACE_ME'))
   ? Stripe(STRIPE_PUBLISHABLE_KEY) : null;
 
