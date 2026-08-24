@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexposed — A Witch's Boutique by New Earth Frequency</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=Cinzel:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:   #000000;
+  --deep:    #04020c;
+  --pink:    #e8196a;
+  --purple:  #7b2be2;
+  --muted:   #6b6080;
+  --text:    #c8bdd4;
+  --white:   #f0eaf5;
+  --card-bg: #0a0514;
+  --card-border: rgba(232,25,106,0.3);
+  --glow-pink:   0 0 20px rgba(232,25,106,0.4), 0 0 60px rgba(232,25,106,0.15);
+  --glow-purple: 0 0 20px rgba(123,43,226,0.5), 0 0 60px rgba(123,43,226,0.2);
+  --mono:    'Space Mono', monospace;
+  --serif:   'Cormorant Garamond', Georgia, serif;
+  --display: 'Cinzel', Georgia, serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:var(--serif);font-size:18px;font-weight:300;overflow-x:hidden;line-height:1.7}
+
+.label{font-family:var(--mono);font-size:.72rem;color:var(--pink);letter-spacing:.05em}
+.label::before{content:'//';margin-right:.2em}.label::after{content:'//';margin-left:.2em}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.4rem 2.5rem;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(232,25,106,.12)}
+.nav-logo{font-family:var(--display);font-size:1rem;font-weight:300;letter-spacing:.35em;text-transform:uppercase;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:.8rem}
+.moon-phases{display:flex;gap:3px;align-items:center}
+.moon-phases span{width:8px;height:8px;border-radius:50%;border:1px solid var(--pink);display:inline-block}
+.moon-phases span:nth-child(1){background:transparent}
+.moon-phases span:nth-child(2){background:linear-gradient(to right,var(--pink) 50%,transparent 50%)}
+.moon-phases span:nth-child(3){background:var(--pink)}
+.moon-phases span:nth-child(4){background:linear-gradient(to left,var(--pink) 50%,transparent 50%)}
+.moon-phases span:nth-child(5){background:transparent}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.05em;transition:color .3s}
+.nav-links a::before{content:'//';color:rgba(232,25,106,.4);margin-right:.2em}
+.nav-links a:hover{color:var(--pink)}
+.nav-right{display:flex;align-items:center;gap:1.5rem}
+.tarot-nav{font-family:var(--mono);font-size:.72rem;color:var(--pink);text-decoration:none;border:1px solid var(--pink);padding:.45rem 1rem;letter-spacing:.05em;transition:all .3s;white-space:nowrap}
+.tarot-nav::before{content:'//';margin-right:.2em}.tarot-nav::after{content:'//';margin-left:.2em}
+.tarot-nav:hover{background:rgba(232,25,106,.12);box-shadow:var(--glow-pink)}
+.cart-pill{font-family:var(--mono);font-size:.68rem;color:var(--muted);cursor:pointer;transition:color .3s}
+.cart-pill:hover{color:var(--pink)}
+.cart-count{color:var(--pink)}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:9rem 2rem 5rem;position:relative;background:radial-gradient(ellipse at 50% 60%,rgba(123,43,226,.12) 0%,transparent 60%),radial-gradient(ellipse at 30% 80%,rgba(232,25,106,.06) 0%,transparent 50%),var(--black)}
+.hero-moon{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#1a0830,#000);border:1px solid rgba(232,25,106,.2);box-shadow:0 0 80px rgba(123,43,226,.2);top:50%;left:50%;transform:translate(-50%,-60%);z-index:0}
+.hero-content{position:relative;z-index:1}
+.hero-eyebrow{font-family:var(--mono);font-size:.7rem;color:var(--pink);letter-spacing:.1em;margin-bottom:2rem;display:block;opacity:0;animation:fadeUp 1s .2s ease forwards}
+.hero-title{font-family:var(--display);font-size:clamp(2.8rem,9vw,8rem);font-weight:300;letter-spacing:.25em;text-transform:uppercase;color:var(--white);line-height:.95;margin-bottom:.5rem;opacity:0;animation:fadeUp 1s .4s ease forwards}
+.hero-title-accent{display:block;color:var(--pink);text-shadow:var(--glow-pink);font-size:.18em;letter-spacing:.35em;margin-top:1.2rem;text-transform:uppercase;font-family:var(--mono);font-weight:400}
+.hero-sub{font-size:1.15rem;font-style:italic;color:var(--muted);max-width:480px;margin:2rem auto 3rem;opacity:0;animation:fadeUp 1s .6s ease forwards}
+.hero-ctas{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp 1s .8s ease forwards}
+.cta-tarot{font-family:var(--mono);font-size:.8rem;color:var(--white);text-decoration:none;border:1px solid rgba(255,255,255,.2);padding:.9rem 2rem;letter-spacing:.08em;transition:all .3s;display:inline-block;background:rgba(123,43,226,.15)}
+.cta-tarot:hover{border-color:var(--purple);box-shadow:var(--glow-purple);background:rgba(123,43,226,.25)}
+.cta-shop{font-family:var(--mono);font-size:.8rem;color:var(--pink);text-decoration:none;border:1px solid var(--pink);padding:.9rem 2rem;letter-spacing:.08em;transition:all .3s;display:inline-block}
+.cta-shop:hover{background:rgba(232,25,106,.12);box-shadow:var(--glow-pink)}
+
+/* SECTIONS */
+section{padding:6rem 2rem;position:relative}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-header{margin-bottom:3.5rem}
+.section-title{font-family:var(--display);font-size:clamp(1.8rem,4vw,3.2rem);font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--white);line-height:1.1;margin:.8rem 0}
+.section-desc{font-size:1.05rem;font-style:italic;color:var(--muted);max-width:520px}
+.divider{max-width:1100px;margin:0 auto;height:1px;background:linear-gradient(to right,transparent,rgba(232,25,106,.3),rgba(123,43,226,.3),transparent)}
+
+/* READINGS SECTION */
+#readings{background:radial-gradient(ellipse at 50% 0%,rgba(123,43,226,.13) 0%,transparent 65%);border-top:1px solid rgba(232,25,106,.12);border-bottom:1px solid rgba(232,25,106,.12);padding:5rem 2rem}
+.readings-inner{max-width:1000px;margin:0 auto}
+.readings-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:3rem}
+.reading-card{background:var(--card-bg);border:1px solid rgba(123,43,226,.25);padding:2.2rem;position:relative;overflow:hidden;transition:all .4s}
+.reading-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--purple),transparent);opacity:0;transition:opacity .4s}
+.reading-card:hover{border-color:rgba(123,43,226,.55);transform:translateY(-3px)}
+.reading-card:hover::before{opacity:1}
+.reading-card.featured{border-color:rgba(232,25,106,.35);grid-column:1/-1}
+.reading-card.featured::before{background:linear-gradient(to right,transparent,var(--pink),transparent)}
+.reading-card.featured:hover{border-color:rgba(232,25,106,.7)}
+.reading-type{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:.8rem}
+.reading-name{font-family:var(--display);font-size:1.35rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.6rem}
+.reading-card.featured .reading-name{font-size:1.7rem}
+.reading-desc{font-size:.95rem;font-style:italic;color:var(--muted);line-height:1.65;margin-bottom:1.5rem}
+.reading-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem}
+.reading-price{font-family:var(--mono);font-size:1.1rem;color:var(--white)}
+.reading-duration{font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.05em}
+.btn-book{font-family:var(--mono);font-size:.68rem;color:var(--pink);background:none;border:1px solid var(--pink);padding:.5rem 1.2rem;letter-spacing:.05em;cursor:pointer;transition:all .3s;white-space:nowrap}
+.btn-book::before{content:'//';margin-right:.2em}.btn-book::after{content:'//';margin-left:.2em}
+.btn-book:hover{background:rgba(232,25,106,.12);box-shadow:var(--glow-pink)}
+.reading-card.featured .btn-book{padding:.65rem 1.8rem;font-size:.75rem}
+
+/* BOOKING MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity .35s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:#06010f;border:1px solid rgba(232,25,106,.3);max-width:520px;width:100%;padding:2.8rem;position:relative;box-shadow:0 0 60px rgba(123,43,226,.2)}
+.modal-close{position:absolute;top:1.2rem;right:1.4rem;font-family:var(--mono);font-size:.7rem;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:.05em;transition:color .2s}
+.modal-close:hover{color:var(--pink)}
+.modal-eyebrow{font-family:var(--mono);font-size:.62rem;color:var(--purple);letter-spacing:.1em;margin-bottom:.6rem}
+.modal-title{font-family:var(--display);font-size:1.5rem;letter-spacing:.15em;color:var(--white);margin-bottom:.4rem}
+.modal-price-line{font-family:var(--mono);font-size:.78rem;color:var(--pink);margin-bottom:1.8rem}
+.modal-body{font-size:.95rem;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:2rem}
+.modal-steps{display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem}
+.step{display:flex;gap:1rem;align-items:flex-start}
+.step-num{font-family:var(--mono);font-size:.62rem;color:var(--pink);border:1px solid rgba(232,25,106,.35);width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.15rem}
+.step-text{font-family:var(--mono);font-size:.72rem;color:var(--text);line-height:1.6;letter-spacing:.02em}
+.step-text strong{color:var(--white)}
+.cashapp-block{background:rgba(0,0,0,.4);border:1px solid rgba(232,25,106,.2);padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}
+.cashapp-handle{font-family:var(--mono);font-size:1.1rem;color:var(--white);letter-spacing:.05em}
+.cashapp-handle span{color:var(--pink)}
+.cashapp-copy{font-family:var(--mono);font-size:.6rem;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:.3rem .7rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cashapp-copy:hover{color:var(--white);border-color:rgba(255,255,255,.3)}
+.cashapp-copy.copied{color:#4ade80;border-color:#4ade80}
+.modal-note{font-family:var(--mono);font-size:.62rem;color:var(--muted);line-height:1.6;letter-spacing:.02em;border-top:1px solid rgba(255,255,255,.06);padding-top:1.2rem}
+
+/* SPELLS */
+#spells{background:radial-gradient(ellipse at 30% 50%,rgba(232,25,106,.05) 0%,transparent 60%)}
+.spells-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.spell-card{background:var(--card-bg);border:1px solid var(--card-border);padding:0;position:relative;overflow:hidden;transition:all .4s;cursor:default;display:flex;flex-direction:column}
+.spell-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,25,106,.04),transparent);opacity:0;transition:opacity .4s;pointer-events:none}
+.spell-card:hover{border-color:rgba(232,25,106,.6);transform:translateY(-3px)}
+.spell-card:hover::after{opacity:1}
+.spell-image-wrap{width:100%;height:280px;overflow:hidden;position:relative;border-bottom:1px solid var(--card-border)}
+.spell-image{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s}
+.spell-card:hover .spell-image{transform:scale(1.04)}
+.spell-body{padding:1.8rem 2rem 2rem}
+.spell-rarity{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .6rem;border-radius:2px;display:inline-block;margin-bottom:1.2rem}
+.r-common{background:rgba(100,116,139,.2);color:#94a3b8;border:1px solid rgba(100,116,139,.3)}
+.r-rare{background:rgba(123,43,226,.2);color:#a78bfa;border:1px solid rgba(123,43,226,.4)}
+.r-legendary{background:rgba(232,25,106,.15);color:var(--pink);border:1px solid rgba(232,25,106,.4)}
+.spell-name{font-family:var(--display);font-size:1.25rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.6rem}
+.spell-desc{font-size:.95rem;color:var(--muted);line-height:1.6;margin-bottom:.8rem;font-style:italic}
+.spell-bundle{font-family:var(--mono);font-size:.6rem;color:#9f7aea;letter-spacing:.04em;margin-bottom:1.2rem;display:flex;align-items:center;gap:.4rem}
+.spell-bundle::before{content:'◈';color:var(--purple)}
+.spell-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.tag{font-family:var(--mono);font-size:.6rem;padding:.15rem .5rem;border-radius:2px;background:rgba(123,43,226,.15);color:#9f7aea;border:1px solid rgba(123,43,226,.25)}
+.spell-footer{display:flex;align-items:center;justify-content:space-between}
+.spell-price{font-family:var(--mono);font-size:1.1rem;color:var(--white)}
+.btn-add{font-family:var(--mono);font-size:.68rem;color:var(--pink);background:none;border:1px solid var(--pink);padding:.45rem 1rem;letter-spacing:.05em;cursor:pointer;transition:all .3s}
+.btn-add::before{content:'//';margin-right:.2em}.btn-add::after{content:'//';margin-left:.2em}
+.btn-add:hover{background:rgba(232,25,106,.12);box-shadow:var(--glow-pink)}
+.btn-add.added{color:#4ade80;border-color:#4ade80}
+
+/* COMING SOON CARD */
+.spell-card.coming-soon{cursor:default}
+.spell-card.coming-soon .spell-image-wrap{filter:saturate(.85)}
+.spell-card.coming-soon .spell-image-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,2,12,0) 40%,rgba(4,2,12,.9) 100%)}
+.r-soon{background:rgba(200,189,212,.1);color:var(--muted);border:1px solid rgba(200,189,212,.25)}
+.soon-note{font-family:var(--mono);font-size:.68rem;color:var(--muted);letter-spacing:.04em;border-top:1px solid rgba(255,255,255,.06);padding-top:1rem;margin-top:.4rem}
+
+/* SHIRTS */
+#shirts{background:radial-gradient(ellipse at 70% 50%,rgba(123,43,226,.07) 0%,transparent 60%)}
+.shirts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
+.shirt-card{background:var(--card-bg);border:1px solid rgba(123,43,226,.25);transition:all .4s}
+.shirt-card:hover{border-color:rgba(123,43,226,.6);transform:translateY(-3px);box-shadow:var(--glow-purple)}
+.shirt-preview{height:220px;display:flex;align-items:center;justify-content:center;font-size:6rem;position:relative;overflow:hidden}
+.shirt-preview::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 20px,rgba(232,25,106,.02) 20px,rgba(232,25,106,.02) 21px)}
+.shirt-body{padding:1.5rem}
+.shirt-name{font-family:var(--display);font-size:1.1rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.4rem}
+.shirt-tagline{font-size:.9rem;font-style:italic;color:var(--muted);margin-bottom:.6rem}
+.shirt-fulfil{font-family:var(--mono);font-size:.58rem;color:rgba(123,43,226,.55);letter-spacing:.04em;margin-bottom:1rem}
+.size-row{display:flex;gap:.4rem;margin-bottom:1.2rem}
+.size-btn{font-family:var(--mono);font-size:.62rem;background:none;border:1px solid rgba(123,43,226,.3);color:#9f7aea;padding:.25rem .6rem;cursor:pointer;transition:all .2s}
+.size-btn:hover,.size-btn.active{background:rgba(123,43,226,.2);border-color:var(--purple);color:#c4b5fd}
+.shirt-footer{display:flex;align-items:center;justify-content:space-between}
+.shirt-price{font-family:var(--mono);font-size:1.05rem;color:var(--white)}
+.btn-merch{font-family:var(--mono);font-size:.68rem;color:var(--purple);background:none;border:1px solid var(--purple);padding:.45rem 1rem;letter-spacing:.05em;cursor:pointer;transition:all .3s;text-decoration:none;display:inline-block}
+.btn-merch::before{content:'//';margin-right:.2em}.btn-merch::after{content:'//';margin-left:.2em}
+.btn-merch:hover{background:rgba(123,43,226,.15);box-shadow:var(--glow-purple)}
+.merch-notice{max-width:1100px;margin:0 auto 2.5rem;background:rgba(123,43,226,.08);border:1px solid rgba(123,43,226,.2);padding:1rem 1.5rem}
+.merch-notice-text{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.03em;line-height:1.7}
+.merch-notice-text strong{color:var(--text)}
+
+/* GAME */
+#game-section{text-align:center;padding:6rem 2rem;background:radial-gradient(ellipse at center,rgba(123,43,226,.08) 0%,transparent 60%)}
+.game-box{max-width:700px;margin:0 auto;border:1px solid rgba(232,25,106,.2);background:var(--card-bg);padding:4rem 2rem;position:relative;overflow:hidden}
+.game-box::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 30px,rgba(232,25,106,.03) 30px,rgba(232,25,106,.03) 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,rgba(232,25,106,.03) 30px,rgba(232,25,106,.03) 31px)}
+.game-box-inner{position:relative;z-index:1}
+.game-title-txt{font-family:var(--display);font-size:2rem;letter-spacing:.2em;text-transform:uppercase;color:var(--white);margin:1rem 0}
+.game-sub-txt{font-style:italic;color:var(--muted);margin-bottom:2rem}
+.game-launch{display:inline-block;font-family:var(--mono);font-size:.85rem;color:var(--pink);text-decoration:none;border:1px solid var(--pink);padding:1rem 2.5rem;letter-spacing:.08em;transition:all .3s}
+.game-launch::before{content:'//';margin-right:.3em}.game-launch::after{content:'//';margin-left:.3em}
+.game-launch:hover{background:rgba(232,25,106,.12);box-shadow:var(--glow-pink);transform:translateY(-2px)}
+
+/* FOOTER */
+footer{padding:3rem 2rem;border-top:1px solid rgba(232,25,106,.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
+.footer-logo{font-family:var(--display);font-size:.85rem;letter-spacing:.3em;color:rgba(255,255,255,.3);text-transform:uppercase}
+.footer-links{display:flex;gap:1.5rem;list-style:none}
+.footer-links a{font-family:var(--mono);font-size:.65rem;color:var(--muted);text-decoration:none;transition:color .3s}
+.footer-links a:hover{color:var(--pink)}
+.footer-copy{font-family:var(--mono);font-size:.65rem;color:rgba(100,80,120,.5)}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;z-index:999;background:var(--card-bg);border:1px solid rgba(232,25,106,.5);padding:1rem 1.5rem;max-width:280px;font-family:var(--mono);font-size:.78rem;color:var(--white);box-shadow:var(--glow-pink);transform:translateX(calc(100% + 2rem));transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+.toast.show{transform:translateX(0)}
+.toast-lbl{color:var(--pink);display:block;margin-bottom:.2rem;font-size:.65rem}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:680px){
+  nav{padding:1rem 1.2rem}
+  .nav-links{display:none}
+  section,#readings{padding:4rem 1.2rem}
+  .readings-grid{grid-template-columns:1fr}
+  .reading-card.featured{grid-column:1}
+  footer{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#hero" class="nav-logo">
+    <div class="moon-phases"><span></span><span></span><span></span><span></span><span></span></div>
+    Hexposed
+  </a>
+  <ul class="nav-links">
+    <li><a href="#readings">readings</a></li>
+    <li><a href="#spells">spells</a></li>
+    <li><a href="#shirts">apparel</a></li>
+    <li><a href="game.html">the skyway</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#readings" class="tarot-nav">book a reading</a>
+    <span class="cart-pill" onclick="showCart()">bag [<span class="cart-count" id="cartCount">0</span>]</span>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="hero-moon"></div>
+  <div class="hero-content">
+    <span class="hero-eyebrow">//new earth frequency — est. in the void//</span>
+    <h1 class="hero-title">HEXPOSED<span class="hero-title-accent">A Witch's Boutique by New Earth Frequency</span></h1>
+    <p class="hero-sub">Spells, streetwear, and the art of divination. Sourced from the city's oldest shadows.</p>
+    <div class="hero-ctas">
+      <a href="#readings" class="cta-tarot">//book your tarot reading//</a>
+      <a href="#spells" class="cta-shop">//enter the shop//</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TAROT READINGS ═══════════════ -->
+<section id="readings">
+  <div class="readings-inner">
+    <div class="section-header">
+      <span class="label">divination services</span>
+      <h2 class="section-title">Tarot Readings</h2>
+      <p class="section-desc">Past, present, trajectory. Celtic Cross and single-draw sessions. Always honest.</p>
+    </div>
+    <div class="readings-grid">
+
+      <div class="reading-card featured">
+        <div class="reading-type">full spread</div>
+        <div class="reading-name">Celtic Cross Reading</div>
+        <div class="reading-desc">Ten-card spread covering your present position, hidden influences, near future, hopes, fears, and likely outcome. Detailed written interpretation delivered within 24 hours of payment confirmation.</div>
+        <div class="reading-meta">
+          <div>
+            <div class="reading-price">$45.00</div>
+            <div class="reading-duration">// written delivery · 24hr turnaround //</div>
+          </div>
+          <button class="btn-book" onclick="openModal('Celtic Cross Reading','$45.00','Ten-card spread. Written interpretation of all positions delivered within 24 hours.')">book session</button>
+        </div>
+      </div>
+
+      <div class="reading-card">
+        <div class="reading-type">single card</div>
+        <div class="reading-name">The Single Draw</div>
+        <div class="reading-desc">One card. One question. Cut to the truth without ceremony. Best for a specific situation or yes/no framing.</div>
+        <div class="reading-meta">
+          <div>
+            <div class="reading-price">$12.00</div>
+            <div class="reading-duration">// same day //</div>
+          </div>
+          <button class="btn-book" onclick="openModal('The Single Draw','$12.00','One card, one question. Same-day written response.')">book session</button>
+        </div>
+      </div>
+
+      <div class="reading-card">
+        <div class="reading-type">three card spread</div>
+        <div class="reading-name">Past · Present · Path</div>
+        <div class="reading-desc">The classic three-pull. Where you've been, where you are, where this is going. Direct interpretation with no filler.</div>
+        <div class="reading-meta">
+          <div>
+            <div class="reading-price">$22.00</div>
+            <div class="reading-duration">// written delivery · same day //</div>
+          </div>
+          <button class="btn-book" onclick="openModal('Past · Present · Path','$22.00','Three-card spread. Written interpretation delivered same day.')">book session</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- BOOKING MODAL -->
+<div class="modal-bg" id="modalBg" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕ close</button>
+    <div class="modal-eyebrow">//new earth frequency — divination//</div>
+    <div class="modal-title" id="modalTitle">Celtic Cross Reading</div>
+    <div class="modal-price-line" id="modalPrice">$45.00</div>
+    <div class="modal-body" id="modalBody">Written interpretation delivered within 24 hours of payment confirmation.</div>
+    <div class="modal-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Send payment via CashApp to the handle below. Include your <strong>question or intention</strong> in the note field.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">After payment, <strong>DM us on Instagram</strong> or email us with your CashApp name so we can match your payment and begin.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Your reading is delivered <strong>via DM or email</strong> — whichever you prefer. Written, detailed, no fluff.</div>
+      </div>
+    </div>
+    <div class="cashapp-block">
+      <div>
+        <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-bottom:.3rem">// send payment to //</div>
+        <!-- REPLACE YourCashAppHandle WITH YOUR ACTUAL HANDLE (no $ in the JS string) -->
+        <div class="cashapp-handle"><span>$</span>YourCashAppHandle</div>
+      </div>
+      <button class="cashapp-copy" id="copyBtn" onclick="copyCashApp()">copy handle</button>
+    </div>
+    <div class="modal-note">
+      Readings are non-refundable once begun. If you have no specific question, state an area of life — relationship, career, general guidance — and the cards will direct.
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ SPELL JARS ═══════════════ -->
+<section id="spells">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="label">enchantments &amp; sorceries</span>
+      <h2 class="section-title">The Spell Market</h2>
+      <p class="section-desc">Handcrafted spell jars, candles, and ritual items. Each made to order under the appropriate moon phase.</p>
+    </div>
+    <div class="spells-grid" id="spellsGrid"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ APPAREL (Merchize) ═══════════════ -->
+<section id="shirts">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="label">arcane apparel</span>
+      <h2 class="section-title">Wear the Mark</h2>
+      <p class="section-desc">City-forged threads. Minor wards woven into the fabric. Look the part.</p>
+    </div>
+    <div class="merch-notice">
+      <div class="merch-notice-text">
+        <strong>Apparel ships direct from our print partner.</strong> Shirt orders are processed and fulfilled separately from spell jar orders — expect two shipments if ordering both. Shirts typically arrive within 5–7 business days.
+      </div>
+    </div>
+    <div class="shirts-grid" id="shirtsGrid"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="game-section">
+  <div class="section-inner" style="margin-bottom:2.5rem;text-align:center">
+    <span class="label">the skyway</span>
+    <h2 class="section-title" style="text-align:center">Broomstick Run</h2>
+    <p class="section-desc" style="margin:0 auto">3D broomstick game. Dodge the towers. Collect moon crystals.</p>
+  </div>
+  <div class="game-box">
+    <div class="game-box-inner">
+      <div style="font-size:4rem;margin-bottom:1rem">🧹</div>
+      <h3 class="game-title-txt">Enter The Sky</h3>
+      <p class="game-sub-txt">Full Three.js flight — witch, broom, neon city, obstacles, crystals.</p>
+      <a href="game.html" class="game-launch">launch the game</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-logo">Hexposed</span>
+  <ul class="footer-links">
+    <li><a href="#readings">readings</a></li>
+    <li><a href="#spells">spells</a></li>
+    <li><a href="#shirts">apparel</a></li>
+    <li><a href="game.html">the skyway</a></li>
+  </ul>
+  <span class="footer-copy">© 2026 Hexposed · New Earth Frequency · All enchantments final sale</span>
+</footer>
+
+<div class="toast" id="toast">
+  <span class="toast-lbl">//added to bag//</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+/* ── CART ── */
+let cartTotal = 0;
+function addToCart(name,price){cartTotal++;document.getElementById('cartCount').textContent=cartTotal;showToast(`${name} — ${price}`)}
+function showCart(){showToast(cartTotal===0?'your bag is empty':`${cartTotal} item${cartTotal!==1?'s':''} in your bag`)}
+let toastTimer;
+function showToast(msg){clearTimeout(toastTimer);document.getElementById('toastMsg').textContent=msg;const t=document.getElementById('toast');t.classList.add('show');toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
+
+/* ── MODAL ── */
+function openModal(title,price,body){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalPrice').textContent=price;
+  document.getElementById('modalBody').textContent=body;
+  document.getElementById('modalBg').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');document.body.style.overflow='';}
+function closeModalOutside(e){if(e.target===document.getElementById('modalBg'))closeModal();}
+
+function copyCashApp(){
+  // ← Change 'YourCashAppHandle' to your actual handle (no $ sign in the string)
+  navigator.clipboard.writeText('$YourCashAppHandle').then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='copied ✓';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy handle';btn.classList.remove('copied')},2000);
+  });
+}
+
+/* ── SPELLS
+   `sticker` field = the matching Merchize sticker product name.
+   This is your internal ops reference — customer sees `bundle` line only.
+   When a customer orders a spell + shirt from Merchize simultaneously,
+   add the sticker to their Merchize order manually after seeing confirmation.
+── */
+const spells = [
+  {
+    img:'images/love-spell-no4.webp', name:'Love Spell No. 4', rarity:'legendary',
+    desc:'Rosemary, cinnamon, rose bud, and clear quartz sealed under red wax. Charged to attract true love and open the door to a soulmate connection.',
+    tags:['love','romance','soulmate'], price:'$28.99',
+    bundle:'Includes: Love Spell No. 4 sigil sticker',
+    sticker:'Love Spell No. 4 Sticker' // Merchize product name
+  },
+  {
+    img:'images/protection-spell.webp', name:'Protection Spell', rarity:'rare',
+    desc:'Rosemary, selenite, bay leaf, and black tourmaline sealed under black wax. Shields your space from negativity and keeps you grounded.',
+    tags:['protection','warding','grounding'], price:'$19.99',
+    bundle:'Includes: Protection Spell sigil sticker',
+    sticker:'Protection Spell Sticker'
+  },
+  {
+    img:'images/success-spell.webp', name:'Success Spell', rarity:'legendary',
+    desc:'Cinnamon, dried lemon, rose bud, and tiger’s eye sealed under gold wax. Charged to attract abundance and fuel achievement.',
+    tags:['abundance','success','achievement'], price:'$34.99',
+    bundle:'Includes: Success Spell sigil sticker',
+    sticker:'Success Spell Sticker'
+  },
+];
+
+// Non-purchasable teaser card — swap `comingSoon:false` and fill in a real
+// spell object above once the next jar is ready to sell.
+const comingSoon = {
+  img:'images/more-jars-coming-soon.webp', name:'More Jars Coming Soon',
+  desc:'New spells are being charged under the next moon. Check back soon — the collection keeps growing.'
+};
+
+const RC={common:'r-common',rare:'r-rare',legendary:'r-legendary'};
+const sg=document.getElementById('spellsGrid');
+spells.forEach(sp=>{
+  const el=document.createElement('div');el.className='spell-card';
+  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${sp.img}" alt="${sp.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity ${RC[sp.rarity]}">${sp.rarity}</span><div class="spell-name">${sp.name}</div><div class="spell-desc">${sp.desc}</div><div class="spell-bundle">${sp.bundle}</div><div class="spell-tags">${sp.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="spell-footer"><span class="spell-price">${sp.price}</span><button class="btn-add" onclick="handleSpell(this,'${sp.name}','${sp.price}')">add to bag</button></div></div>`;
+  sg.appendChild(el);
+});
+(function(){
+  const el=document.createElement('div');el.className='spell-card coming-soon';
+  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${comingSoon.img}" alt="${comingSoon.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity r-soon">coming soon</span><div class="spell-name">${comingSoon.name}</div><div class="spell-desc">${comingSoon.desc}</div><div class="soon-note">// follow the shop or check back — new jars post here first //</div></div>`;
+  sg.appendChild(el);
+})();
+function handleSpell(btn,name,price){addToCart(name,price);btn.textContent='added ✓';btn.classList.add('added');setTimeout(()=>{btn.innerHTML='add to bag';btn.classList.remove('added')},2200)}
+
+/* ── SHIRTS
+   `merchizeUrl` = your actual Merchize product page URL.
+   Customer clicks "shop now" → goes directly to Merchize → pays there → Merchize fulfills.
+   Your margin is paid out by Merchize on their payout schedule.
+   Replace placeholder URLs once your Merchize store is live.
+── */
+const shirts = [
+  {
+    emoji:'🌙', bg:'linear-gradient(135deg,#0a0514,#1a0830)',
+    name:'Moonphase Tee',
+    tagline:'Every phase, every mood. Worn by practitioners since the third eclipse.',
+    sizes:['S','M','L','XL'], price:'$32.00',
+    // ↓ Replace with real Merchize product URL
+    merchizeUrl:'https://your-store.merchize.com/products/moonphase-tee'
+  },
+];
+
+const shg=document.getElementById('shirtsGrid');
+shirts.forEach(sh=>{
+  const el=document.createElement('div');el.className='shirt-card';
+  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${sh.emoji}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span><a href="${sh.merchizeUrl}" target="_blank" class="btn-merch">shop now</a></div></div>`;
+  shg.appendChild(el);
+});
+function selectSize(btn){btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+</script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexposition — Broomstick Run</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
+#c{display:block;width:100vw;height:100vh}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;pointer-events:none;z-index:10}
+#hud-top{display:flex;justify-content:space-between;align-items:center;padding:1.2rem 2rem;background:linear-gradient(to bottom,rgba(0,0,0,.75),transparent)}
+.hud-score{color:#e8196a;font-size:.85rem;letter-spacing:.1em}
+.hud-score span{color:#fff;font-size:1.1rem;margin-left:.5rem}
+.hud-hi{color:#7b2be2;font-size:.75rem;letter-spacing:.1em}
+.hud-hi span{color:#c4b5fd;margin-left:.4rem}
+.hud-lives{display:flex;gap:.4rem;font-size:1.1rem}
+
+/* OVERLAY */
+#overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;background:rgba(0,0,0,.72);text-align:center;gap:1rem;padding:2rem}
+#overlay.hidden{display:none}
+.ov-eyebrow{font-size:.7rem;letter-spacing:.15em;color:#e8196a}
+.ov-eyebrow::before{content:'//'}
+.ov-eyebrow::after{content:'//'}
+.ov-title{font-size:clamp(2rem,8vw,4rem);letter-spacing:.3em;text-transform:uppercase;color:#fff;text-shadow:0 0 40px rgba(232,25,106,.8);line-height:1}
+.ov-sub{color:#9b72cf;font-size:.8rem;letter-spacing:.08em;max-width:400px;line-height:1.6}
+.ov-score{font-size:1.4rem;color:#e8196a;letter-spacing:.1em}
+.ov-hi{font-size:.85rem;color:#7b2be2;letter-spacing:.1em}
+.ov-new{color:#4ade80;font-size:.78rem;letter-spacing:.1em;animation:blink 1s step-end infinite}
+.ov-btn{margin-top:.5rem;background:none;border:1px solid #e8196a;color:#e8196a;padding:.9rem 2.5rem;font-family:'Courier New',monospace;font-size:.82rem;letter-spacing:.1em;cursor:pointer;pointer-events:all;transition:all .3s}
+.ov-btn::before{content:'//';margin-right:.3em}
+.ov-btn::after{content:'//';margin-left:.3em}
+.ov-btn:hover{background:rgba(232,25,106,.15);box-shadow:0 0 20px rgba(232,25,106,.4)}
+.ov-controls{font-size:.68rem;color:rgba(255,255,255,.25);letter-spacing:.08em;margin-top:.5rem}
+
+/* BACK LINK */
+#back{position:fixed;bottom:1.2rem;left:1.5rem;z-index:10;font-size:.68rem;color:rgba(232,25,106,.5);text-decoration:none;letter-spacing:.08em;transition:color .3s}
+#back:hover{color:#e8196a}
+#back::before{content:'← '}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hud-top">
+    <div>
+      <div class="hud-score">//score//<span id="scoreVal">0</span></div>
+      <div class="hud-hi">//best//<span id="hiVal">0</span></div>
+    </div>
+    <div class="hud-lives" id="livesEl">🧹🧹🧹</div>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <span class="ov-eyebrow">hexposed — a witch's boutique by new earth frequency</span>
+  <h1 class="ov-title" id="ovTitle">Broomstick Run</h1>
+  <p class="ov-sub" id="ovSub">Dodge the towers. Collect moon crystals. Survive the storm.</p>
+  <div id="ovScoreBlock" style="display:none">
+    <div class="ov-score" id="ovScore"></div>
+    <div class="ov-hi" id="ovHi"></div>
+    <div class="ov-new" id="ovNew" style="display:none">//new high score//</div>
+  </div>
+  <button class="ov-btn" id="ovBtn" onclick="startGame()">enter the sky</button>
+  <p class="ov-controls">SPACE · ↑ · tap to fly</p>
+</div>
+
+<a href="index.html" id="back">//back to hexposition</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════
+   HEXPOSITION — BROOMSTICK RUN
+   Full Three.js game
+   · 3D witch + broom from primitives
+   · Scrolling neon city backdrop
+   · Tower obstacles (purple columns)
+   · Moon crystal collectibles (teal octahedrons)
+   · Particle bursts on hit/collect
+   · Score, lives, high score
+   · Increasing difficulty
+═══════════════════════════════════════════ */
+
+/* ── RENDERER ── */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000005);
+scene.fog = new THREE.FogExp2(0x000008, 0.016);
+
+/* ── CAMERA ── */
+const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 300);
+camera.position.set(0, 0, 15);
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ═══════════════════════════════════════════
+   LIGHTING
+═══════════════════════════════════════════ */
+scene.add(new THREE.AmbientLight(0x080015, 3));
+
+const keyLight = new THREE.DirectionalLight(0x7b2be2, 3.5);
+keyLight.position.set(-4, 8, 5);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(1024,1024);
+scene.add(keyLight);
+
+const fillLight = new THREE.PointLight(0xe8196a, 5, 45);
+fillLight.position.set(6, -2, 5);
+scene.add(fillLight);
+
+scene.add(Object.assign(new THREE.DirectionalLight(0x3d0080,2),{position:new THREE.Vector3(3,-3,-8)}));
+
+const trailLight = new THREE.PointLight(0xff2d87, 4, 14);
+scene.add(trailLight);
+
+/* ═══════════════════════════════════════════
+   CITY BACKDROP
+═══════════════════════════════════════════ */
+function makeCityTexture(){
+  const W=2048,H=512;
+  const cv=document.createElement('canvas');
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#000005');
+  sky.addColorStop(.55,'#0a0118');
+  sky.addColorStop(1,'#120025');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+
+  // Moon glow
+  const mg=ctx.createRadialGradient(W*.72,H*.18,0,W*.72,H*.18,160);
+  mg.addColorStop(0,'rgba(200,80,200,.25)');
+  mg.addColorStop(.4,'rgba(123,43,226,.12)');
+  mg.addColorStop(1,'transparent');
+  ctx.fillStyle=mg;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1a0830';
+  ctx.beginPath();ctx.arc(W*.72,H*.18,38,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(232,25,106,.6)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(W*.72,H*.18,38,0,Math.PI*2);ctx.stroke();
+
+  // Stars
+  for(let i=0;i<200;i++){
+    const a=.3+Math.random()*.7;
+    ctx.fillStyle=`rgba(255,255,255,${a})`;
+    ctx.beginPath();ctx.arc(Math.random()*W,Math.random()*H*.6,.5+Math.random()*1.2,0,Math.PI*2);ctx.fill();
+  }
+
+  // Back buildings
+  for(let i=0;i<28;i++){
+    const bx=i*(W/26)+(Math.random()-.5)*30,bw=35+Math.random()*55,bh=80+Math.random()*160;
+    const g=ctx.createLinearGradient(bx,0,bx+bw,0);
+    g.addColorStop(0,'#050010');g.addColorStop(.5,'#0a0020');g.addColorStop(1,'#050010');
+    ctx.fillStyle=g;ctx.fillRect(bx,H-bh,bw,bh);
+    const cols=Math.floor(bw/11),rows=Math.floor(bh/14);
+    for(let r=1;r<rows-1;r++) for(let c=0;c<cols;c++){
+      if(Math.random()>.45)continue;
+      ctx.fillStyle=`rgba(180,40,140,${.15+Math.random()*.5})`;
+      ctx.fillRect(bx+c*11+2,H-bh+r*14+2,6,9);
+    }
+  }
+
+  // Front buildings
+  for(let i=0;i<20;i++){
+    const bx=i*(W/17)+(Math.random()-.5)*40,bw=50+Math.random()*80,bh=140+Math.random()*220;
+    ctx.fillStyle='#02000a';ctx.fillRect(bx,H-bh,bw,bh);
+    const cols=Math.floor(bw/13),rows=Math.floor(bh/16);
+    for(let r=1;r<rows;r++) for(let c=0;c<cols;c++){
+      if(Math.random()>.35)continue;
+      const hue=Math.random()>.5?'232,25,106':'123,43,226';
+      ctx.fillStyle=`rgba(${hue},${.4+Math.random()*.6})`;
+      ctx.fillRect(bx+c*13+3,H-bh+r*16+3,7,10);
+    }
+    if(Math.random()>.5){
+      ctx.strokeStyle='rgba(232,25,106,.5)';ctx.lineWidth=1;
+      const mid=bx+bw/2;
+      ctx.beginPath();ctx.moveTo(mid,H-bh);ctx.lineTo(mid,H-bh-25-Math.random()*30);ctx.stroke();
+    }
+  }
+
+  const gg=ctx.createLinearGradient(0,H*.85,0,H);
+  gg.addColorStop(0,'transparent');
+  gg.addColorStop(.5,'rgba(232,25,106,.06)');
+  gg.addColorStop(1,'rgba(123,43,226,.12)');
+  ctx.fillStyle=gg;ctx.fillRect(0,H*.85,W,H*.15);
+
+  return new THREE.CanvasTexture(cv);
+}
+
+const cityTex = makeCityTexture();
+cityTex.wrapS = THREE.RepeatWrapping;
+cityTex.repeat.x = 2;
+const cityMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(130,30),
+  new THREE.MeshBasicMaterial({map:cityTex,depthWrite:false})
+);
+cityMesh.position.set(0,-1,-20);
+scene.add(cityMesh);
+
+/* ═══════════════════════════════════════════
+   WITCH + BROOM MODEL (Three.js primitives)
+   Swap broomGroup children for GLB loader
+   when you have model files ready.
+═══════════════════════════════════════════ */
+function buildBroom(){
+  const g = new THREE.Group();
+
+  const woodMat  = new THREE.MeshStandardMaterial({color:0x6b3a1a,roughness:.8,metalness:.05});
+  const brstMat  = new THREE.MeshStandardMaterial({color:0xd97706,roughness:.9});
+  const bodyMat  = new THREE.MeshStandardMaterial({color:0x1a0a2e,roughness:.7,emissive:new THREE.Color(0x200040),emissiveIntensity:.3});
+  const skinMat  = new THREE.MeshStandardMaterial({color:0x5a3a5a,roughness:.6});
+  const hatMat   = new THREE.MeshStandardMaterial({color:0x0a0015,roughness:.5,emissive:new THREE.Color(0xe8196a),emissiveIntensity:.1});
+  const cloakMat = new THREE.MeshStandardMaterial({color:0x12003a,roughness:.8,emissive:new THREE.Color(0x7b2be2),emissiveIntensity:.15,side:THREE.DoubleSide});
+
+  // Stick
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,4.5,8),woodMat);
+  stick.rotation.z=Math.PI/2;stick.castShadow=true;g.add(stick);
+
+  // Bristle cone
+  const brist=new THREE.Mesh(new THREE.ConeGeometry(.45,1.1,8),brstMat);
+  brist.position.set(2.5,-.1,0);brist.rotation.z=-Math.PI/2;brist.castShadow=true;g.add(brist);
+
+  // Bristle strands
+  for(let i=0;i<10;i++){
+    const s=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.8+Math.random()*.4,4),brstMat);
+    const ang=(i/10)*Math.PI*2,rad=.2+Math.random()*.2;
+    s.position.set(2.6+Math.random()*.5,Math.sin(ang)*rad,Math.cos(ang)*rad);
+    s.rotation.z=-Math.PI/2+(Math.random()-.5)*.4;g.add(s);
+  }
+
+  // Torso
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,.7,8),bodyMat);
+  torso.position.set(-.8,.45,0);torso.castShadow=true;g.add(torso);
+
+  // Head
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.2,10,10),skinMat);
+  head.position.set(-.75,.95,0);head.castShadow=true;g.add(head);
+
+  // Hat brim + cone
+  const brim=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.04,12),hatMat);
+  brim.position.set(-.75,1.1,0);g.add(brim);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(.18,.55,8),hatMat);
+  cone.position.set(-.75,1.42,0);g.add(cone);
+
+  // Cloak
+  const cloak=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,7),cloakMat);
+  cloak.position.set(-.5,.1,0);cloak.rotation.z=-.3;g.add(cloak);
+
+  // Legs
+  for(const side of[-1,1]){
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.55,6),bodyMat);
+    leg.position.set(-.5,.15,side*.18);leg.rotation.x=side*.3;leg.rotation.z=-.15;g.add(leg);
+  }
+
+  // Arms
+  for(const side of[-1,1]){
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.45,6),bodyMat);
+    arm.position.set(-.2,.45,side*.22);arm.rotation.z=side*1.1;g.add(arm);
+  }
+
+  return g;
+}
+
+const broom = buildBroom();
+broom.position.set(-2,0,0);
+scene.add(broom);
+
+/* ═══════════════════════════════════════════
+   OBSTACLE MATERIAL (shared, reused)
+═══════════════════════════════════════════ */
+const obsMat = new THREE.MeshStandardMaterial({
+  color:0x2a0060, roughness:.3, metalness:.6,
+  emissive:new THREE.Color(0x7b2be2), emissiveIntensity:.35,
+});
+const obsCapMat = new THREE.MeshStandardMaterial({
+  color:0xe8196a, roughness:.4, metalness:.5,
+  emissive:new THREE.Color(0xe8196a), emissiveIntensity:.6,
+});
+
+/* ═══════════════════════════════════════════
+   CRYSTAL MATERIAL
+═══════════════════════════════════════════ */
+const crystalMat = new THREE.MeshStandardMaterial({
+  color:0x14b8a6, roughness:.1, metalness:.8,
+  emissive:new THREE.Color(0x14b8a6), emissiveIntensity:.8,
+  transparent:true, opacity:.9,
+});
+
+/* ═══════════════════════════════════════════
+   STARS + DUST
+═══════════════════════════════════════════ */
+(()=>{
+  const pos=new Float32Array(400*3);
+  for(let i=0;i<400*3;i+=3){
+    pos[i]=(Math.random()-.5)*150;
+    pos[i+1]=(Math.random()-.5)*70;
+    pos[i+2]=-5-Math.random()*35;
+  }
+  const sg=new THREE.BufferGeometry();
+  sg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:.07,sizeAttenuation:true,transparent:true,opacity:.6})));
+})();
+
+const DUST_COUNT=120;
+const dustPos=new Float32Array(DUST_COUNT*3);
+const dustVel=[];
+for(let i=0;i<DUST_COUNT;i++){
+  dustPos[i*3]=(Math.random()-.5)*32;
+  dustPos[i*3+1]=(Math.random()-.5)*18;
+  dustPos[i*3+2]=(Math.random()-.5)*8;
+  dustVel.push({x:(Math.random()-.5)*.008,y:(Math.random()-.5)*.006});
+}
+const dustGeo=new THREE.BufferGeometry();
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+const dustPoints=new THREE.Points(dustGeo,new THREE.PointsMaterial({color:0xe8196a,size:.055,transparent:true,opacity:.45,sizeAttenuation:true}));
+scene.add(dustPoints);
+
+/* ═══════════════════════════════════════════
+   GAME STATE
+═══════════════════════════════════════════ */
+let state      = 'idle';    // idle | playing | dead
+let score      = 0;
+let highScore  = 0;
+let lives      = 3;
+let vy         = 0;
+let frame      = 0;
+let cityOffset = 0;
+let invincible = 0; // frames of invincibility after hit
+
+const GRAVITY = 0.0042;
+const THRUST  = -0.115;
+const MAX_VY  = 0.092;
+const BOUNDS  = {top:5.8, bottom:-5.8};
+
+// Obstacle + crystal pools
+const obstacles  = [];
+const crystals   = [];
+const particles  = [];
+
+// Viewport width at z=0 (world units)
+const SPAWN_X = 14;
+const LANE_H  = 12; // total vertical play area
+
+/* ═══════════════════════════════════════════
+   OBSTACLE BUILDER
+═══════════════════════════════════════════ */
+function spawnObstacle(){
+  const gapSize = Math.max(3.2, 5.5 - score * 0.04);
+  const gapCenterY = (Math.random()-.5) * (LANE_H - gapSize - 2);
+  const topH  = (LANE_H/2) - gapCenterY - gapSize/2;
+  const botH  = (LANE_H/2) + gapCenterY - gapSize/2;
+
+  const group = new THREE.Group();
+
+  // Top column
+  if(topH > 0){
+    const topGeo=new THREE.CylinderGeometry(.8,.9,topH,8);
+    const topMesh=new THREE.Mesh(topGeo,obsMat);
+    topMesh.position.y = LANE_H/2 - topH/2;
+    topMesh.castShadow=true;
+    group.add(topMesh);
+    // Cap
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(1.05,.8,.3,8),obsCapMat);
+    cap.position.y = LANE_H/2 - topH - .15;
+    group.add(cap);
+  }
+
+  // Bottom column
+  if(botH > 0){
+    const botGeo=new THREE.CylinderGeometry(.9,.8,botH,8);
+    const botMesh=new THREE.Mesh(botGeo,obsMat);
+    botMesh.position.y = -LANE_H/2 + botH/2;
+    botMesh.castShadow=true;
+    group.add(botMesh);
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(.8,1.05,.3,8),obsCapMat);
+    cap.position.y = -LANE_H/2 + botH + .15;
+    group.add(cap);
+  }
+
+  group.position.set(SPAWN_X, 0, 0);
+  scene.add(group);
+  obstacles.push({
+    mesh:group,
+    x:SPAWN_X,
+    topH, botH, gapCenterY, gapSize,
+    passed:false,
+    colW:.9,
+  });
+}
+
+/* ═══════════════════════════════════════════
+   CRYSTAL BUILDER
+═══════════════════════════════════════════ */
+function spawnCrystal(){
+  const mesh=new THREE.Mesh(new THREE.OctahedronGeometry(.38,0),crystalMat);
+  const y=(Math.random()-.5)*9;
+  mesh.position.set(SPAWN_X+2, y, 0);
+  scene.add(mesh);
+  crystals.push({mesh, x:SPAWN_X+2, y, r:.38, collected:false});
+}
+
+/* ═══════════════════════════════════════════
+   PARTICLES
+═══════════════════════════════════════════ */
+function burst(x,y,color,count){
+  for(let i=0;i<count;i++){
+    const geo=new THREE.SphereGeometry(.07+Math.random()*.1,4,4);
+    const mat=new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(x+(Math.random()-.5)*.5,y+(Math.random()-.5)*.5,0);
+    const angle=Math.random()*Math.PI*2;
+    const spd=.04+Math.random()*.1;
+    scene.add(mesh);
+    particles.push({mesh,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1,decay:.035+Math.random()*.025});
+  }
+}
+
+/* ═══════════════════════════════════════════
+   UI UPDATERS
+═══════════════════════════════════════════ */
+function updateHUD(){
+  document.getElementById('scoreVal').textContent=score;
+  document.getElementById('hiVal').textContent=highScore;
+  document.getElementById('livesEl').textContent='🧹'.repeat(Math.max(0,lives));
+}
+
+function showOverlay(title,sub,showScore,isNew){
+  const ov=document.getElementById('overlay');
+  ov.classList.remove('hidden');
+  document.getElementById('ovTitle').textContent=title;
+  document.getElementById('ovSub').textContent=sub;
+  document.getElementById('ovBtn').textContent=state==='dead'?'fly again':'enter the sky';
+  const sb=document.getElementById('ovScoreBlock');
+  if(showScore){
+    sb.style.display='block';
+    document.getElementById('ovScore').textContent=`//score — ${score}//`;
+    document.getElementById('ovHi').textContent=`//best — ${highScore}//`;
+    document.getElementById('ovNew').style.display=isNew?'block':'none';
+  } else {
+    sb.style.display='none';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   GAME CONTROL
+═══════════════════════════════════════════ */
+function startGame(){
+  // Clear old obstacles + crystals + particles
+  obstacles.forEach(o=>scene.remove(o.mesh));
+  crystals.forEach(c=>scene.remove(c.mesh));
+  particles.forEach(p=>scene.remove(p.mesh));
+  obstacles.length=0;crystals.length=0;particles.length=0;
+
+  score=0;lives=3;vy=0;frame=0;invincible=0;
+  broom.position.set(-2,0,0);
+  broom.rotation.z=0;
+  cityOffset=0;
+  state='playing';
+  document.getElementById('overlay').classList.add('hidden');
+  updateHUD();
+}
+
+function die(){
+  lives--;
+  burst(broom.position.x,broom.position.y,0xff2d87,18);
+  updateHUD();
+  if(lives<=0){
+    const isNew=score>0 && score>=highScore;
+    if(isNew)highScore=score;
+    state='dead';
+    setTimeout(()=>showOverlay('You Fell','The sky reclaimed you.',true,isNew),600);
+  } else {
+    invincible=90;
+    broom.position.y=0;vy=0;
+  }
+}
+
+function flap(){
+  if(state==='idle'||state==='dead'){startGame();return;}
+  if(state==='playing') vy=THRUST;
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();flap();}
+});
+window.addEventListener('pointerdown',()=>flap());
+
+// Show start overlay
+showOverlay('Broomstick Run','Dodge the towers. Collect moon crystals. Survive.',false,false);
+
+/* ═══════════════════════════════════════════
+   COLLISION HELPERS
+═══════════════════════════════════════════ */
+function checkObstacle(o){
+  const bx=broom.position.x, by=broom.position.y;
+  const hitW=.6, hitH=.5;
+  const ox=o.x;
+  if(Math.abs(bx-ox)>hitW+o.colW) return false;
+  const topEdge  =  LANE_H/2 - o.topH;
+  const botEdge  = -LANE_H/2 + o.botH;
+  if(by+hitH > topEdge || by-hitH < botEdge) return true;
+  return false;
+}
+
+function checkCrystal(c){
+  const dx=broom.position.x-c.x;
+  const dy=broom.position.y-c.y;
+  return Math.sqrt(dx*dx+dy*dy)<c.r+.6;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN LOOP
+═══════════════════════════════════════════ */
+const clock=new THREE.Clock();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const delta=clock.getDelta();
+  const t=clock.getElapsedTime();
+
+  if(state==='playing'){
+    frame++;
+    const speed=3.2+score*0.045;
+    const worldSpeed=speed*delta;
+
+    /* ── Physics ── */
+    vy+=GRAVITY;
+    vy=Math.min(vy,MAX_VY);
+    broom.position.y-=vy;
+    broom.rotation.z=Math.clamp?THREE.MathUtils.clamp(-vy*3.8,-.6,.6):-vy*3.8;
+    if(broom.rotation.z<-.6)broom.rotation.z=-.6;
+    if(broom.rotation.z>.6)broom.rotation.z=.6;
+
+    /* ── Boundary death ── */
+    if(broom.position.y>BOUNDS.top||broom.position.y<BOUNDS.bottom){
+      if(invincible<=0)die();
+    }
+
+    if(invincible>0) invincible--;
+
+    /* ── City scroll ── */
+    cityOffset+=delta*0.055;
+    cityTex.offset.x=cityOffset;
+
+    /* ── Spawn ── */
+    const spawnRate=Math.max(55,100-score*1.2);
+    if(frame%Math.floor(spawnRate)===0) spawnObstacle();
+    if(frame%130===0) spawnCrystal();
+
+    /* ── Move obstacles ── */
+    for(let i=obstacles.length-1;i>=0;i--){
+      const o=obstacles[i];
+      o.x-=worldSpeed;
+      o.mesh.position.x=o.x;
+      if(!o.passed&&o.x<broom.position.x-1){
+        o.passed=true;score++;updateHUD();
+        burst(broom.position.x,broom.position.y,0xf59e0b,6);
+      }
+      if(invincible<=0&&checkObstacle(o)){die();break;}
+      if(o.x<-SPAWN_X-4){scene.remove(o.mesh);obstacles.splice(i,1);}
+    }
+
+    /* ── Move crystals ── */
+    for(let i=crystals.length-1;i>=0;i--){
+      const c=crystals[i];
+      c.x-=worldSpeed*.85;
+      c.mesh.position.x=c.x;
+      c.mesh.rotation.y+=delta*2.5;
+      c.mesh.rotation.x+=delta*1.2;
+      if(checkCrystal(c)){
+        burst(c.x,c.y,0x14b8a6,12);
+        score+=2;updateHUD();
+        scene.remove(c.mesh);crystals.splice(i,1);
+        continue;
+      }
+      if(c.x<-SPAWN_X-4){scene.remove(c.mesh);crystals.splice(i,1);}
+    }
+
+    /* ── Particles ── */
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.mesh.position.x+=p.vx;
+      p.mesh.position.y+=p.vy;
+      p.vy-=.002;
+      p.life-=p.decay;
+      p.mesh.material.opacity=p.life;
+      if(p.life<=0){scene.remove(p.mesh);particles.splice(i,1);}
+    }
+
+    /* ── Trail light ── */
+    trailLight.position.set(broom.position.x-1.8,broom.position.y,3);
+    trailLight.intensity=2.5+Math.sin(t*8)*1.5;
+
+    /* ── Broom sparkle ── */
+    if(frame%4===0){
+      burst(broom.position.x-2,broom.position.y+(Math.random()-.5)*.3,0x7b2be2,1);
+    }
+
+    /* ── Camera follow ── */
+    camera.position.y+=(broom.position.y*.09-camera.position.y)*.08;
+    camera.lookAt(broom.position.x+1.5,broom.position.y*.1,0);
+
+  } else {
+    /* Idle drift */
+    broom.position.y=Math.sin(t*.6)*.5;
+    broom.rotation.z=Math.sin(t*.8)*.06;
+    camera.position.y=Math.sin(t*.3)*.1;
+    camera.lookAt(0,0,0);
+    cityOffset+=delta*.02;
+    cityTex.offset.x=cityOffset;
+  }
+
+  /* ── Always: dust, lights ── */
+  const dp=dustGeo.attributes.position.array;
+  for(let i=0;i<DUST_COUNT;i++){
+    dp[i*3]+=dustVel[i].x;dp[i*3+1]+=dustVel[i].y;
+    if(dp[i*3]>16)dp[i*3]=-16;if(dp[i*3]<-16)dp[i*3]=16;
+    if(dp[i*3+1]>9)dp[i*3+1]=-9;if(dp[i*3+1]<-9)dp[i*3+1]=9;
+  }
+  dustGeo.attributes.position.needsUpdate=true;
+  fillLight.intensity=3.5+Math.sin(t*3+1);
+
+  renderer.render(scene,camera);
+}
+
+animate();
+</script>
+</body>
+</html>
