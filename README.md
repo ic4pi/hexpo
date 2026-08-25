@@ -11,7 +11,10 @@ hexposed/
 ├── game.html        ← Broomstick Run (Three.js 3D game)
 ├── thank-you.html   ← Post-payment confirmation page (Stripe redirects here)
 ├── api/
+│   ├── _availability.js          ← THE SCHEDULE — the days/times readings can be booked
+│   ├── availability.js           ← Vercel serverless fn: open slots for the time picker
 │   ├── create-payment-intent.js  ← Vercel serverless fn: starts a Stripe payment
+│   ├── booking-details.js        ← Vercel serverless fn: the booked time, for the confirmation page
 │   └── webhook.js                ← Vercel serverless fn: verifies Stripe payment events
 ├── package.json      ← declares the `stripe` dependency the two functions above need
 ├── models/          ← Create this folder — put your .glb files here
@@ -37,19 +40,31 @@ To preview the static pages: just open `index.html` in a browser (booking's
 Booking a reading is a fully on-site checkout: the customer never leaves
 the page. It's built from three pieces:
 
-1. **`index.html`** — the booking modal collects the customer's email (the
-   one tied to their Zoom account — that's how you reach them) and an
-   optional question, then mounts Stripe's embedded Payment Element to
-   take the card.
-2. **`api/create-payment-intent.js`** — a Vercel serverless function that
-   looks up the reading's Stripe Price ID and fetches the real amount from
-   Stripe *server-side* (never trusts a price sent from the browser), then
-   creates a PaymentIntent for that amount.
-3. **`api/webhook.js`** — a Vercel serverless function Stripe calls when a
+1. **`index.html`** — the booking modal has the customer pick a session
+   time from your open slots, then collects their email (the one tied to
+   their Zoom account — that's how you reach them) and an optional
+   question, then mounts Stripe's embedded Payment Element to take the
+   card.
+2. **`api/availability.js`** — a Vercel serverless function that generates
+   the open slots from your schedule (`api/_availability.js`) and drops
+   any that are already booked or on hold. The picker shows them in the
+   *customer's* timezone with yours alongside.
+3. **`api/create-payment-intent.js`** — a Vercel serverless function that
+   re-checks the chosen time server-side (never trusts the browser: the
+   picker's list can be minutes stale, and the request can be
+   hand-written), looks up the reading's Stripe Price ID, fetches the real
+   amount from Stripe *server-side*, then creates a PaymentIntent for that
+   amount with the session time attached.
+4. **`api/webhook.js`** — a Vercel serverless function Stripe calls when a
    payment succeeds, so you have a durable, verified record even if the
    customer closes the tab before the confirmation page loads. Right now
-   it just logs the booking (reading, email, question) — once you have a
-   business domain + mailbox, send the confirmation email from here.
+   it just logs the booking (reading, session time, email, question) —
+   once you have a business domain + mailbox, send the confirmation email
+   and the Zoom link from here.
+5. **`api/booking-details.js`** — lets `thank-you.html` show the customer
+   the session they just booked. Stripe redirects back with the payment's
+   id *and* its client secret, and this only answers when the two match,
+   so nobody can read someone else's booking off a guessed id.
 
 ### Setup steps
 
@@ -82,9 +97,75 @@ the amount charged is fetched live from Stripe at checkout time. To add or
 change a reading's price: create/update the Price in the Stripe dashboard
 (Products), then put its `price_...` ID in `READING_PRICE_IDS`.
 
-**Still needs a Price ID:** `'Two Steps Between'` ($99 dual tarot + tea
-reading) has no entry yet — that reading's checkout will show an error
-until one is added.
+All three readings have Price IDs set. A reading also needs an entry in
+`READING_DURATIONS` in `api/_availability.js` (how long the session runs)
+— without one it won't appear as bookable, since there'd be no way to
+know how much of the calendar to hold.
+
+---
+
+## Setting Your Reading Hours
+
+Both of you work day jobs, so readings only open on the days and times you
+say. **`api/_availability.js` is the only file you edit for that** — the
+time picker on the site, the server-side check at checkout, and the
+confirmation all read from it, so there's never a second place to keep in
+sync.
+
+Open it and you'll find, in order:
+
+| Setting | What it does |
+|---|---|
+| `TIMEZONE` | Your timezone. Every time below is in *this* zone; customers see their own. |
+| `WEEKLY_HOURS` | The schedule. `0` = Sunday … `6` = Saturday, each holding any number of `['HH:MM','HH:MM']` windows in 24h time. `[]` = closed that day. |
+| `BLACKOUT_DATES` | One-off days off (vacation, a double shift), as `'YYYY-MM-DD'`. |
+| `READING_DURATIONS` | How long each reading runs, in minutes. |
+| `SLOT_INTERVAL_MINUTES` | Start times offered — `30` gives :00 and :30. |
+| `BUFFER_MINUTES` | Gap kept between two sessions. |
+| `MIN_LEAD_HOURS` | How much notice you need. `24` = nothing bookable inside a day. |
+| `BOOKING_WINDOW_DAYS` | How far ahead the calendar opens. |
+| `HOLD_MINUTES` | How long an in-progress checkout holds its slot. |
+
+Shipped defaults (change them to your real availability): Tuesday and
+Thursday evenings 7:00–9:30 PM, Saturday 12:00–5:00 PM, Sunday 1:00–5:00
+PM, Eastern — everything else closed.
+
+A few things it handles so you don't have to think about them:
+
+- **Windows are start *and* finish.** A 90-minute reading won't be offered
+  at 8:00 PM in a window that closes at 9:30.
+- **One shared calendar.** Both of you read together on *Two Steps
+  Between*, so any booking blocks that time for every reading — no
+  double-booking yourselves.
+- **Daylight saving.** Times are wall-clock in your zone; the conversion
+  is done per-date, so 7:00 PM stays 7:00 PM across the March and November
+  changes.
+- **Abandoned checkouts free themselves.** Starting a checkout holds the
+  slot for `HOLD_MINUTES`; if they never pay, it reopens on its own.
+
+### Where bookings are stored
+
+In Stripe, on the payment itself (`slot_start_ms`, `slot_end_ms`,
+`slot_shop_time` in the PaymentIntent metadata) — no database to run or
+pay for. The booked time shows on the Stripe payment in your dashboard,
+in the `payment_intent.succeeded` webhook log, and on the customer's
+confirmation page.
+
+One caveat: Stripe's search index takes up to about a minute to see a new
+payment, so two people starting checkout for the same slot inside that
+same minute could both get through. At your volume that's unlikely; if it
+ever happens, refund or reschedule one of them. The fix if bookings ever
+get heavy is a real bookings table with a unique index on the slot —
+nothing else in the flow would change.
+
+### Still manual for now
+
+Nothing sends a Zoom link automatically yet. Watch the Vercel function
+logs (or your Stripe dashboard) for `Reading booked:` — it carries the
+session time in your timezone, the customer's Zoom email, and their
+question — and send the invite from there. The booking modal tells
+customers to reply to their Stripe receipt to reschedule, which is your
+cue to move them into another open slot.
 
 ---
 
@@ -425,6 +506,7 @@ scene.add(sky);
 
 - [ ] Fix is live: title reads **HEXPOSED** / subtitle reads **A Witch's Boutique by New Earth Frequency**
 - [ ] Deploy `index.html` + `game.html` to Vercel/Netlify
+- [ ] Set your real reading days/times in `api/_availability.js` (`WEEKLY_HOURS`)
 - [ ] Create `/models/` directory alongside the HTML files
 - [ ] Build or source models in Blender → export as `.glb` into `/models/`
 - [ ] Add GLTFLoader script tag to `game.html`

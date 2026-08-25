@@ -50,6 +50,12 @@ module.exports = async (req, res) => {
     } else {
       console.log('Reading booked:', {
         reading: pi.metadata.reading,
+        // The session the customer picked, in your timezone — this is
+        // the time to send the Zoom invite for.
+        scheduledFor: pi.metadata.slot_shop_time,
+        scheduledForISO: pi.metadata.slot_start_ms
+          ? new Date(Number(pi.metadata.slot_start_ms)).toISOString()
+          : '',
         zoomEmail: pi.metadata.zoom_email,
         question: pi.metadata.question,
         amount: pi.amount,

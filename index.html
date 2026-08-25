@@ -131,6 +131,24 @@ section{padding:6rem 2rem;position:relative}
 .btn-back:hover{color:var(--pink)}
 .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
 
+/* SCHEDULE PICKER */
+.sched-status{font-family:var(--mono);font-size:.68rem;color:var(--muted);letter-spacing:.03em;line-height:1.6;padding:.4rem 0 .2rem}
+.sched-days{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.6rem;margin-bottom:1rem;scrollbar-width:thin}
+.day-chip{flex:0 0 auto;background:rgba(0,0,0,.4);border:1px solid rgba(201,147,46,.2);color:var(--text);font-family:var(--mono);font-size:.62rem;letter-spacing:.05em;padding:.55rem .8rem;cursor:pointer;text-align:center;line-height:1.5;transition:all .25s}
+.day-chip:hover{border-color:rgba(201,147,46,.55);color:var(--white)}
+.day-chip.selected{border-color:var(--pink);color:var(--white);background:rgba(201,147,46,.14);box-shadow:var(--glow-pink)}
+.day-chip .dc-dow{display:block;color:var(--purple);font-size:.58rem}
+.day-chip.selected .dc-dow{color:var(--pink)}
+.sched-times{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:.5rem}
+.time-slot{background:rgba(0,0,0,.4);border:1px solid rgba(201,147,46,.2);color:var(--text);font-family:var(--mono);font-size:.68rem;letter-spacing:.03em;padding:.6rem .4rem;cursor:pointer;transition:all .25s}
+.time-slot:hover{border-color:rgba(201,147,46,.55);color:var(--white)}
+.time-slot.selected{border-color:var(--pink);color:var(--white);background:rgba(201,147,46,.14);box-shadow:var(--glow-pink)}
+.sched-tz{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.03em;margin-top:.8rem;line-height:1.6}
+.sched-picked{font-family:var(--mono);font-size:.68rem;color:var(--white);letter-spacing:.03em;line-height:1.6;border-left:1px solid var(--pink);padding-left:.7rem;margin-top:.9rem}
+.sched-picked span{color:var(--muted)}
+.pay-slot-line{font-family:var(--mono);font-size:.68rem;color:var(--text);letter-spacing:.03em;line-height:1.6;margin-bottom:1.1rem;border-left:1px solid var(--pink);padding-left:.7rem}
+.pay-slot-line span{color:var(--muted)}
+
 /* CART */
 .cart-item{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:.9rem;padding:.9rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .cart-item-name{font-family:var(--display);font-size:.95rem;color:var(--white);letter-spacing:.03em}
@@ -297,7 +315,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
             <div>
               <span class="price-badge">limited time</span>
               <div class="reading-price">$99.00</div>
-              <div class="reading-duration">// live via zoom · scheduled after booking //</div>
+              <div class="reading-duration">// live via zoom · pick your time at checkout //</div>
             </div>
             <button class="btn-book" onclick="openModal('Two Steps Between','$99.00','Tarot and Tea, Together — two readers, two methods, one live Zoom session with both interpretations.')">book &amp; pay</button>
           </div>
@@ -312,7 +330,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
           <div>
             <span class="price-badge">limited time</span>
             <div class="reading-price">$45.00</div>
-            <div class="reading-duration">// live via zoom · scheduled after booking //</div>
+            <div class="reading-duration">// live via zoom · pick your time at checkout //</div>
           </div>
           <button class="btn-book" onclick="openModal('Celtic Cross Reading','$45.00','Ten-card spread, read live with you over Zoom.')">book &amp; pay</button>
         </div>
@@ -326,7 +344,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
           <div>
             <span class="price-badge">limited time</span>
             <div class="reading-price">$22.00</div>
-            <div class="reading-duration">// live via zoom · scheduled after booking //</div>
+            <div class="reading-duration">// live via zoom · pick your time at checkout //</div>
           </div>
           <button class="btn-book" onclick="openModal('Past · Present · Path','$22.00','Three-card spread, read live with you over Zoom.')">book &amp; pay</button>
         </div>
@@ -347,6 +365,14 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
 
     <div id="detailsStep">
       <div class="form-group">
+        <label class="form-label">// pick your session — we read on set days around our day jobs //</label>
+        <div class="sched-status" id="schedStatus">loading the calendar…</div>
+        <div class="sched-days" id="schedDays"></div>
+        <div class="sched-times" id="schedTimes"></div>
+        <div class="sched-tz" id="schedTz"></div>
+        <div class="sched-picked" id="schedPicked" style="display:none"></div>
+      </div>
+      <div class="form-group">
         <label class="form-label" for="bookingEmail">// email tied to your zoom account — this is how we'll reach you //</label>
         <input class="form-input" type="email" id="bookingEmail" placeholder="you@example.com" autocomplete="email">
       </div>
@@ -359,6 +385,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
     </div>
 
     <div id="paymentStep" style="display:none">
+      <div class="pay-slot-line" id="paySlotLine"></div>
       <div id="payment-element"></div>
       <div class="form-error" id="paymentError"></div>
       <button class="btn-pay" id="confirmPayBtn" onclick="submitPayment()">pay $<span id="payAmountLabel"></span></button>
@@ -366,7 +393,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
     </div>
 
     <div class="modal-note">
-      Readings are non-refundable once begun. If you have no specific question, state an area of life — relationship, career, general guidance — and the cards will direct.
+      Your Zoom link goes to the email above before your session. Need to move a booked time? Reply to your Stripe receipt and we'll reschedule you into another open slot. Readings are non-refundable once begun. If you have no specific question, state an area of life — relationship, career, general guidance — and the cards will direct.
     </div>
   </div>
 </div>
@@ -528,7 +555,11 @@ async function postJSON(url, body){
   }catch(err){
     throw new Error('Checkout isn’t available right now. Please try again shortly.');
   }
-  if(!res.ok) throw new Error(data.error || 'Could not start checkout.');
+  if(!res.ok){
+    const err = new Error(data.error || 'Could not start checkout.');
+    err.status = res.status;  // 409 = the time was taken while they typed
+    throw err;
+  }
   return data;
 }
 
@@ -723,6 +754,31 @@ let checkoutElements = null;
 let currentReading = '';
 let currentReadingAmountLabel = '';
 
+/* ── SCHEDULING ──
+   Readings run on set days and times (both readers have day jobs), so
+   the calendar isn't open-ended. /api/availability generates the open
+   slots from api/_availability.js — the single place the schedule is
+   defined — with anything already booked or on hold removed. Slots
+   arrive as ISO instants and are drawn in the CUSTOMER's timezone,
+   with the shop's time shown alongside so nobody has to do the math.
+── */
+let availableSlots = [];      // [{ startMs, endMs, dayKey }]
+let selectedDayKey = '';
+let selectedSlotMs = null;
+let shopTimezone = '';
+let slotDurationMinutes = 0;
+let availabilityRequestId = 0;
+
+const CUSTOMER_TZ = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'your local time';
+const fmtTime = new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});
+const fmtDayLong = new Intl.DateTimeFormat(undefined,{weekday:'long',month:'long',day:'numeric'});
+const fmtChipDow = new Intl.DateTimeFormat(undefined,{weekday:'short'});
+const fmtChipDate = new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'});
+const fmtShopTime = (ms,tz)=>new Intl.DateTimeFormat(undefined,{timeZone:tz,hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(ms));
+// Group by the customer's own calendar day, so the day chip and the
+// times under it always agree with the clock they're reading.
+const dayKeyOf = (ms)=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms));
+
 function openModal(title,price,body){
   currentReading = title;
   document.getElementById('modalTitle').textContent=title;
@@ -748,6 +804,87 @@ function openModal(title,price,body){
   showDetailsStep();
   document.getElementById('modalBg').classList.add('open');
   document.body.style.overflow='hidden';
+  loadAvailability();
+}
+
+async function loadAvailability(){
+  const reqId = ++availabilityRequestId;   // ignore a slow reply for a reading they've since switched away from
+  availableSlots=[]; selectedDayKey=''; selectedSlotMs=null;
+  document.getElementById('schedDays').innerHTML='';
+  document.getElementById('schedTimes').innerHTML='';
+  document.getElementById('schedTz').textContent='';
+  document.getElementById('schedPicked').style.display='none';
+  const statusEl=document.getElementById('schedStatus');
+  statusEl.textContent='loading the calendar…';
+
+  let data;
+  try{
+    const res=await fetch(`/api/availability?reading=${encodeURIComponent(currentReading)}`,{headers:{'Accept':'application/json'}});
+    data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Couldn’t load the calendar.');
+  }catch(err){
+    if(reqId!==availabilityRequestId) return;
+    statusEl.textContent='Couldn’t load open times right now — please try again shortly.';
+    return;
+  }
+  if(reqId!==availabilityRequestId) return;
+
+  shopTimezone=data.timezone;
+  slotDurationMinutes=data.durationMinutes;
+  availableSlots=data.slots.map(s=>({startMs:Date.parse(s.start),endMs:Date.parse(s.end),dayKey:dayKeyOf(Date.parse(s.start))}));
+
+  if(!availableSlots.length){
+    statusEl.textContent=`No open times in the next few weeks — we read on set days around our day jobs. Check back soon, or reach out and we'll find you a slot.`;
+    return;
+  }
+  statusEl.textContent=`${slotDurationMinutes}-minute session · earliest opening ${fmtDayLong.format(new Date(availableSlots[0].startMs))}`;
+  renderDays();
+  selectDay(availableSlots[0].dayKey);
+}
+
+function renderDays(){
+  const seen=[];
+  for(const slot of availableSlots) if(!seen.includes(slot.dayKey)) seen.push(slot.dayKey);
+  const wrap=document.getElementById('schedDays');
+  wrap.innerHTML='';
+  for(const key of seen){
+    const first=availableSlots.find(s=>s.dayKey===key);
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='day-chip'+(key===selectedDayKey?' selected':'');
+    btn.dataset.day=key;
+    btn.innerHTML=`<span class="dc-dow">${fmtChipDow.format(new Date(first.startMs))}</span>${fmtChipDate.format(new Date(first.startMs))}`;
+    btn.onclick=()=>selectDay(key);
+    wrap.appendChild(btn);
+  }
+}
+
+function selectDay(key){
+  selectedDayKey=key;
+  selectedSlotMs=null;
+  document.getElementById('schedPicked').style.display='none';
+  for(const chip of document.querySelectorAll('.day-chip')) chip.classList.toggle('selected',chip.dataset.day===key);
+  const times=document.getElementById('schedTimes');
+  times.innerHTML='';
+  for(const slot of availableSlots.filter(s=>s.dayKey===key)){
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='time-slot';
+    btn.dataset.start=String(slot.startMs);
+    btn.textContent=fmtTime.format(new Date(slot.startMs));
+    btn.onclick=()=>selectSlot(slot.startMs);
+    times.appendChild(btn);
+  }
+  document.getElementById('schedTz').textContent=`times shown in your timezone (${CUSTOMER_TZ}) · we read from ${shopTimezone}`;
+}
+
+function selectSlot(startMs){
+  selectedSlotMs=startMs;
+  for(const btn of document.querySelectorAll('.time-slot')) btn.classList.toggle('selected',Number(btn.dataset.start)===startMs);
+  const picked=document.getElementById('schedPicked');
+  picked.style.display='block';
+  picked.innerHTML=`${fmtDayLong.format(new Date(startMs))} · ${fmtTime.format(new Date(startMs))} <span>(${slotDurationMinutes} min · ${fmtShopTime(startMs,shopTimezone)} our time)</span>`;
+  document.getElementById('detailsError').textContent='';
 }
 function closeModal(){document.getElementById('modalBg').classList.remove('open');document.body.style.overflow='';}
 function closeModalOutside(e){if(e.target===document.getElementById('modalBg'))closeModal();}
@@ -767,21 +904,31 @@ async function startCheckout(){
   const question=document.getElementById('bookingQuestion').value.trim();
   const errEl=document.getElementById('detailsError');
   errEl.textContent='';
+  if(!selectedSlotMs){
+    errEl.textContent='Pick the day and time you want your reading.';
+    return;
+  }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
     errEl.textContent='Enter a valid email — the one tied to your Zoom account.';
     return;
   }
   const btn=document.getElementById('continueBtn');
   btn.disabled=true; btn.textContent='loading…';
+  const slotStart=new Date(selectedSlotMs).toISOString();
   try{
-    const data=await postJSON('/api/create-payment-intent',{reading:currentReading,email,question});
+    const data=await postJSON('/api/create-payment-intent',{reading:currentReading,email,question,slotStart});
     checkoutElements = stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
     checkoutElements.create('payment').mount('#payment-element');
     currentReadingAmountLabel=(data.amount/100).toFixed(2);
     document.getElementById('payAmountLabel').textContent=currentReadingAmountLabel;
+    document.getElementById('paySlotLine').innerHTML=
+      `${fmtDayLong.format(new Date(selectedSlotMs))} · ${fmtTime.format(new Date(selectedSlotMs))} <span>(${slotDurationMinutes} min · ${fmtShopTime(selectedSlotMs,shopTimezone)} our time)</span><br><span>this time is held for ${data.holdMinutes} minutes while you pay</span>`;
     showPaymentStep();
   }catch(err){
     errEl.textContent=err.message;
+    // 409 means the slot went while they were filling the form — pull a
+    // fresh calendar so they're not staring at a time they can't have.
+    if(err.status===409) loadAvailability();
   }finally{
     btn.disabled=false; btn.textContent='continue to payment';
   }
