@@ -42,8 +42,9 @@ the page. It's built from three pieces:
    optional question, then mounts Stripe's embedded Payment Element to
    take the card.
 2. **`api/create-payment-intent.js`** — a Vercel serverless function that
-   looks up the reading's price *server-side* (never trusts a price sent
-   from the browser) and creates a Stripe PaymentIntent.
+   looks up the reading's Stripe Price ID and fetches the real amount from
+   Stripe *server-side* (never trusts a price sent from the browser), then
+   creates a PaymentIntent for that amount.
 3. **`api/webhook.js`** — a Vercel serverless function Stripe calls when a
    payment succeeds, so you have a durable, verified record even if the
    customer closes the tab before the confirmation page loads. Right now
@@ -75,9 +76,14 @@ the page. It's built from three pieces:
 6. Redeploy. Until the publishable key is filled in, the "book & pay"
    flow correctly shows **"checkout coming soon"** instead of breaking.
 
-Reading prices live in two places that must stay in sync: `READING_PRICES`
-in `index.html` (for display) and `READING_PRICES_CENTS` in
-`api/create-payment-intent.js` (the one that actually charges the card).
+Reading prices are set by **Stripe Price ID**, in `READING_PRICE_IDS` in
+`api/create-payment-intent.js` — that's the one place that matters, since
+the amount charged is fetched live from Stripe at checkout time. To add or
+change a reading's price: create/update the Price in the Stripe dashboard
+(Products), then put its `price_...` ID in `READING_PRICE_IDS`.
+
+**Still needs a Price ID:** `'The Single Draw'` ($12 reading) has no entry
+yet — that reading's checkout will show an error until one is added.
 
 ---
 
@@ -90,20 +96,22 @@ since these are physical products:
 1. **`index.html`** — `cart` tracks `{ productName: quantity }`. The bag
    modal lets you adjust quantities, then collects email + shipping
    address, then mounts a second Payment Element for the order total.
-2. **`api/create-order-payment-intent.js`** — recomputes the order total
-   server-side from `SPELL_PRICES_CENTS` (never trusts cart contents/prices
-   sent from the browser) and creates the PaymentIntent with the shipping
-   address attached.
+2. **`api/create-order-payment-intent.js`** — looks up each cart item's
+   Stripe Price ID in `SPELL_PRICE_IDS`, fetches the real amount from
+   Stripe *server-side* for each (never trusts cart contents/prices sent
+   from the browser), sums the order total, and creates the PaymentIntent
+   with the shipping address attached.
 3. **`api/webhook.js`** — same endpoint as readings, already branches on
    `metadata.kind` (`'reading'` vs `'spell_order'`) and logs orders with
    their shipping address so you can fulfill them manually for now.
 
 No extra setup beyond what's above — it reuses the same
-`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / publishable key. Just keep
-prices in sync in **three** places when they change: `spells` (display
-price string) and `SPELL_PRICE_CENTS` in `index.html`, and
-`SPELL_PRICES_CENTS` in `api/create-order-payment-intent.js` (the one that
-actually charges the card).
+`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / publishable key. Product
+prices are set by Stripe Price ID in `SPELL_PRICE_IDS` in
+`api/create-order-payment-intent.js` — that's the one place that matters
+for what's actually charged. `SPELL_PRICE_CENTS` in `index.html` is
+display-only (the bag subtotal shown before checkout), so update it too
+when a price changes so the displayed total doesn't drift from Stripe's.
 
 ---
 

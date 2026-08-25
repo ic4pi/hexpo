@@ -515,11 +515,12 @@ async function postJSON(url, body){
 }
 
 /* ── CART / SPELL ORDER CHECKOUT ──
-   Real cart, kept in memory as { productName: quantity }. Prices are
-   display-only here — the source of truth is SPELL_PRICES_CENTS on the
-   Vercel backend (api/create-order-payment-intent.js), which recomputes
-   the total server-side so a tampered client request can't change what's
-   actually charged. Keep both price lists in sync when prices change.
+   Real cart, kept in memory as { productName: quantity }. Prices below
+   are display-only (for the bag subtotal before checkout) — the source of
+   truth is each product's Stripe Price ID in SPELL_PRICE_IDS on the
+   Vercel backend (api/create-order-payment-intent.js), which fetches the
+   real amount from Stripe and recomputes the total server-side, so a
+   tampered client request can't change what's actually charged.
 ── */
 const SPELL_PRICE_CENTS = {
   'Love Spell No. 4': 2899,
@@ -681,11 +682,10 @@ const STRIPE_PUBLISHABLE_KEY = 'pk_live_51ToemrALwINGiotHxPopQKKRxDRqvFy1HGJPG3R
 const stripe = (window.Stripe && !STRIPE_PUBLISHABLE_KEY.includes('REPLACE_ME'))
   ? Stripe(STRIPE_PUBLISHABLE_KEY) : null;
 
-const READING_PRICES = {
-  'Celtic Cross Reading': 45.00,
-  'The Single Draw': 12.00,
-  'Past · Present · Path': 22.00,
-};
+// Reading prices are no longer duplicated here — the amount actually
+// charged comes back from /api/create-payment-intent (which reads it live
+// from the Stripe Price object), avoiding drift between this file and
+// what's configured in Stripe.
 
 const STRIPE_APPEARANCE = {
   theme: 'night',
@@ -703,6 +703,7 @@ const STRIPE_APPEARANCE = {
 
 let checkoutElements = null;
 let currentReading = '';
+let currentReadingAmountLabel = '';
 
 function openModal(title,price,body){
   currentReading = title;
@@ -758,7 +759,8 @@ async function startCheckout(){
     const data=await postJSON('/api/create-payment-intent',{reading:currentReading,email,question});
     checkoutElements = stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
     checkoutElements.create('payment').mount('#payment-element');
-    document.getElementById('payAmountLabel').textContent=READING_PRICES[currentReading].toFixed(2);
+    currentReadingAmountLabel=(data.amount/100).toFixed(2);
+    document.getElementById('payAmountLabel').textContent=currentReadingAmountLabel;
     showPaymentStep();
   }catch(err){
     errEl.textContent=err.message;
@@ -780,7 +782,7 @@ async function submitPayment(){
   // on success Stripe redirects the browser to return_url itself.
   if(error){
     errEl.textContent=error.message;
-    btn.disabled=false; btn.textContent=`pay $${READING_PRICES[currentReading].toFixed(2)}`;
+    btn.disabled=false; btn.textContent=`pay $${currentReadingAmountLabel}`;
   }
 }
 

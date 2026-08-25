@@ -2,13 +2,14 @@ const Stripe = require('stripe');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Source of truth for spell jar prices — must stay in sync with
-// SPELL_PRICE_CENTS in index.html (that copy is display-only; this one is
-// what actually gets charged, since client-sent amounts can't be trusted).
-const SPELL_PRICES_CENTS = {
-  'Love Spell No. 4': 2899,
-  'Protection Spell': 1999,
-  'Success Spell': 3499,
+// Product name -> Stripe Price ID. Amounts are fetched live from Stripe
+// (via prices.retrieve below) rather than hardcoded, so a client-sent
+// price can never be trusted or tampered with — Stripe is the one source
+// of truth for what each jar actually costs.
+const SPELL_PRICE_IDS = {
+  'Love Spell No. 4': 'price_1U87I5ALwINGiotH4ii8KNGn',
+  'Protection Spell': 'price_1U87PyALwINGiotHkVyXIvDl',
+  'Success Spell': 'price_1U87TVALwINGiotHQTp8Sxkv',
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,22 +44,31 @@ module.exports = async (req, res) => {
   }
 
   let amount = 0;
+  let currency = 'usd';
   const lineItems = [];
-  for (const item of items) {
-    const unitPrice = SPELL_PRICES_CENTS[item && item.name];
-    const qty = Number(item && item.qty);
-    if (!unitPrice || !Number.isInteger(qty) || qty < 1 || qty > 20) {
-      res.status(400).json({ error: 'Invalid item in bag' });
-      return;
+  try {
+    for (const item of items) {
+      const priceId = SPELL_PRICE_IDS[item && item.name];
+      const qty = Number(item && item.qty);
+      if (!priceId || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+        res.status(400).json({ error: 'Invalid item in bag' });
+        return;
+      }
+      const price = await stripe.prices.retrieve(priceId);
+      amount += price.unit_amount * qty;
+      currency = price.currency;
+      lineItems.push(`${item.name} x${qty}`);
     }
-    amount += unitPrice * qty;
-    lineItems.push(`${item.name} x${qty}`);
+  } catch (err) {
+    console.error('create-order-payment-intent price lookup failed:', err.message);
+    res.status(500).json({ error: 'Could not price your bag. Please try again.' });
+    return;
   }
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
-      currency: 'usd',
+      currency,
       receipt_email: email,
       automatic_payment_methods: { enabled: true },
       shipping: {
