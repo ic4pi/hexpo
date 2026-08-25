@@ -118,8 +118,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.85;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000005);
-scene.fog = new THREE.FogExp2(0x000008, 0.016);
+scene.background = new THREE.Color(0x14110d);
+scene.fog = new THREE.FogExp2(0x18140f, 0.019);
 
 /* ── CAMERA ── */
 const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 300);
@@ -163,20 +163,20 @@ function makeCityTexture(){
   const ctx=cv.getContext('2d');
 
   const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,'#000005');
-  sky.addColorStop(.55,'#0a0118');
-  sky.addColorStop(1,'#120025');
+  sky.addColorStop(0,'#0d0b09');
+  sky.addColorStop(.55,'#211c16');
+  sky.addColorStop(1,'#2e2721');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
 
-  // Moon glow
+  // Moon glow — faded, hazy, overcast; the moon stays a warm accent pop
   const mg=ctx.createRadialGradient(W*.72,H*.18,0,W*.72,H*.18,160);
-  mg.addColorStop(0,'rgba(200,80,200,.25)');
-  mg.addColorStop(.4,'rgba(123,43,226,.12)');
+  mg.addColorStop(0,'rgba(190,175,155,.22)');
+  mg.addColorStop(.4,'rgba(120,105,95,.10)');
   mg.addColorStop(1,'transparent');
   ctx.fillStyle=mg;ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#1a0830';
+  ctx.fillStyle='#3a322a';
   ctx.beginPath();ctx.arc(W*.72,H*.18,38,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(232,25,106,.6)';ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(232,25,106,.55)';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.arc(W*.72,H*.18,38,0,Math.PI*2);ctx.stroke();
 
   // Stars
@@ -405,6 +405,11 @@ function buildBroom(){
     const arm=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.45,6),bodyMat);
     arm.position.set(-.2,.45,side*.22);arm.rotation.z=side*1.1;g.add(arm);
   }
+
+  // The rig above was built with the bristle/tail cone facing the
+  // direction of travel and the witch facing backward — flip the whole
+  // group 180° so the witch faces forward and the bristles trail behind.
+  g.rotation.y = Math.PI;
 
   return g;
 }
