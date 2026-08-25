@@ -7,7 +7,24 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
-#c{display:block;width:100vw;height:100vh}
+#c{display:block;width:100vw;height:100vh;filter:sepia(.16) saturate(1.08) contrast(1.05) brightness(1.02)}
+
+/* FILM LOOK — 70s/80s reel-to-reel 8mm overlay. Sits above the canvas but
+   below the HUD/overlay DOM so text stays crisp while the scene gets the
+   grain/vignette/warm-tint treatment. Softly blends the neon toward the
+   site's brass palette without touching every scene color. */
+#filmTint{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 42%,rgba(217,164,65,.05),rgba(20,8,28,.28) 100%);
+  mix-blend-mode:multiply}
+#filmGrain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.16;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:140px 140px;
+  animation:grainShift .5s steps(3) infinite, grainFlicker 2.6s ease-in-out infinite}
+#filmVignette{position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.6) 100%);
+  box-shadow:inset 0 0 160px 40px rgba(0,0,0,.5)}
+@keyframes grainShift{0%{background-position:0 0}33%{background-position:-20px 10px}66%{background-position:15px -15px}100%{background-position:0 0}}
+@keyframes grainFlicker{0%,100%{opacity:.13}50%{opacity:.2}}
 
 /* HUD */
 #hud{position:fixed;top:0;left:0;right:0;pointer-events:none;z-index:10}
@@ -45,6 +62,9 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="filmTint"></div>
+<div id="filmGrain"></div>
+<div id="filmVignette"></div>
 
 <!-- HUD -->
 <div id="hud">
@@ -216,6 +236,114 @@ const cityMesh = new THREE.Mesh(
 );
 cityMesh.position.set(0,-1,-20);
 scene.add(cityMesh);
+
+/* ═══════════════════════════════════════════
+   GROUND + MID-GROUND SKYLINE
+   Trees, gothic houses, streetlights — dark
+   silhouettes with warm windows/lamps, sitting
+   between the lane and the city backdrop.
+═══════════════════════════════════════════ */
+const groundMat = new THREE.MeshStandardMaterial({
+  color:0x05030a, roughness:1, metalness:0,
+  emissive:new THREE.Color(0x0a0018), emissiveIntensity:.25,
+});
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(260,90), groundMat);
+ground.rotation.x = -Math.PI/2;
+ground.position.set(0,-6.4,-10);
+scene.add(ground);
+
+const silhouetteMat = new THREE.MeshStandardMaterial({color:0x060309, roughness:1, metalness:0});
+const warmWindowMat = new THREE.MeshStandardMaterial({
+  color:0x2a1a08, roughness:.6,
+  emissive:new THREE.Color(0xd9a441), emissiveIntensity:1.1,
+});
+const treeMat = new THREE.MeshStandardMaterial({color:0x0d0710, roughness:1, metalness:0});
+const lampGlowMat = new THREE.MeshBasicMaterial({color:0xf0c46b});
+
+function buildHouse(){
+  const g=new THREE.Group();
+  const w=1.4+Math.random()*1.0, h=1.6+Math.random()*1.4, d=1.1+Math.random()*.6;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), silhouetteMat);
+  body.position.y=h/2;
+  g.add(body);
+  const roofH=.9+Math.random()*.5;
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.78,roofH,4), silhouetteMat);
+  roof.rotation.y=Math.PI/4;
+  roof.position.y=h+roofH/2-.05;
+  g.add(roof);
+  const winCount=1+Math.floor(Math.random()*2);
+  for(let i=0;i<winCount;i++){
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(.16,.22), warmWindowMat);
+    win.position.set((Math.random()-.5)*w*.5, h*.35+Math.random()*h*.3, d/2+.01);
+    g.add(win);
+  }
+  return g;
+}
+
+function buildTree(){
+  const g=new THREE.Group();
+  const trunkH=1.1+Math.random()*.8;
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.05,.09,trunkH,5), treeMat);
+  trunk.position.y=trunkH/2;
+  g.add(trunk);
+  const branchCount=4+Math.floor(Math.random()*3);
+  for(let i=0;i<branchCount;i++){
+    const len=.5+Math.random()*.6;
+    const branch=new THREE.Mesh(new THREE.CylinderGeometry(.015,.04,len,4), treeMat);
+    const angle=(i/branchCount)*Math.PI*2+Math.random()*.4;
+    const tilt=.5+Math.random()*.6;
+    branch.position.set(0, trunkH*.7+Math.random()*trunkH*.25, 0);
+    branch.rotation.z=Math.cos(angle)*tilt;
+    branch.rotation.x=Math.sin(angle)*tilt;
+    branch.translateY(len/2);
+    g.add(branch);
+  }
+  return g;
+}
+
+function buildStreetlight(){
+  const g=new THREE.Group();
+  const poleH=1.8+Math.random()*.4;
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,poleH,6), silhouetteMat);
+  pole.position.y=poleH/2;
+  g.add(pole);
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,8,8), lampGlowMat);
+  lamp.position.y=poleH+.05;
+  g.add(lamp);
+  const glow=new THREE.PointLight(0xf0c46b,.8,3.5);
+  glow.position.y=poleH+.05;
+  g.add(glow);
+  return g;
+}
+
+function makePropLayer(count, buildFn, xSpan, zRange, yBase, scaleRange){
+  const items=[];
+  for(let i=0;i<count;i++){
+    const mesh=buildFn();
+    const x=-xSpan+(i+Math.random()*.6)*(xSpan*2/count);
+    const z=zRange[0]+Math.random()*(zRange[1]-zRange[0]);
+    const s=scaleRange[0]+Math.random()*(scaleRange[1]-scaleRange[0]);
+    mesh.position.x=x;
+    mesh.position.z+=z;
+    mesh.position.y+=yBase;
+    mesh.scale.setScalar(s);
+    scene.add(mesh);
+    items.push({mesh,x,span:xSpan});
+  }
+  return items;
+}
+
+const treeProps        = makePropLayer(9, buildTree,        20, [-7,-4.5],  -6.4, [.8,1.3]);
+const houseProps       = makePropLayer(7, buildHouse,       28, [-15,-11],  -6.4, [.9,1.6]);
+const streetlightProps = makePropLayer(6, buildStreetlight, 17, [-3.2,-2],  -6.4, [.85,1.15]);
+
+function scrollProps(list, speed, wrapPad){
+  for(const p of list){
+    p.x-=speed;
+    if(p.x<-p.span-wrapPad) p.x+=p.span*2+wrapPad*2;
+    p.mesh.position.x=p.x;
+  }
+}
 
 /* ═══════════════════════════════════════════
    WITCH + BROOM MODEL (Three.js primitives)
@@ -562,6 +690,11 @@ function animate(){
     cityOffset+=delta*0.055;
     cityTex.offset.x=cityOffset;
 
+    /* ── Skyline scroll (parallax: closer layers move faster) ── */
+    scrollProps(streetlightProps, worldSpeed*1.05, 2);
+    scrollProps(treeProps, worldSpeed*0.95, 3);
+    scrollProps(houseProps, worldSpeed*0.4, 4);
+
     /* ── Spawn ── */
     const spawnRate=Math.max(55,100-score*1.2);
     if(frame%Math.floor(spawnRate)===0) spawnObstacle();
@@ -628,6 +761,9 @@ function animate(){
     camera.lookAt(0,0,0);
     cityOffset+=delta*.02;
     cityTex.offset.x=cityOffset;
+    scrollProps(streetlightProps, delta*.55, 2);
+    scrollProps(treeProps, delta*.5, 3);
+    scrollProps(houseProps, delta*.2, 4);
   }
 
   /* ── Always: dust, lights ── */
