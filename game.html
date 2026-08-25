@@ -126,7 +126,9 @@ const fillLight = new THREE.PointLight(0xe8196a, 5, 45);
 fillLight.position.set(6, -2, 5);
 scene.add(fillLight);
 
-scene.add(Object.assign(new THREE.DirectionalLight(0x3d0080,2),{position:new THREE.Vector3(3,-3,-8)}));
+const backLight = new THREE.DirectionalLight(0x3d0080,2);
+backLight.position.set(3,-3,-8);
+scene.add(backLight);
 
 const trailLight = new THREE.PointLight(0xff2d87, 4, 14);
 scene.add(trailLight);
