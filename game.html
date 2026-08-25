@@ -81,14 +81,14 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 <div id="overlay">
   <span class="ov-eyebrow">hexposed — a witch's boutique by new earth frequency</span>
   <h1 class="ov-title" id="ovTitle">Broomstick Run</h1>
-  <p class="ov-sub" id="ovSub">Dodge the towers. Collect moon crystals. Survive the storm.</p>
+  <p class="ov-sub" id="ovSub">Race the pack over the neighborhood. Thread the gates. Collect moon crystals.</p>
   <div id="ovScoreBlock" style="display:none">
     <div class="ov-score" id="ovScore"></div>
     <div class="ov-hi" id="ovHi"></div>
     <div class="ov-new" id="ovNew" style="display:none">//new high score//</div>
   </div>
   <button class="ov-btn" id="ovBtn" onclick="startGame()">enter the sky</button>
-  <p class="ov-controls">SPACE · ↑ · tap to fly</p>
+  <p class="ov-controls">← → · A D · steer  ·  SPACE · ↑ · climb</p>
 </div>
 
 <a href="index.html" id="back">//back to hexposition</a>
@@ -97,14 +97,17 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 <script>
 /* ═══════════════════════════════════════════
    HEXPOSITION — BROOMSTICK RUN
-   Full Three.js game
-   · 3D witch + broom from primitives
-   · Scrolling neon city backdrop
-   · Tower obstacles (purple columns)
-   · Moon crystal collectibles (teal octahedrons)
+   Third-person chase-cam broom race over a
+   neighborhood, in the spirit of Temple Run.
+   · 3D witch + broom from primitives (player
+     steers X/Y; 3 AI racers fly alongside)
+   · Gates (rings) approach in depth — thread
+     the opening as it reaches you
+   · Neighborhood scenery (houses/trees/lamps)
+     and neon city skyline scroll past below
+   · Moon crystal collectibles
    · Particle bursts on hit/collect
-   · Score, lives, high score
-   · Increasing difficulty
+   · Score, lives, high score, increasing speed
 ═══════════════════════════════════════════ */
 
 /* ── RENDERER ── */
@@ -121,9 +124,12 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x14110d);
 scene.fog = new THREE.FogExp2(0x18140f, 0.019);
 
-/* ── CAMERA ── */
-const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 300);
-camera.position.set(0, 0, 15);
+/* ── CAMERA ──
+   Chase cam: sits behind and above the player, looking forward down
+   the track (into -Z) instead of watching from the side. */
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 300);
+camera.position.set(0, 2.4, 7);
+camera.lookAt(0, 0.6, -10);
 
 window.addEventListener('resize', ()=>{
   camera.aspect = innerWidth/innerHeight;
@@ -231,10 +237,10 @@ const cityTex = makeCityTexture();
 cityTex.wrapS = THREE.RepeatWrapping;
 cityTex.repeat.x = 2;
 const cityMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(130,30),
-  new THREE.MeshBasicMaterial({map:cityTex,depthWrite:false})
+  new THREE.PlaneGeometry(260,60),
+  new THREE.MeshBasicMaterial({map:cityTex,depthWrite:false,fog:false})
 );
-cityMesh.position.set(0,-1,-20);
+cityMesh.position.set(0,4,-95);
 scene.add(cityMesh);
 
 /* ═══════════════════════════════════════════
@@ -247,9 +253,9 @@ const groundMat = new THREE.MeshStandardMaterial({
   color:0x05030a, roughness:1, metalness:0,
   emissive:new THREE.Color(0x0a0018), emissiveIntensity:.25,
 });
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(260,90), groundMat);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(70,300), groundMat);
 ground.rotation.x = -Math.PI/2;
-ground.position.set(0,-6.4,-10);
+ground.position.set(0,-6.4,-70);
 scene.add(ground);
 
 const silhouetteMat = new THREE.MeshStandardMaterial({color:0x060309, roughness:1, metalness:0});
@@ -316,32 +322,37 @@ function buildStreetlight(){
   return g;
 }
 
-function makePropLayer(count, buildFn, xSpan, zRange, yBase, scaleRange){
+/* Props scroll toward the camera along Z (flying forward over them),
+   scattered across X like buildings/trees either side of the flight
+   corridor, and wrap back out to the far distance once passed. */
+function makePropLayer(count, buildFn, xWidth, span, yBase, scaleRange){
   const items=[];
   for(let i=0;i<count;i++){
     const mesh=buildFn();
-    const x=-xSpan+(i+Math.random()*.6)*(xSpan*2/count);
-    const z=zRange[0]+Math.random()*(zRange[1]-zRange[0]);
+    const x=(Math.random()-.5)*xWidth*2;
+    const z=-Math.random()*span;
     const s=scaleRange[0]+Math.random()*(scaleRange[1]-scaleRange[0]);
-    mesh.position.x=x;
-    mesh.position.z+=z;
-    mesh.position.y+=yBase;
+    mesh.position.set(x, yBase, z);
     mesh.scale.setScalar(s);
     scene.add(mesh);
-    items.push({mesh,x,span:xSpan});
+    items.push({mesh,x,z,xWidth});
   }
   return items;
 }
 
-const treeProps        = makePropLayer(9, buildTree,        20, [-7,-4.5],  -6.4, [.8,1.3]);
-const houseProps       = makePropLayer(7, buildHouse,       28, [-15,-11],  -6.4, [.9,1.6]);
-const streetlightProps = makePropLayer(6, buildStreetlight, 17, [-3.2,-2],  -6.4, [.85,1.15]);
+const treeProps        = makePropLayer(12, buildTree,        16, 70, -6.4, [.8,1.3]);
+const houseProps       = makePropLayer(10, buildHouse,       22, 90, -6.4, [.9,1.6]);
+const streetlightProps = makePropLayer(9,  buildStreetlight, 10, 60, -6.4, [.85,1.15]);
 
-function scrollProps(list, speed, wrapPad){
+function scrollProps(list, speed, span, wrapPad){
   for(const p of list){
-    p.x-=speed;
-    if(p.x<-p.span-wrapPad) p.x+=p.span*2+wrapPad*2;
-    p.mesh.position.x=p.x;
+    p.z+=speed;
+    if(p.z>wrapPad){
+      p.z-=(span+wrapPad*2);
+      p.x=(Math.random()-.5)*p.xWidth*2;
+      p.mesh.position.x=p.x;
+    }
+    p.mesh.position.z=p.z;
   }
 }
 
@@ -406,17 +417,41 @@ function buildBroom(){
     arm.position.set(-.2,.45,side*.22);arm.rotation.z=side*1.1;g.add(arm);
   }
 
-  // The rig above was built with the bristle/tail cone facing the
-  // direction of travel and the witch facing backward — flip the whole
-  // group 180° so the witch faces forward and the bristles trail behind.
-  g.rotation.y = Math.PI;
+  // The rig above is built lying along local X (witch at -X, bristles at
+  // +X). The camera now chases from behind looking down -Z, so rotate
+  // the whole group -90° around Y to point the witch-end forward along
+  // world -Z, with the bristle/tail trailing back toward +Z (the camera).
+  g.rotation.y = -Math.PI/2;
 
   return g;
 }
 
 const broom = buildBroom();
-broom.position.set(-2,0,0);
+broom.position.set(0,0,0);
 scene.add(broom);
+
+/* ═══════════════════════════════════════════
+   AI RACERS — 3 opponent brooms flying the same
+   course, homing toward whichever gate is next.
+   No fail-state for them yet (v1): they always
+   thread the gate, giving the feel of a pack
+   race without needing real collision AI.
+═══════════════════════════════════════════ */
+const AI_COUNT = 3;
+const aiRacers = [];
+for(let i=0;i<AI_COUNT;i++){
+  const mesh = buildBroom();
+  mesh.scale.setScalar(.88);
+  scene.add(mesh);
+  aiRacers.push({
+    mesh,
+    x:(i-(AI_COUNT-1)/2)*1.6,
+    y:(Math.random()-.5)*2,
+    z:0.5+i*0.45,
+    skill:0.028+Math.random()*0.03,
+    bobSeed:Math.random()*10,
+  });
+}
 
 /* ═══════════════════════════════════════════
    OBSTACLE MATERIAL (shared, reused)
@@ -475,81 +510,64 @@ let state      = 'idle';    // idle | playing | dead
 let score      = 0;
 let highScore  = 0;
 let lives      = 3;
-let vy         = 0;
 let frame      = 0;
 let cityOffset = 0;
+let gateSpawnTimer    = 0;
+let crystalSpawnTimer = 0;
 let invincible = 0; // frames of invincibility after hit
 
-const GRAVITY = 0.0042;
-const THRUST  = -0.115;
-const MAX_VY  = 0.092;
-const BOUNDS  = {top:5.8, bottom:-5.8};
+// Player position — fixed at z=0, steering in X (lanes) and Y (altitude)
+let px=0, py=0, vx=0, vy=0;
+let steerDir=0; // -1 left, 0 none, 1 right, driven by keys held
 
-// Obstacle + crystal pools
-const obstacles  = [];
+const GRAVITY   = 0.0042;
+const THRUST    = -0.115;
+const MAX_VY    = 0.092;
+const XACCEL    = 0.026;
+const MAX_VX    = 0.15;
+const XFRICTION = 0.86;
+const PX_RANGE  = 4.4; // half-width of the flight corridor
+const PY_RANGE  = 3.6; // half-height
+
+// Gate + crystal pools
+const gates      = [];
 const crystals   = [];
 const particles  = [];
 
-// Viewport width at z=0 (world units)
-const SPAWN_X = 14;
-const LANE_H  = 12; // total vertical play area
+const GATE_SPAWN_Z    = -75; // gates/crystals appear far ahead and approach
+const CRYSTAL_SPAWN_Z = -75;
+const DESPAWN_Z       = 9;   // recycle once safely behind the camera
 
 /* ═══════════════════════════════════════════
-   OBSTACLE BUILDER
+   GATE BUILDER — a ring to fly through, like a
+   drone-racing gate. Player must stay inside its
+   opening as it reaches the player's Z plane.
 ═══════════════════════════════════════════ */
-function spawnObstacle(){
-  const gapSize = Math.max(3.2, 5.5 - score * 0.04);
-  const gapCenterY = (Math.random()-.5) * (LANE_H - gapSize - 2);
-  const topH  = (LANE_H/2) - gapCenterY - gapSize/2;
-  const botH  = (LANE_H/2) + gapCenterY - gapSize/2;
+function spawnGate(){
+  const radius = Math.max(1.15, 1.85 - score*0.008);
+  const gapCenterX = (Math.random()-.5) * (PX_RANGE*2 - radius*2 - 1);
+  const gapCenterY = (Math.random()-.5) * (PY_RANGE*2 - radius*2 - 1);
 
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(radius,.14,8,24), obsMat);
+  const capGlow = new THREE.Mesh(new THREE.TorusGeometry(radius,.03,6,24), obsCapMat);
   const group = new THREE.Group();
-
-  // Top column
-  if(topH > 0){
-    const topGeo=new THREE.CylinderGeometry(.8,.9,topH,8);
-    const topMesh=new THREE.Mesh(topGeo,obsMat);
-    topMesh.position.y = LANE_H/2 - topH/2;
-    topMesh.castShadow=true;
-    group.add(topMesh);
-    // Cap
-    const cap=new THREE.Mesh(new THREE.CylinderGeometry(1.05,.8,.3,8),obsCapMat);
-    cap.position.y = LANE_H/2 - topH - .15;
-    group.add(cap);
-  }
-
-  // Bottom column
-  if(botH > 0){
-    const botGeo=new THREE.CylinderGeometry(.9,.8,botH,8);
-    const botMesh=new THREE.Mesh(botGeo,obsMat);
-    botMesh.position.y = -LANE_H/2 + botH/2;
-    botMesh.castShadow=true;
-    group.add(botMesh);
-    const cap=new THREE.Mesh(new THREE.CylinderGeometry(.8,1.05,.3,8),obsCapMat);
-    cap.position.y = -LANE_H/2 + botH + .15;
-    group.add(cap);
-  }
-
-  group.position.set(SPAWN_X, 0, 0);
+  group.add(ring); group.add(capGlow);
+  group.position.set(gapCenterX, gapCenterY, GATE_SPAWN_Z);
   scene.add(group);
-  obstacles.push({
-    mesh:group,
-    x:SPAWN_X,
-    topH, botH, gapCenterY, gapSize,
-    passed:false,
-    colW:.9,
-  });
+
+  gates.push({mesh:group, x:gapCenterX, y:gapCenterY, z:GATE_SPAWN_Z, r:radius, passed:false});
 }
 
 /* ═══════════════════════════════════════════
    CRYSTAL BUILDER
 ═══════════════════════════════════════════ */
 function spawnCrystal(){
+  const x=(Math.random()-.5)*PX_RANGE*1.6;
+  const y=(Math.random()-.5)*PY_RANGE*1.6;
   const mesh=new THREE.Mesh(new THREE.OctahedronGeometry(.38,0),crystalMat);
-  const y=(Math.random()-.5)*9;
-  mesh.position.set(SPAWN_X+2, y, 0);
+  mesh.position.set(x, y, CRYSTAL_SPAWN_Z);
   scene.add(mesh);
-  crystals.push({mesh, x:SPAWN_X+2, y, r:.38, collected:false});
+  crystals.push({mesh, x, y, z:CRYSTAL_SPAWN_Z, r:.38});
 }
 
 /* ═══════════════════════════════════════════
@@ -598,16 +616,21 @@ function showOverlay(title,sub,showScore,isNew){
    GAME CONTROL
 ═══════════════════════════════════════════ */
 function startGame(){
-  // Clear old obstacles + crystals + particles
-  obstacles.forEach(o=>scene.remove(o.mesh));
+  gates.forEach(g=>scene.remove(g.mesh));
   crystals.forEach(c=>scene.remove(c.mesh));
   particles.forEach(p=>scene.remove(p.mesh));
-  obstacles.length=0;crystals.length=0;particles.length=0;
+  gates.length=0;crystals.length=0;particles.length=0;
 
-  score=0;lives=3;vy=0;frame=0;invincible=0;
-  broom.position.set(-2,0,0);
+  score=0;lives=3;vx=0;vy=0;px=0;py=0;frame=0;invincible=0;steerDir=0;
+  gateSpawnTimer=0;crystalSpawnTimer=0;
+  broom.position.set(0,0,0);
   broom.rotation.z=0;
+  broom.rotation.x=0;
   cityOffset=0;
+  aiRacers.forEach((r,i)=>{
+    r.x=(i-(AI_COUNT-1)/2)*1.6;
+    r.y=(Math.random()-.5)*2;
+  });
   state='playing';
   document.getElementById('overlay').classList.add('hidden');
   updateHUD();
@@ -615,7 +638,7 @@ function startGame(){
 
 function die(){
   lives--;
-  burst(broom.position.x,broom.position.y,0xff2d87,18);
+  burst(px,py,0xff2d87,18);
   updateHUD();
   if(lives<=0){
     const isNew=score>0 && score>=highScore;
@@ -624,7 +647,7 @@ function die(){
     setTimeout(()=>showOverlay('You Fell','The sky reclaimed you.',true,isNew),600);
   } else {
     invincible=90;
-    broom.position.y=0;vy=0;
+    py=0;vy=0;
   }
 }
 
@@ -635,29 +658,28 @@ function flap(){
 
 window.addEventListener('keydown',e=>{
   if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();flap();}
+  if(e.code==='ArrowLeft'||e.code==='KeyA'){steerDir=-1;}
+  if(e.code==='ArrowRight'||e.code==='KeyD'){steerDir=1;}
+});
+window.addEventListener('keyup',e=>{
+  if((e.code==='ArrowLeft'||e.code==='KeyA')&&steerDir===-1) steerDir=0;
+  if((e.code==='ArrowRight'||e.code==='KeyD')&&steerDir===1) steerDir=0;
 });
 window.addEventListener('pointerdown',()=>flap());
 
 // Show start overlay
-showOverlay('Broomstick Run','Dodge the towers. Collect moon crystals. Survive.',false,false);
+showOverlay('Broomstick Run','Race the pack over the neighborhood. Thread the gates. Collect moon crystals.',false,false);
 
 /* ═══════════════════════════════════════════
    COLLISION HELPERS
 ═══════════════════════════════════════════ */
-function checkObstacle(o){
-  const bx=broom.position.x, by=broom.position.y;
-  const hitW=.6, hitH=.5;
-  const ox=o.x;
-  if(Math.abs(bx-ox)>hitW+o.colW) return false;
-  const topEdge  =  LANE_H/2 - o.topH;
-  const botEdge  = -LANE_H/2 + o.botH;
-  if(by+hitH > topEdge || by-hitH < botEdge) return true;
-  return false;
+function checkGate(g){
+  const dx=px-g.x, dy=py-g.y;
+  return Math.sqrt(dx*dx+dy*dy) > g.r-.32;
 }
 
 function checkCrystal(c){
-  const dx=broom.position.x-c.x;
-  const dy=broom.position.y-c.y;
+  const dx=px-c.x, dy=py-c.y;
   return Math.sqrt(dx*dx+dy*dy)<c.r+.6;
 }
 
@@ -673,66 +695,88 @@ function animate(){
 
   if(state==='playing'){
     frame++;
-    const speed=3.2+score*0.045;
+    const speed=14+score*0.09;
     const worldSpeed=speed*delta;
 
-    /* ── Physics ── */
+    /* ── Player physics: X (lanes) + Y (altitude) ── */
+    vx+=steerDir*XACCEL;
+    vx*=XFRICTION;
+    vx=THREE.MathUtils.clamp(vx,-MAX_VX,MAX_VX);
+    px=THREE.MathUtils.clamp(px+vx,-PX_RANGE,PX_RANGE);
+
     vy+=GRAVITY;
     vy=Math.min(vy,MAX_VY);
-    broom.position.y-=vy;
-    broom.rotation.z=Math.clamp?THREE.MathUtils.clamp(-vy*3.8,-.6,.6):-vy*3.8;
-    if(broom.rotation.z<-.6)broom.rotation.z=-.6;
-    if(broom.rotation.z>.6)broom.rotation.z=.6;
+    py=THREE.MathUtils.clamp(py-vy,-PY_RANGE,PY_RANGE);
 
-    /* ── Boundary death ── */
-    if(broom.position.y>BOUNDS.top||broom.position.y<BOUNDS.bottom){
-      if(invincible<=0)die();
-    }
+    broom.position.set(px,py,0);
+    broom.rotation.z=THREE.MathUtils.clamp(-vx*3.0,-.5,.5); // bank into turns
+    broom.rotation.x=THREE.MathUtils.clamp(vy*3.2,-.35,.35); // pitch with climb/dive
 
     if(invincible>0) invincible--;
 
-    /* ── City scroll ── */
-    cityOffset+=delta*0.055;
+    /* ── City backdrop drift ── */
+    cityOffset+=delta*0.02;
     cityTex.offset.x=cityOffset;
 
-    /* ── Skyline scroll (parallax: closer layers move faster) ── */
-    scrollProps(streetlightProps, worldSpeed*1.05, 2);
-    scrollProps(treeProps, worldSpeed*0.95, 3);
-    scrollProps(houseProps, worldSpeed*0.4, 4);
+    /* ── Neighborhood scroll — flying forward over it ── */
+    scrollProps(streetlightProps, worldSpeed*1.1, 60, 10);
+    scrollProps(treeProps, worldSpeed*1.0, 70, 10);
+    scrollProps(houseProps, worldSpeed*0.9, 90, 10);
 
-    /* ── Spawn ── */
-    const spawnRate=Math.max(55,100-score*1.2);
-    if(frame%Math.floor(spawnRate)===0) spawnObstacle();
-    if(frame%130===0) spawnCrystal();
+    /* ── Spawn (time-based, not frame-count — stays correct at any
+       framerate instead of drifting slower on slower devices) ── */
+    gateSpawnTimer+=delta;
+    const gateInterval=Math.max(0.72,1.3-score*0.012);
+    if(gateSpawnTimer>=gateInterval){ gateSpawnTimer=0; spawnGate(); }
 
-    /* ── Move obstacles ── */
-    for(let i=obstacles.length-1;i>=0;i--){
-      const o=obstacles[i];
-      o.x-=worldSpeed;
-      o.mesh.position.x=o.x;
-      if(!o.passed&&o.x<broom.position.x-1){
-        o.passed=true;score++;updateHUD();
-        burst(broom.position.x,broom.position.y,0xf59e0b,6);
+    crystalSpawnTimer+=delta;
+    if(crystalSpawnTimer>=1.75){ crystalSpawnTimer=0; spawnCrystal(); }
+
+    /* ── Move gates, check as each crosses the player's Z plane ── */
+    for(let i=gates.length-1;i>=0;i--){
+      const g=gates[i];
+      g.z+=worldSpeed;
+      g.mesh.position.z=g.z;
+      g.mesh.rotation.z+=delta*0.4;
+      if(!g.passed&&g.z>=0){
+        g.passed=true;
+        if(invincible<=0&&checkGate(g)){
+          die();
+        }else{
+          score++;updateHUD();
+          burst(px,py,0xf59e0b,8);
+        }
       }
-      if(invincible<=0&&checkObstacle(o)){die();break;}
-      if(o.x<-SPAWN_X-4){scene.remove(o.mesh);obstacles.splice(i,1);}
+      if(g.z>DESPAWN_Z){scene.remove(g.mesh);gates.splice(i,1);}
     }
 
     /* ── Move crystals ── */
     for(let i=crystals.length-1;i>=0;i--){
       const c=crystals[i];
-      c.x-=worldSpeed*.85;
-      c.mesh.position.x=c.x;
+      c.z+=worldSpeed*0.95;
+      c.mesh.position.z=c.z;
       c.mesh.rotation.y+=delta*2.5;
       c.mesh.rotation.x+=delta*1.2;
-      if(checkCrystal(c)){
+      if(Math.abs(c.z)<1.2&&checkCrystal(c)){
         burst(c.x,c.y,0x14b8a6,12);
         score+=2;updateHUD();
         scene.remove(c.mesh);crystals.splice(i,1);
         continue;
       }
-      if(c.x<-SPAWN_X-4){scene.remove(c.mesh);crystals.splice(i,1);}
+      if(c.z>DESPAWN_Z){scene.remove(c.mesh);crystals.splice(i,1);}
     }
+
+    /* ── AI racers: home toward whichever gate is coming up next ── */
+    let nextGate=null;
+    for(const g of gates){ if(g.z<0&&(!nextGate||g.z>nextGate.z)) nextGate=g; }
+    aiRacers.forEach((r,i)=>{
+      const targetX = nextGate ? nextGate.x+(i-1)*0.4 : r.x*0.98;
+      const targetY = nextGate ? nextGate.y : r.y*0.98;
+      r.x+=(targetX-r.x)*r.skill;
+      r.y+=(targetY-r.y)*r.skill;
+      r.mesh.position.set(r.x, r.y+Math.sin(t*2+r.bobSeed)*.1, r.z);
+      r.mesh.rotation.z=THREE.MathUtils.clamp((targetX-r.x)*-1.5,-.4,.4);
+    });
 
     /* ── Particles ── */
     for(let i=particles.length-1;i>=0;i--){
@@ -746,29 +790,35 @@ function animate(){
     }
 
     /* ── Trail light ── */
-    trailLight.position.set(broom.position.x-1.8,broom.position.y,3);
+    trailLight.position.set(px,py,2.2);
     trailLight.intensity=2.5+Math.sin(t*8)*1.5;
 
     /* ── Broom sparkle ── */
     if(frame%4===0){
-      burst(broom.position.x-2,broom.position.y+(Math.random()-.5)*.3,0x7b2be2,1);
+      burst(px+(Math.random()-.5)*.2,py+(Math.random()-.5)*.3,0x7b2be2,1);
     }
 
-    /* ── Camera follow ── */
-    camera.position.y+=(broom.position.y*.09-camera.position.y)*.08;
-    camera.lookAt(broom.position.x+1.5,broom.position.y*.1,0);
+    /* ── Chase camera: behind and above, following lanes/altitude ── */
+    camera.position.x+=(px*0.5-camera.position.x)*0.08;
+    camera.position.y+=(2.4+py*0.35-camera.position.y)*0.08;
+    camera.lookAt(px*0.6, 0.6+py*0.3, -14);
 
   } else {
     /* Idle drift */
-    broom.position.y=Math.sin(t*.6)*.5;
-    broom.rotation.z=Math.sin(t*.8)*.06;
-    camera.position.y=Math.sin(t*.3)*.1;
-    camera.lookAt(0,0,0);
-    cityOffset+=delta*.02;
+    py=Math.sin(t*.6)*.6;
+    broom.position.set(0,py,0);
+    broom.rotation.z=Math.sin(t*.8)*.1;
+    camera.position.x+=(0-camera.position.x)*0.05;
+    camera.position.y+=(2.4-camera.position.y)*0.05;
+    camera.lookAt(0,0.6,-14);
+    cityOffset+=delta*.015;
     cityTex.offset.x=cityOffset;
-    scrollProps(streetlightProps, delta*.55, 2);
-    scrollProps(treeProps, delta*.5, 3);
-    scrollProps(houseProps, delta*.2, 4);
+    scrollProps(streetlightProps, delta*3.2, 60, 10);
+    scrollProps(treeProps, delta*3.0, 70, 10);
+    scrollProps(houseProps, delta*2.6, 90, 10);
+    aiRacers.forEach((r,i)=>{
+      r.mesh.position.set(r.x, r.y+Math.sin(t*1.2+r.bobSeed)*.25, r.z+2);
+    });
   }
 
   /* ── Always: dust, lights ── */
