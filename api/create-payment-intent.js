@@ -8,9 +8,7 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const READING_PRICE_IDS = {
   'Celtic Cross Reading': 'price_1U8889ALwINGiotHjAdUC9Rr',
   'Past · Present · Path': 'price_1U87gYALwINGiotH1RYIF6Ns',
-  // 'Two Steps Between': 'price_...'  ← no Price ID given yet. Create a
-  // $99.00 one-time Price in Stripe for this reading and paste its ID
-  // here — until then this reading's checkout will show an error.
+  'Two Steps Between': 'price_1U8IICALwINGiotHWSkyDTzV',
 };
 
 module.exports = async (req, res) => {
