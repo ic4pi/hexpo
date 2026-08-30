@@ -1,4 +1,5 @@
 const Stripe = require('stripe');
+const { createMerchizeOrder } = require('../lib/merchize');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -13,6 +14,36 @@ function readRawBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
+}
+
+// Any apparel/accessory lines in the order get pushed to Merchize here so
+// they're fulfilled automatically — this only runs after Stripe confirms
+// payment actually succeeded. A failure here never blocks the webhook
+// response to Stripe; it's logged loudly so the order can be pushed to
+// Merchize manually instead.
+async function fulfillMerchizeOrder(pi) {
+  let merchLines;
+  try {
+    merchLines = JSON.parse(pi.metadata.merch_items || '[]');
+  } catch (err) {
+    merchLines = [];
+  }
+  if (!merchLines.length) return;
+
+  try {
+    const order = await createMerchizeOrder({
+      email: pi.metadata.order_email,
+      shipping: pi.shipping,
+      line_items: merchLines.map((l) => ({ product_id: l.id, variant: l.size, quantity: l.qty })),
+      external_reference: pi.id,
+    });
+    console.log('Merchize fulfillment order created for', pi.id, ':', order);
+  } catch (err) {
+    console.error(
+      'Merchize order push FAILED for payment', pi.id, '-', err.message,
+      '- fulfill this order in Merchize manually. Items:', pi.metadata.merch_items
+    );
+  }
 }
 
 module.exports = async (req, res) => {
@@ -39,14 +70,15 @@ module.exports = async (req, res) => {
     // durable, verified record in the Vercel function logs to follow up
     // from manually. Once a domain + mailbox exist, send the confirmation
     // email to `pi.receipt_email` right here.
-    if (pi.metadata.kind === 'spell_order') {
-      console.log('Spell order placed:', {
+    if (pi.metadata.kind === 'order') {
+      console.log('Order placed:', {
         email: pi.metadata.order_email,
         items: pi.metadata.items,
         shipping: pi.shipping,
         amount: pi.amount,
         paymentIntentId: pi.id,
       });
+      await fulfillMerchizeOrder(pi);
     } else {
       console.log('Reading booked:', {
         reading: pi.metadata.reading,

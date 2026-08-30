@@ -465,7 +465,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
     </div>
     <div class="merch-notice">
       <div class="merch-notice-text">
-        <strong>Apparel ships direct from our print partner.</strong> Shirt orders are processed and fulfilled separately from spell jar orders — expect two shipments if ordering both. Shirts typically arrive within 5–7 business days.
+        <strong>Apparel ships direct from our print partner.</strong> You check out here on-site along with any spell jars, but apparel is fulfilled separately — expect two shipments if ordering both. Shirts typically arrive within 5–7 business days.
       </div>
     </div>
     <div class="shirts-grid" id="shirtsGrid"></div>
@@ -533,13 +533,16 @@ async function postJSON(url, body){
   return data;
 }
 
-/* ── CART / SPELL ORDER CHECKOUT ──
-   Real cart, kept in memory as { productName: quantity }. Prices below
-   are display-only (for the bag subtotal before checkout) — the source of
-   truth is each product's Stripe Price ID in SPELL_PRICE_IDS on the
-   Vercel backend (api/create-order-payment-intent.js), which fetches the
-   real amount from Stripe and recomputes the total server-side, so a
-   tampered client request can't change what's actually charged.
+/* ── CART / ORDER CHECKOUT ──
+   Real cart, kept in memory as { lineKey: quantity }. Spell jars are keyed
+   by product name; Merchize apparel/accessories are keyed
+   'merch:<productId>:<size>' so a jar and a shirt never collide.
+   Prices below are display-only (for the bag subtotal before checkout) —
+   the source of truth is server-side on checkout: each spell jar's Stripe
+   Price ID (SPELL_PRICE_IDS in api/create-order-payment-intent.js), and
+   each Merchize product's live price (fetched fresh from Merchize in that
+   same function) — so a tampered client request can't change what's
+   actually charged.
 ── */
 const SPELL_PRICE_CENTS = {
   'Love Spell No. 4': 2899,
@@ -548,10 +551,28 @@ const SPELL_PRICE_CENTS = {
 };
 
 let cart = {};
+let merchCatalog = {}; // productId -> product, populated once Merchize products load
 let orderElements = null;
 
+function parseMerchKey(key){
+  const parts = key.split(':'); // ['merch', id, size]
+  return { id: parts[1], size: parts.slice(2).join(':') };
+}
+
+function lineInfo(key){
+  if(key.startsWith('merch:')){
+    const {id,size} = parseMerchKey(key);
+    const p = merchCatalog[id];
+    return {
+      name: p ? `${p.name}${size?` (${size})`:''}` : 'Apparel item',
+      priceCents: p && typeof p.priceCents==='number' ? p.priceCents : 0,
+    };
+  }
+  return { name:key, priceCents: SPELL_PRICE_CENTS[key]||0 };
+}
+
 function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
-function cartSubtotalCents(){ return Object.entries(cart).reduce((sum,[name,qty])=>sum+(SPELL_PRICE_CENTS[name]||0)*qty,0); }
+function cartSubtotalCents(){ return Object.entries(cart).reduce((sum,[key,qty])=>sum+lineInfo(key).priceCents*qty,0); }
 function updateCartBadge(){ document.getElementById('cartCount').textContent = cartCount(); }
 
 function handleSpell(btn,name){
@@ -562,13 +583,28 @@ function handleSpell(btn,name){
   setTimeout(()=>{btn.innerHTML='add to bag';btn.classList.remove('added')},2200);
 }
 
-function changeQty(name,delta){
-  cart[name]=(cart[name]||0)+delta;
-  if(cart[name]<=0) delete cart[name];
+function addMerchToBag(id){
+  const p = merchCatalog[id];
+  if(!p) return;
+  let size='';
+  if(p.sizes && p.sizes.length){
+    const activeBtn = document.querySelector(`#sizes-${id} .size-btn.active`);
+    if(!activeBtn){ showToast('Pick a size first'); return; }
+    size = activeBtn.textContent;
+  }
+  const key = `merch:${id}:${size}`;
+  cart[key] = (cart[key]||0) + 1;
+  updateCartBadge();
+  showToast(`${p.name}${size?` (${size})`:''} — added to bag`);
+}
+
+function changeQty(key,delta){
+  cart[key]=(cart[key]||0)+delta;
+  if(cart[key]<=0) delete cart[key];
   updateCartBadge();
   renderCartItems();
 }
-function removeFromCart(name){ delete cart[name]; updateCartBadge(); renderCartItems(); }
+function removeFromCart(key){ delete cart[key]; updateCartBadge(); renderCartItems(); }
 
 function renderCartItems(){
   const list=document.getElementById('cartItemsList');
@@ -579,17 +615,18 @@ function renderCartItems(){
     list.innerHTML='<div class="form-error" style="color:var(--muted)">Your bag is empty.</div>';
     document.getElementById('cartSubtotal').textContent='';
   }else{
-    list.innerHTML=entries.map(([name,qty])=>{
-      const lineTotal=((SPELL_PRICE_CENTS[name]||0)*qty/100).toFixed(2);
+    list.innerHTML=entries.map(([key,qty])=>{
+      const info=lineInfo(key);
+      const lineTotal=(info.priceCents*qty/100).toFixed(2);
       return `<div class="cart-item">
-        <div class="cart-item-name">${name}</div>
+        <div class="cart-item-name">${info.name}</div>
         <div class="cart-item-controls">
-          <button class="qty-btn" onclick="changeQty('${name}',-1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
           <span class="qty-val">${qty}</span>
-          <button class="qty-btn" onclick="changeQty('${name}',1)">+</button>
+          <button class="qty-btn" onclick="changeQty('${key}',1)">+</button>
         </div>
         <div class="cart-item-price">$${lineTotal}</div>
-        <button class="cart-item-remove" onclick="removeFromCart('${name}')">remove</button>
+        <button class="cart-item-remove" onclick="removeFromCart('${key}')">remove</button>
       </div>`;
     }).join('');
     document.getElementById('cartSubtotal').textContent=`subtotal: $${(cartSubtotalCents()/100).toFixed(2)}`;
@@ -660,7 +697,13 @@ async function continueToOrderPayment(){
   const btn=document.getElementById('continueOrderBtn');
   btn.disabled=true; btn.textContent='loading…';
   try{
-    const items=Object.entries(cart).map(([name,qty])=>({name,qty}));
+    const items=Object.entries(cart).map(([key,qty])=>{
+      if(key.startsWith('merch:')){
+        const {id,size}=parseMerchKey(key);
+        return {type:'merch', id, size, qty};
+      }
+      return {type:'spell', name:key, qty};
+    });
     const data=await postJSON('/api/create-order-payment-intent',{items,email,shipping});
     orderElements=stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
     orderElements.create('payment').mount('#order-payment-element');
@@ -859,9 +902,12 @@ spells.forEach(sp=>{
    Product data is fetched live from api/merchize-products.js, which calls
    your real Merchize catalog server-side (MERCHIZE_API_BASE_URL /
    MERCHIZE_API_TOKEN — set those in Vercel, never here or in the browser).
-   Customer clicks "shop now" → goes to the product's real Merchize page →
-   pays there → Merchize fulfills. Your margin is paid out by Merchize on
-   their payout schedule.
+   Checkout happens on-site (same bag/Stripe flow as spell jars, so
+   Merchize's own checkout fee never applies) — "add to bag" adds the
+   product+size to `cart`, and api/create-order-payment-intent.js
+   re-verifies its real price against Merchize before charging anything.
+   On successful payment, api/webhook.js pushes a fulfillment order to
+   Merchize automatically.
 ── */
 const shg=document.getElementById('shirtsGrid');
 
@@ -873,11 +919,12 @@ function renderShirts(products){
   if(!products.length){ renderShirtsEmpty(); return; }
   shg.innerHTML='';
   products.forEach(p=>{
+    merchCatalog[p.id]=p;
     const price = typeof p.priceCents==='number' ? `$${(p.priceCents/100).toFixed(2)}` : '';
     const preview = p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy">` : (p.category==='accessory' ? '🔮' : '👕');
-    const sizes = p.sizes.length ? `<div class="size-row">${p.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div>` : '';
+    const sizes = p.sizes.length ? `<div class="size-row" id="sizes-${p.id}">${p.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div>` : '';
     const el=document.createElement('div');el.className='shirt-card';
-    el.innerHTML=`<div class="shirt-preview">${preview}</div><div class="shirt-body"><div class="shirt-name">${p.name}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div>${sizes}<div class="shirt-footer"><span class="shirt-price">${price}</span>${p.url?`<a href="${p.url}" target="_blank" class="btn-merch">shop now</a>`:''}</div></div>`;
+    el.innerHTML=`<div class="shirt-preview">${preview}</div><div class="shirt-body"><div class="shirt-name">${p.name}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div>${sizes}<div class="shirt-footer"><span class="shirt-price">${price}</span><button class="btn-merch" onclick="addMerchToBag('${p.id}')">add to bag</button></div></div>`;
     shg.appendChild(el);
   });
 }

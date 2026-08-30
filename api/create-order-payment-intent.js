@@ -1,8 +1,9 @@
 const Stripe = require('stripe');
+const { getMerchizeProducts } = require('../lib/merchize');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Product name -> Stripe Price ID. Amounts are fetched live from Stripe
+// Spell jar name -> Stripe Price ID. Amounts are fetched live from Stripe
 // (via prices.retrieve below) rather than hardcoded, so a client-sent
 // price can never be trusted or tampered with — Stripe is the one source
 // of truth for what each jar actually costs.
@@ -46,18 +47,46 @@ module.exports = async (req, res) => {
   let amount = 0;
   let currency = 'usd';
   const lineItems = [];
+  // Merch line items (id/size/qty only) get handed to the webhook via
+  // metadata so it can push a fulfillment order to Merchize once payment
+  // actually succeeds — never before.
+  const merchLines = [];
+  let merchProducts = null;
+
   try {
     for (const item of items) {
-      const priceId = SPELL_PRICE_IDS[item && item.name];
       const qty = Number(item && item.qty);
-      if (!priceId || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+      if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
         res.status(400).json({ error: 'Invalid item in bag' });
         return;
       }
-      const price = await stripe.prices.retrieve(priceId);
-      amount += price.unit_amount * qty;
-      currency = price.currency;
-      lineItems.push(`${item.name} x${qty}`);
+
+      if (item && item.type === 'merch') {
+        if (!merchProducts) merchProducts = await getMerchizeProducts();
+        const product = merchProducts.find((p) => p.id === String(item.id));
+        if (!product || typeof product.priceCents !== 'number') {
+          res.status(400).json({ error: 'One of the apparel items is no longer available' });
+          return;
+        }
+        const size = typeof item.size === 'string' ? item.size : '';
+        if (product.sizes.length && !product.sizes.includes(size)) {
+          res.status(400).json({ error: `Invalid size for ${product.name}` });
+          return;
+        }
+        amount += product.priceCents * qty;
+        lineItems.push(`${product.name}${size ? ` (${size})` : ''} x${qty}`);
+        merchLines.push({ id: product.id, name: product.name, size, qty });
+      } else {
+        const priceId = SPELL_PRICE_IDS[item && item.name];
+        if (!priceId) {
+          res.status(400).json({ error: 'Invalid item in bag' });
+          return;
+        }
+        const price = await stripe.prices.retrieve(priceId);
+        amount += price.unit_amount * qty;
+        currency = price.currency;
+        lineItems.push(`${item.name} x${qty}`);
+      }
     }
   } catch (err) {
     console.error('create-order-payment-intent price lookup failed:', err.message);
@@ -83,9 +112,10 @@ module.exports = async (req, res) => {
         },
       },
       metadata: {
-        kind: 'spell_order',
+        kind: 'order',
         order_email: email,
         items: lineItems.join('; ').slice(0, 500),
+        merch_items: merchLines.length ? JSON.stringify(merchLines).slice(0, 500) : '',
       },
     });
     res.status(200).json({ clientSecret: paymentIntent.client_secret, amount });

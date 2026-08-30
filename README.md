@@ -116,27 +116,39 @@ when a price changes so the displayed total doesn't drift from Stripe's.
 
 ---
 
-## Apparel & Accessories Catalog (Merchize) — Same Deploy, One More Env Var
+## Apparel & Accessories (Merchize) — On-Site Checkout, Same Deploy
 
-The "arcane apparel" section (`#shirts` in `index.html`) now pulls its
-product list **live** from your real Merchize store instead of a hardcoded
-placeholder:
+The "arcane apparel" section (`#shirts` in `index.html`) pulls its product
+list **live** from your real Merchize store, and checks out **on this
+site** through the same Stripe bag as spell jars — the customer never
+leaves Hexposed to pay, so Merchize's own storefront checkout fee never
+applies. Merchize is only used as a catalog + fulfillment backend.
 
-1. **`api/merchize-products.js`** — a Vercel serverless function that calls
-   your Merchize back-office API (`bo-api`) server-side with your access
-   token, normalizes whatever it gets back (name, image, sizes, price,
-   category, product URL), and returns it as JSON. The token never reaches
-   the browser.
-2. **`index.html`** — on page load, fetches `/api/merchize-products` and
-   renders a card per product (image, sizes, price, a "shop now" link to
-   the product's real Merchize page). If the API isn't configured yet or
-   returns nothing, it shows a "check back soon" message instead of
-   breaking — same graceful-degradation pattern as the Stripe checkout.
+1. **`lib/merchize.js`** — shared helper for calling your Merchize
+   back-office API (`bo-api`) server-side with your access token. Two
+   functions: `getMerchizeProducts()` (catalog) and `createMerchizeOrder()`
+   (push a fulfillment order). The token never reaches the browser.
+2. **`api/merchize-products.js`** — returns the normalized catalog (name,
+   image, sizes, price, category) for `index.html` to render.
+3. **`index.html`** — renders a card per product; "add to bag" adds the
+   product (+ chosen size) to the same in-memory bag spell jars use, keyed
+   `merch:<productId>:<size>` so it can't collide with a jar. If the API
+   isn't configured or returns nothing, it shows a "check back soon"
+   message instead of breaking.
+4. **`api/create-order-payment-intent.js`** — when the bag is checked out,
+   re-verifies every apparel line's real price straight from Merchize
+   (never trusts what the browser sent) before creating the Stripe
+   PaymentIntent, exactly like it already does for spell jars via Stripe
+   Price IDs.
+5. **`api/webhook.js`** — once Stripe confirms the payment actually
+   succeeded, pushes a fulfillment order to Merchize via
+   `createMerchizeOrder()` for the apparel lines in that order. A push
+   failure is logged loudly (with the order's items) rather than silently
+   dropped, so it can be fulfilled in Merchize manually if needed — it
+   never blocks the customer's payment confirmation.
 
-Customers still check out **on Merchize's own store page** for these
-items (click "shop now" → pay on Merchize → Merchize fulfills and pays out
-your margin on their schedule) — this integration only replaces the
-hardcoded product with your real catalog, it doesn't change checkout.
+Apparel still physically ships separately from spell jars (two packages),
+even though it's now one checkout — the on-page notice reflects that.
 
 ### Setup steps
 
@@ -150,21 +162,34 @@ hardcoded product with your real catalog, it doesn't change checkout.
      password: it expires (this token type is valid ~30 days from
      issuance) and should be rotated in Merchize before it does, then
      updated here.
-   - `MERCHIZE_PRODUCTS_PATH` — optional, only needed if the default
-     `/v1/products` isn't the right path for your store's bo-api version
-     (see note below).
-3. Redeploy. Open the deployed site's `#shirts` section — if products
-   don't show up, check this function's logs in the Vercel dashboard
-   (Deployments → your deployment → Functions → `merchize-products`) for
-   the raw upstream response, and adjust `MERCHIZE_PRODUCTS_PATH` and/or
-   the field names read in `normalizeProduct()` in
-   `api/merchize-products.js` to match what your store's API actually
-   returns.
+   - `MERCHIZE_PRODUCTS_PATH` / `MERCHIZE_ORDERS_PATH` — optional, only
+     needed if the defaults (`/v1/products`, `/v1/orders`) aren't the
+     right paths for your store's bo-api version (see note below).
+3. This apparel checkout rides the same Stripe setup as spell jars — see
+   **Spell Jar Checkout** above for `STRIPE_SECRET_KEY` /
+   `STRIPE_WEBHOOK_SECRET` / the publishable key. If those aren't set up
+   yet, apparel checkout will correctly show "checkout coming soon" like
+   everything else Stripe-backed on this site.
+4. Redeploy. Open the deployed site's `#shirts` section — if products
+   don't show up, check the `merchize-products` function's logs in the
+   Vercel dashboard for the raw upstream response, and adjust
+   `MERCHIZE_PRODUCTS_PATH` and/or the field names read in
+   `normalizeProduct()` in `lib/merchize.js` to match what your store's
+   API actually returns.
+5. Place one real test order once Stripe test mode + Merchize are both
+   configured, and check the `webhook` function's logs to confirm the
+   Merchize order push succeeded (not just the Stripe payment). If it
+   fails, the log line shows the upstream error and the order's items —
+   adjust `MERCHIZE_ORDERS_PATH` and/or the payload shape built in
+   `fulfillMerchizeOrder()` in `api/webhook.js` to match your store's
+   expected order-creation format.
 
-**Why step 3 matters:** the exact bo-api endpoint path and JSON field
-names can vary by Merchize store/version, and this integration was built
-without live access to your Merchize API to confirm them against your
-actual account — that's the one thing worth verifying once deployed.
+**Why steps 4–5 matter:** the exact bo-api endpoint paths and JSON field
+names (for both reading products and creating orders) can vary by
+Merchize store/version, and this integration was built without live
+network access to your Merchize API to confirm them against your actual
+account — that's the one thing worth verifying once deployed, especially
+before relying on it for real orders.
 
 ---
 
