@@ -116,6 +116,58 @@ when a price changes so the displayed total doesn't drift from Stripe's.
 
 ---
 
+## Apparel & Accessories Catalog (Merchize) — Same Deploy, One More Env Var
+
+The "arcane apparel" section (`#shirts` in `index.html`) now pulls its
+product list **live** from your real Merchize store instead of a hardcoded
+placeholder:
+
+1. **`api/merchize-products.js`** — a Vercel serverless function that calls
+   your Merchize back-office API (`bo-api`) server-side with your access
+   token, normalizes whatever it gets back (name, image, sizes, price,
+   category, product URL), and returns it as JSON. The token never reaches
+   the browser.
+2. **`index.html`** — on page load, fetches `/api/merchize-products` and
+   renders a card per product (image, sizes, price, a "shop now" link to
+   the product's real Merchize page). If the API isn't configured yet or
+   returns nothing, it shows a "check back soon" message instead of
+   breaking — same graceful-degradation pattern as the Stripe checkout.
+
+Customers still check out **on Merchize's own store page** for these
+items (click "shop now" → pay on Merchize → Merchize fulfills and pays out
+your margin on their schedule) — this integration only replaces the
+hardcoded product with your real catalog, it doesn't change checkout.
+
+### Setup steps
+
+1. In your Merchize dashboard, open the **API** menu to get your store's
+   API base URL (a `bo-api` URL specific to your store) and your access
+   token.
+2. **Set environment variables** in the Vercel project (Settings →
+   Environment Variables) — never in this repo, never in chat:
+   - `MERCHIZE_API_BASE_URL` — your store's bo-api base URL from step 1.
+   - `MERCHIZE_API_TOKEN` — your access token from step 1. Treat it like a
+     password: it expires (this token type is valid ~30 days from
+     issuance) and should be rotated in Merchize before it does, then
+     updated here.
+   - `MERCHIZE_PRODUCTS_PATH` — optional, only needed if the default
+     `/v1/products` isn't the right path for your store's bo-api version
+     (see note below).
+3. Redeploy. Open the deployed site's `#shirts` section — if products
+   don't show up, check this function's logs in the Vercel dashboard
+   (Deployments → your deployment → Functions → `merchize-products`) for
+   the raw upstream response, and adjust `MERCHIZE_PRODUCTS_PATH` and/or
+   the field names read in `normalizeProduct()` in
+   `api/merchize-products.js` to match what your store's API actually
+   returns.
+
+**Why step 3 matters:** the exact bo-api endpoint path and JSON field
+names can vary by Merchize store/version, and this integration was built
+without live access to your Merchize API to confirm them against your
+actual account — that's the one thing worth verifying once deployed.
+
+---
+
 ## The Game — What's In It (Current State)
 
 The game (`game.html`) uses **Three.js r128** (loaded from CDN) and is fully self-contained. It currently builds everything from primitives:

@@ -184,8 +184,9 @@ section{padding:6rem 2rem;position:relative}
 .shirts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
 .shirt-card{background:var(--card-bg);border:1px solid rgba(91,58,143,.25);transition:all .4s}
 .shirt-card:hover{border-color:rgba(91,58,143,.6);transform:translateY(-3px);box-shadow:var(--glow-purple)}
-.shirt-preview{height:220px;display:flex;align-items:center;justify-content:center;font-size:6rem;position:relative;overflow:hidden}
+.shirt-preview{height:220px;display:flex;align-items:center;justify-content:center;font-size:6rem;position:relative;overflow:hidden;background:linear-gradient(135deg,#140d08,#201033)}
 .shirt-preview::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 20px,rgba(201,147,46,.02) 20px,rgba(201,147,46,.02) 21px)}
+.shirt-preview img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover}
 .shirt-body{padding:1.5rem}
 .shirt-name{font-family:var(--display);font-size:1.1rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.4rem}
 .shirt-tagline{font-size:.9rem;font-style:italic;color:var(--muted);margin-bottom:.6rem}
@@ -460,7 +461,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
     <div class="section-header">
       <span class="label">arcane apparel</span>
       <h2 class="section-title">Wear the Mark</h2>
-      <p class="section-desc">City-forged threads. Minor wards woven into the fabric. Look the part.</p>
+      <p class="section-desc">City-forged threads and wardable trinkets. Minor wards woven into the fabric. Look the part.</p>
     </div>
     <div class="merch-notice">
       <div class="merch-notice-text">
@@ -854,29 +855,38 @@ spells.forEach(sp=>{
   sg.appendChild(el);
 })();
 
-/* ── SHIRTS
-   `merchizeUrl` = your actual Merchize product page URL.
-   Customer clicks "shop now" → goes directly to Merchize → pays there → Merchize fulfills.
-   Your margin is paid out by Merchize on their payout schedule.
-   Replace placeholder URLs once your Merchize store is live.
+/* ── APPAREL & ACCESSORIES (Merchize) ──
+   Product data is fetched live from api/merchize-products.js, which calls
+   your real Merchize catalog server-side (MERCHIZE_API_BASE_URL /
+   MERCHIZE_API_TOKEN — set those in Vercel, never here or in the browser).
+   Customer clicks "shop now" → goes to the product's real Merchize page →
+   pays there → Merchize fulfills. Your margin is paid out by Merchize on
+   their payout schedule.
 ── */
-const shirts = [
-  {
-    emoji:'🌙', bg:'linear-gradient(135deg,#140d08,#201033)',
-    name:'Moonphase Tee',
-    tagline:'Every phase, every mood. Worn by practitioners since the third eclipse.',
-    sizes:['S','M','L','XL'], price:'$32.00',
-    // ↓ Replace with real Merchize product URL
-    merchizeUrl:'https://your-store.merchize.com/products/moonphase-tee'
-  },
-];
-
 const shg=document.getElementById('shirtsGrid');
-shirts.forEach(sh=>{
-  const el=document.createElement('div');el.className='shirt-card';
-  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${sh.emoji}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span><a href="${sh.merchizeUrl}" target="_blank" class="btn-merch">shop now</a></div></div>`;
-  shg.appendChild(el);
-});
+
+function renderShirtsEmpty(){
+  shg.innerHTML='<div class="shirt-card" style="padding:2rem;text-align:center"><div class="shirt-tagline" style="margin-bottom:0">// no apparel synced from the print partner yet — check back soon //</div></div>';
+}
+
+function renderShirts(products){
+  if(!products.length){ renderShirtsEmpty(); return; }
+  shg.innerHTML='';
+  products.forEach(p=>{
+    const price = typeof p.priceCents==='number' ? `$${(p.priceCents/100).toFixed(2)}` : '';
+    const preview = p.image ? `<img src="${p.image}" alt="${p.name}" loading="lazy">` : (p.category==='accessory' ? '🔮' : '👕');
+    const sizes = p.sizes.length ? `<div class="size-row">${p.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div>` : '';
+    const el=document.createElement('div');el.className='shirt-card';
+    el.innerHTML=`<div class="shirt-preview">${preview}</div><div class="shirt-body"><div class="shirt-name">${p.name}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div>${sizes}<div class="shirt-footer"><span class="shirt-price">${price}</span>${p.url?`<a href="${p.url}" target="_blank" class="btn-merch">shop now</a>`:''}</div></div>`;
+    shg.appendChild(el);
+  });
+}
+
+fetch('/api/merchize-products')
+  .then(r=>r.json())
+  .then(data=>renderShirts(Array.isArray(data.products)?data.products:[]))
+  .catch(()=>renderShirtsEmpty());
+
 function selectSize(btn){btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
 </script>
 </body>
