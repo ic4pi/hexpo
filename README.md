@@ -82,9 +82,9 @@ the amount charged is fetched live from Stripe at checkout time. To add or
 change a reading's price: create/update the Price in the Stripe dashboard
 (Products), then put its `price_...` ID in `READING_PRICE_IDS`.
 
-**Still needs a Price ID:** `'Two Steps Between'` ($99 dual tarot + tea
-reading) has no entry yet — that reading's checkout will show an error
-until one is added.
+All three readings and all three spell jars currently have live Stripe
+Price IDs wired in (verified against the connected Stripe account) — no
+missing entries as of this writing.
 
 ---
 
