@@ -192,7 +192,7 @@ section{padding:6rem 2rem;position:relative}
 .shirt-name{font-family:var(--display);font-size:1.1rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.4rem}
 .shirt-tagline{font-size:.9rem;font-style:italic;color:var(--muted);margin-bottom:.6rem}
 .shirt-fulfil{font-family:var(--mono);font-size:.58rem;color:rgba(91,58,143,.55);letter-spacing:.04em;margin-bottom:1rem}
-.size-row{display:flex;gap:.4rem;margin-bottom:1.2rem}
+.size-row{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem}
 .size-btn{font-family:var(--mono);font-size:.62rem;background:none;border:1px solid rgba(91,58,143,.3);color:#a68bd6;padding:.25rem .6rem;cursor:pointer;transition:all .2s}
 .size-btn:hover,.size-btn.active{background:rgba(91,58,143,.2);border-color:var(--purple);color:#c9b8e8}
 .shirt-footer{display:flex;align-items:center;justify-content:space-between}
@@ -873,18 +873,23 @@ spells.forEach(sp=>{
 ── */
 const shirts = [
   {
-    emoji:'🌙', bg:'linear-gradient(135deg,#140d08,#201033)',
-    name:'Moonphase Tee',
-    tagline:'Every phase, every mood. Worn by practitioners since the third eclipse.',
-    sizes:['S','M','L','XL'], price:'$32.00',
-    // ↓ Replace both with the real values from your Merchize product page
-    // img:'https://...',  // optional product photo — uncomment when you have one
-    merchizeUrl:'https://your-store.merchize.com/products/moonphase-tee'
+    emoji:'🧣', bg:'linear-gradient(135deg,#140d08,#201033)',
+    name:'Occupied Skies Ugly Sweater',
+    tagline:'Something is always circling overhead. Knit the watch into the wool.',
+    sizes:['S','M','L','XL','2XL','3XL','4XL','5XL'], price:'$44.00',
+    // Seller dashboard (internal only, not linkable):
+    // https://seller.merchize.com/a/products/6a9b9cfbf44f323ee30a46fc
+    // ↓ Needs the PUBLIC storefront URL for this product, and a direct
+    //   image URL (must end .jpg/.png/.webp) before the card goes live.
+    // img:'',
+    merchizeUrl:''
   },
 ];
 
 const shg=document.getElementById('shirtsGrid');
-const isPlaceholderUrl=u=>!u||u.includes('your-store.merchize.com');
+// Not customer-facing: the unfilled placeholder, or a seller.merchize.com
+// admin URL (that one is the dashboard — shoppers hit a login wall).
+const isPlaceholderUrl=u=>!u||u.includes('your-store.merchize.com')||u.includes('seller.merchize.com');
 shirts.forEach(sh=>{
   const el=document.createElement('div');el.className='shirt-card';
   const preview=sh.img
