@@ -185,6 +185,8 @@ section{padding:6rem 2rem;position:relative}
 .shirt-card{background:var(--card-bg);border:1px solid rgba(91,58,143,.25);transition:all .4s}
 .shirt-card:hover{border-color:rgba(91,58,143,.6);transform:translateY(-3px);box-shadow:var(--glow-purple)}
 .shirt-preview{height:220px;display:flex;align-items:center;justify-content:center;font-size:6rem;position:relative;overflow:hidden}
+.shirt-image{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s}
+.shirt-card:hover .shirt-image{transform:scale(1.04)}
 .shirt-preview::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 20px,rgba(201,147,46,.02) 20px,rgba(201,147,46,.02) 21px)}
 .shirt-body{padding:1.5rem}
 .shirt-name{font-family:var(--display);font-size:1.1rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.4rem}
@@ -855,10 +857,19 @@ spells.forEach(sp=>{
 })();
 
 /* ── SHIRTS
-   `merchizeUrl` = your actual Merchize product page URL.
-   Customer clicks "shop now" → goes directly to Merchize → pays there → Merchize fulfills.
-   Your margin is paid out by Merchize on their payout schedule.
-   Replace placeholder URLs once your Merchize store is live.
+   `merchizeUrl` = the product's page URL on your Merchize store, copied
+   straight from the browser address bar while viewing that product.
+   Customer clicks "shop now" → goes to Merchize → pays there → Merchize
+   prints, ships, and pays your margin out on their payout schedule.
+
+   `img` (optional) = product mockup image. Either a Merchize-hosted image
+   URL (right-click the product photo on your store → copy image address)
+   or a local file you drop in images/. Leave it off and the card falls
+   back to the `emoji` tile.
+
+   A shirt whose merchizeUrl is still the your-store.merchize.com
+   placeholder renders as "link coming soon" instead of a dead link, so an
+   unfinished product can sit in this list safely.
 ── */
 const shirts = [
   {
@@ -866,15 +877,23 @@ const shirts = [
     name:'Moonphase Tee',
     tagline:'Every phase, every mood. Worn by practitioners since the third eclipse.',
     sizes:['S','M','L','XL'], price:'$32.00',
-    // ↓ Replace with real Merchize product URL
+    // ↓ Replace both with the real values from your Merchize product page
+    // img:'https://...',  // optional product photo — uncomment when you have one
     merchizeUrl:'https://your-store.merchize.com/products/moonphase-tee'
   },
 ];
 
 const shg=document.getElementById('shirtsGrid');
+const isPlaceholderUrl=u=>!u||u.includes('your-store.merchize.com');
 shirts.forEach(sh=>{
   const el=document.createElement('div');el.className='shirt-card';
-  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${sh.emoji}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span><a href="${sh.merchizeUrl}" target="_blank" class="btn-merch">shop now</a></div></div>`;
+  const preview=sh.img
+    ? `<img class="shirt-image" src="${sh.img}" alt="${sh.name}" loading="lazy">`
+    : sh.emoji;
+  const cta=isPlaceholderUrl(sh.merchizeUrl)
+    ? `<span class="btn-merch" style="opacity:.45;cursor:default">link coming soon</span>`
+    : `<a href="${sh.merchizeUrl}" target="_blank" rel="noopener noreferrer" class="btn-merch">shop now</a>`;
+  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${preview}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span>${cta}</div></div>`;
   shg.appendChild(el);
 });
 function selectSize(btn){btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
