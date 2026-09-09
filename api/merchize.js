@@ -18,10 +18,24 @@
 // Find these in the Merchize dashboard on the product's variant list.
 // A size with no SKU here cannot be auto-fulfilled — it still sells and
 // still gets logged, you just place that one by hand.
+// Each size in the Merchize variant list showed two SKUs: this listing's
+// own variant SKU (design + size, e.g. "1C-YSNXES-...") and a second one
+// labeled "All-over Print Knitted Sweater" (e.g. "KNSWVN000000AA01") —
+// the generic blank-garment SKU shared by every seller's design on that
+// base product. Using this listing's own SKU below, since ordering the
+// generic blank code would risk printing an undecorated sweater.
+// CONFIRM WITH YOUR FIRST TEST ORDER: if Merchize prints the wrong thing
+// (blank, or another design), swap these for the KNSWVN... codes instead.
 const MERCHIZE_SKUS = {
   'Occupied Skies Ugly Sweater': {
-    S: '', M: '', L: '', XL: '',
-    '2XL': '', '3XL': '', '4XL': '', '5XL': '',
+    S: '1C-YSNXES-1788583163P95H2-06ML',
+    M: '1C-YSNXES-1788583163P95H2-06MM',
+    L: '1C-YSNXES-1788583163P95H2-06MN',
+    XL: '1C-YSNXES-1788583163P95H2-06MO',
+    '2XL': '1C-YSNXES-1788583163P95H2-06MP',
+    '3XL': '1C-YSNXES-1788583163P95H2-06MQ',
+    '4XL': '1C-YSNXES-1788583163P95H2-06MR',
+    '5XL': '1C-YSNXES-1788583163P95H2-06MS',
   },
 };
 
