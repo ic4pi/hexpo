@@ -149,12 +149,18 @@ wait on, because the customer never pays Merchize.
    Settings → Fulfillment → Enable. Without this, pushed orders sit
    unfulfilled.
 3. **Get your API credentials** — Merchize dashboard → API menu. It shows
-   a store URL shaped `https://<your-store>.merchize.store/bo-api` and an
-   access token.
+   a store URL shaped `https://<your-store>.merchize.store/bo-api`, plus
+   **two tabs with two different token values**: Access Token and API
+   Key. These are alternate ways to authenticate, not two credentials
+   used together — pick one. `api/merchize.js` sends the **Access
+   Token** as a Bearer token (`Authorization: Bearer <token>`), since
+   that's the method Merchize's own docs name explicitly. If a push
+   comes back 401, switch to the API Key tab's value and header — the
+   one place to change that is `sendAuthHeader` in `api/merchize.js`.
 4. **Set them in Vercel** (Settings → Environment Variables — never in
    this repo, never in chat):
    - `MERCHIZE_API_BASE` — that store URL
-   - `MERCHIZE_API_KEY` — that access token
+   - `MERCHIZE_API_KEY` — the **Access Token** tab's value
 5. **Fill in the variant SKUs** in `MERCHIZE_SKUS` in `api/merchize.js` —
    one per size, from the product's variant list in Merchize. This is what
    tells Merchize *which* garment to print.

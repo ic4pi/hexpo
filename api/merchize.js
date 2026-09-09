@@ -8,11 +8,29 @@
    Set these in Vercel (Settings → Environment Variables), never here:
      MERCHIZE_API_BASE — from the Merchize dashboard's API menu, shaped
                          https://<your-store>.merchize.store/bo-api
-     MERCHIZE_API_KEY  — the access token shown on that same API page
+     MERCHIZE_API_KEY  — the value from the "ACCESS TOKEN" tab on that
+                         same API page (NOT the "API KEY" tab — that's a
+                         second, different credential for an alternate
+                         auth method; see note below)
 
-   If either is unset, order pushes are skipped and logged, so the site
-   keeps taking payments safely while you finish setting Merchize up.
+   That dashboard page shows two tabs, Access Token and API Key, with two
+   *different* token values. They're alternate ways to authenticate to
+   the same API, not two credentials used together. The page's own text
+   says Access Token is used as a Bearer token ("Authentication to the
+   API is performed via Bearer Token"), which is the far more standard
+   convention, so that's what this file sends. If pushes fail with a 401,
+   the fix is the "API KEY" tab's value instead — see sendAuthHeader below.
+
+   If MERCHIZE_API_BASE/MERCHIZE_API_KEY are unset, order pushes are
+   skipped and logged, so the site keeps taking payments safely while you
+   finish setting Merchize up.
 ── */
+
+// The one place to fix a 401: swap to the "API KEY" tab's value (in
+// MERCHIZE_API_KEY) and this header, if Bearer auth turns out wrong.
+function sendAuthHeader(key) {
+  return { Authorization: `Bearer ${key}` };
+}
 
 // Product name + size -> the Merchize variant SKU that gets printed.
 // Find these in the Merchize dashboard on the product's variant list.
@@ -104,7 +122,7 @@ async function createMerchizeOrder({ externalNumber, email, shipping, items }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': key,
+        ...sendAuthHeader(key),
       },
       body: JSON.stringify(payload),
     });
