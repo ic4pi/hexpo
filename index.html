@@ -192,7 +192,8 @@ section{padding:6rem 2rem;position:relative}
 .shirt-name{font-family:var(--display);font-size:1.1rem;font-weight:400;letter-spacing:.1em;color:var(--white);margin-bottom:.4rem}
 .shirt-tagline{font-size:.9rem;font-style:italic;color:var(--muted);margin-bottom:.6rem}
 .shirt-fulfil{font-family:var(--mono);font-size:.58rem;color:rgba(91,58,143,.55);letter-spacing:.04em;margin-bottom:1rem}
-.size-row{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem}
+.size-row{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem}
+.size-note{font-family:var(--mono);font-size:.6rem;color:var(--pink);letter-spacing:.04em;min-height:1rem;margin-bottom:.7rem}
 .size-btn{font-family:var(--mono);font-size:.62rem;background:none;border:1px solid rgba(91,58,143,.3);color:#a68bd6;padding:.25rem .6rem;cursor:pointer;transition:all .2s}
 .size-btn:hover,.size-btn.active{background:rgba(91,58,143,.2);border-color:var(--purple);color:#c9b8e8}
 .shirt-footer{display:flex;align-items:center;justify-content:space-between}
@@ -548,28 +549,71 @@ const SPELL_PRICE_CENTS = {
   'Success Spell': 3499,
 };
 
+// Apparel sells through this same bag and checkout. Merchize's hosted
+// storefront is their paid product; fulfillment is free — so the sale
+// happens here, and api/webhook.js hands the paid order to Merchize to
+// print and ship. Display-only, same as SPELL_PRICE_CENTS above.
+const APPAREL_PRICE_CENTS = {
+  'Occupied Skies Ugly Sweater': 4400,
+};
+
+// A bag entry is keyed by variant, not just name, so two sizes of the
+// same sweater stay separate lines: 'spell|Success Spell' or
+// 'apparel|Occupied Skies Ugly Sweater|2XL'.
+function cartKey(kind,name,size){ return size ? `${kind}|${name}|${size}` : `${kind}|${name}`; }
+function parseCartKey(key){ const [kind,name,size]=key.split('|'); return {kind,name,size}; }
+function unitCents(key){
+  const {kind,name}=parseCartKey(key);
+  return (kind==='apparel' ? APPAREL_PRICE_CENTS[name] : SPELL_PRICE_CENTS[name]) || 0;
+}
+function cartLabel(key){ const {name,size}=parseCartKey(key); return size ? `${name} — ${size}` : name; }
+function jsAttr(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
 let cart = {};
 let orderElements = null;
 
 function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
-function cartSubtotalCents(){ return Object.entries(cart).reduce((sum,[name,qty])=>sum+(SPELL_PRICE_CENTS[name]||0)*qty,0); }
+function cartSubtotalCents(){ return Object.entries(cart).reduce((sum,[key,qty])=>sum+unitCents(key)*qty,0); }
 function updateCartBadge(){ document.getElementById('cartCount').textContent = cartCount(); }
 
-function handleSpell(btn,name){
-  cart[name] = (cart[name]||0) + 1;
+function addToBag(key,label){
+  cart[key] = (cart[key]||0) + 1;
   updateCartBadge();
-  showToast(`${name} — added to bag`);
+  showToast(`${label} — added to bag`);
+}
+function flashAdded(btn){
   btn.textContent='added ✓';btn.classList.add('added');
   setTimeout(()=>{btn.innerHTML='add to bag';btn.classList.remove('added')},2200);
 }
 
-function changeQty(name,delta){
-  cart[name]=(cart[name]||0)+delta;
-  if(cart[name]<=0) delete cart[name];
+function handleSpell(btn,name){
+  addToBag(cartKey('spell',name), name);
+  flashAdded(btn);
+}
+
+// Apparel needs a size before it can be printed, so the button asks for
+// one rather than silently defaulting.
+function handleApparel(btn,name){
+  const card=btn.closest('.shirt-card');
+  const chosen=card.querySelector('.size-btn.active');
+  const note=card.querySelector('.size-note');
+  if(!chosen){
+    note.textContent='Pick a size first.';
+    return;
+  }
+  note.textContent='';
+  const size=chosen.textContent.trim();
+  addToBag(cartKey('apparel',name,size), `${name} — ${size}`);
+  flashAdded(btn);
+}
+
+function changeQty(key,delta){
+  cart[key]=(cart[key]||0)+delta;
+  if(cart[key]<=0) delete cart[key];
   updateCartBadge();
   renderCartItems();
 }
-function removeFromCart(name){ delete cart[name]; updateCartBadge(); renderCartItems(); }
+function removeFromCart(key){ delete cart[key]; updateCartBadge(); renderCartItems(); }
 
 function renderCartItems(){
   const list=document.getElementById('cartItemsList');
@@ -580,17 +624,18 @@ function renderCartItems(){
     list.innerHTML='<div class="form-error" style="color:var(--muted)">Your bag is empty.</div>';
     document.getElementById('cartSubtotal').textContent='';
   }else{
-    list.innerHTML=entries.map(([name,qty])=>{
-      const lineTotal=((SPELL_PRICE_CENTS[name]||0)*qty/100).toFixed(2);
+    list.innerHTML=entries.map(([key,qty])=>{
+      const lineTotal=(unitCents(key)*qty/100).toFixed(2);
+      const k=jsAttr(key);
       return `<div class="cart-item">
-        <div class="cart-item-name">${name}</div>
+        <div class="cart-item-name">${cartLabel(key)}</div>
         <div class="cart-item-controls">
-          <button class="qty-btn" onclick="changeQty('${name}',-1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${k}',-1)">−</button>
           <span class="qty-val">${qty}</span>
-          <button class="qty-btn" onclick="changeQty('${name}',1)">+</button>
+          <button class="qty-btn" onclick="changeQty('${k}',1)">+</button>
         </div>
         <div class="cart-item-price">$${lineTotal}</div>
-        <button class="cart-item-remove" onclick="removeFromCart('${name}')">remove</button>
+        <button class="cart-item-remove" onclick="removeFromCart('${k}')">remove</button>
       </div>`;
     }).join('');
     document.getElementById('cartSubtotal').textContent=`subtotal: $${(cartSubtotalCents()/100).toFixed(2)}`;
@@ -661,7 +706,10 @@ async function continueToOrderPayment(){
   const btn=document.getElementById('continueOrderBtn');
   btn.disabled=true; btn.textContent='loading…';
   try{
-    const items=Object.entries(cart).map(([name,qty])=>({name,qty}));
+    const items=Object.entries(cart).map(([key,qty])=>{
+      const {name,size}=parseCartKey(key);
+      return size ? {name,size,qty} : {name,qty};
+    });
     const data=await postJSON('/api/create-order-payment-intent',{items,email,shipping});
     orderElements=stripe.elements({clientSecret:data.clientSecret, appearance:STRIPE_APPEARANCE});
     orderElements.create('payment').mount('#order-payment-element');
@@ -857,19 +905,21 @@ spells.forEach(sp=>{
 })();
 
 /* ── SHIRTS
-   `merchizeUrl` = the product's page URL on your Merchize store, copied
-   straight from the browser address bar while viewing that product.
-   Customer clicks "shop now" → goes to Merchize → pays there → Merchize
-   prints, ships, and pays your margin out on their payout schedule.
+   Apparel is sold right here, in the same bag and checkout as the spell
+   jars — no Merchize storefront involved, since their hosted store is the
+   paid product while fulfillment is free. The customer pays you through
+   Stripe, then api/webhook.js hands the order to Merchize to print and
+   ship, and you keep the difference between your price and their base
+   cost + shipping.
 
-   `img` (optional) = product mockup image. Either a Merchize-hosted image
-   URL (right-click the product photo on your store → copy image address)
-   or a local file you drop in images/. Leave it off and the card falls
-   back to the `emoji` tile.
+   `price` here is display-only. What is actually charged comes from the
+   Stripe Price ID in APPAREL_PRICE_IDS in
+   api/create-order-payment-intent.js — keep the two in step so the bag
+   subtotal doesn't drift from the real total.
 
-   A shirt whose merchizeUrl is still the your-store.merchize.com
-   placeholder renders as "link coming soon" instead of a dead link, so an
-   unfinished product can sit in this list safely.
+   `img` (optional) = product mockup image, either a direct image URL
+   (ending .jpg/.png/.webp) or a file dropped in images/. Without it the
+   card falls back to the `emoji` tile.
 ── */
 const shirts = [
   {
@@ -877,31 +927,27 @@ const shirts = [
     name:'Occupied Skies Ugly Sweater',
     tagline:'Something is always circling overhead. Knit the watch into the wool.',
     sizes:['S','M','L','XL','2XL','3XL','4XL','5XL'], price:'$44.00',
-    // Seller dashboard (internal only, not linkable):
+    // Merchize product (seller dashboard, for your reference only):
     // https://seller.merchize.com/a/products/6a9b9cfbf44f323ee30a46fc
-    // ↓ Needs the PUBLIC storefront URL for this product, and a direct
-    //   image URL (must end .jpg/.png/.webp) before the card goes live.
-    // img:'',
-    merchizeUrl:''
+    // img:'',  // ← direct image URL, ending .jpg / .png / .webp
   },
 ];
 
 const shg=document.getElementById('shirtsGrid');
-// Not customer-facing: the unfilled placeholder, or a seller.merchize.com
-// admin URL (that one is the dashboard — shoppers hit a login wall).
-const isPlaceholderUrl=u=>!u||u.includes('your-store.merchize.com')||u.includes('seller.merchize.com');
 shirts.forEach(sh=>{
   const el=document.createElement('div');el.className='shirt-card';
   const preview=sh.img
     ? `<img class="shirt-image" src="${sh.img}" alt="${sh.name}" loading="lazy">`
     : sh.emoji;
-  const cta=isPlaceholderUrl(sh.merchizeUrl)
-    ? `<span class="btn-merch" style="opacity:.45;cursor:default">link coming soon</span>`
-    : `<a href="${sh.merchizeUrl}" target="_blank" rel="noopener noreferrer" class="btn-merch">shop now</a>`;
-  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${preview}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span>${cta}</div></div>`;
+  el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${preview}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="size-note"></div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span><button class="btn-add" onclick="handleApparel(this,'${jsAttr(sh.name)}')">add to bag</button></div></div>`;
   shg.appendChild(el);
 });
-function selectSize(btn){btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function selectSize(btn){
+  btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const note=btn.closest('.shirt-card').querySelector('.size-note');
+  if(note) note.textContent='';
+}
 </script>
 </body>
 </html>

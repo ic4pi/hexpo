@@ -12,6 +12,29 @@ const SPELL_PRICE_IDS = {
   'Success Spell': 'price_1U87TVALwINGiotHQTp8Sxkv',
 };
 
+// Apparel is sold here, not on a Merchize storefront — Merchize's hosted
+// store is their paid product, while fulfillment is free. So the shirt is
+// priced in Stripe exactly like a spell jar, and api/webhook.js hands the
+// paid order to Merchize to print and ship.
+//
+// `default` covers every size at one price. Add a size key alongside it
+// (e.g. '2XL': 'price_...') only if you charge more for that size.
+const APPAREL_PRICE_IDS = {
+  'Occupied Skies Ugly Sweater': {
+    default: '', // ← Stripe Price ID for this sweater
+  },
+};
+
+const APPAREL_SIZES = {
+  'Occupied Skies Ugly Sweater': ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
+};
+
+function apparelPriceId(name, size) {
+  const entry = APPAREL_PRICE_IDS[name];
+  if (!entry) return '';
+  return entry[size] || entry.default || '';
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 module.exports = async (req, res) => {
@@ -46,18 +69,46 @@ module.exports = async (req, res) => {
   let amount = 0;
   let currency = 'usd';
   const lineItems = [];
+  // Apparel needs to survive into the webhook so it can be pushed to
+  // Merchize for printing — spell jars you pack and ship yourself.
+  const apparelItems = [];
   try {
     for (const item of items) {
-      const priceId = SPELL_PRICE_IDS[item && item.name];
+      const name = item && item.name;
+      const size = item && item.size;
       const qty = Number(item && item.qty);
-      if (!priceId || !Number.isInteger(qty) || qty < 1 || qty > 20) {
+      const isApparel = Boolean(APPAREL_PRICE_IDS[name]);
+
+      if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
         res.status(400).json({ error: 'Invalid item in bag' });
         return;
       }
+
+      let priceId;
+      if (isApparel) {
+        if (!(APPAREL_SIZES[name] || []).includes(size)) {
+          res.status(400).json({ error: 'Pick a size for ' + name });
+          return;
+        }
+        priceId = apparelPriceId(name, size);
+        if (!priceId) {
+          res.status(400).json({ error: name + ' isn\u2019t available for purchase yet.' });
+          return;
+        }
+      } else {
+        priceId = SPELL_PRICE_IDS[name];
+      }
+
+      if (!priceId) {
+        res.status(400).json({ error: 'Invalid item in bag' });
+        return;
+      }
+
       const price = await stripe.prices.retrieve(priceId);
       amount += price.unit_amount * qty;
       currency = price.currency;
-      lineItems.push(`${item.name} x${qty}`);
+      lineItems.push(isApparel ? `${name} [${size}] x${qty}` : `${name} x${qty}`);
+      if (isApparel) apparelItems.push({ name, size, qty });
     }
   } catch (err) {
     console.error('create-order-payment-intent price lookup failed:', err.message);
@@ -86,6 +137,12 @@ module.exports = async (req, res) => {
         kind: 'spell_order',
         order_email: email,
         items: lineItems.join('; ').slice(0, 500),
+        // Read back by api/webhook.js to place the Merchize order. Stripe
+        // caps a metadata value at 500 chars; short keys keep a realistic
+        // apparel order well inside that.
+        apparel: apparelItems.length
+          ? JSON.stringify(apparelItems.map((a) => ({ n: a.name, s: a.size, q: a.qty }))).slice(0, 500)
+          : '',
       },
     });
     res.status(200).json({ clientSecret: paymentIntent.client_secret, amount });
