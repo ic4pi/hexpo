@@ -21,7 +21,7 @@ const SPELL_PRICE_IDS = {
 // (e.g. '2XL': 'price_...') only if you charge more for that size.
 const APPAREL_PRICE_IDS = {
   'Occupied Skies Ugly Sweater': {
-    default: '', // ← Stripe Price ID for this sweater
+    default: 'price_1UDbp3ALwINGiotHWI1JKHRx',
   },
 };
 
