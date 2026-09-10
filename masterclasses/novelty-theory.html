@@ -764,8 +764,15 @@
   }
 
   /* ANIMATIONS */
+  /* Opacity stays 1 throughout on purpose: this runs with
+     animation-fill-mode:both on the hero title/subtitle/CTA, which holds
+     an element at its `from` state until the animation actually plays.
+     Some renderers (in-app previews, share-sheet Quick Look, etc.) never
+     run it — that held opacity:0 made the entire hero invisible with no
+     text visible at all. Sliding up is a nice-to-have; being readable
+     isn't optional, so only transform animates now. */
   @keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 1; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes float {
@@ -785,11 +792,18 @@
     100% { background-position: 200% center; }
   }
 
-  /* REVEAL ON SCROLL */
+  /* REVEAL ON SCROLL
+     Default state is fully visible. JS below adds .reveal-armed only if
+     it can actually run the IntersectionObserver that un-hides it again —
+     so a renderer that can't run that JS just shows the content plainly
+     instead of holding it at opacity:0 forever with nothing to remove it.
+     (This is what was hiding almost the entire page below the hero.) */
   .reveal {
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.reveal-armed {
     opacity: 0;
     transform: translateY(40px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
   }
   .reveal.visible {
     opacity: 1;
@@ -1667,15 +1681,23 @@ function toggleGloss(el) {
 // SCROLL REVEAL
 // =====================
 const revealEls = document.querySelectorAll('.reveal');
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('visible');
-      observer.unobserve(e.target);
-    }
-  });
-}, { threshold: 0.1 });
-revealEls.forEach(el => observer.observe(el));
+if ('IntersectionObserver' in window) {
+  // Only hide content once we can guarantee something will un-hide it —
+  // arm-then-observe, never arm-and-hope.
+  revealEls.forEach(el => el.classList.add('reveal-armed'));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        e.target.classList.remove('reveal-armed');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  revealEls.forEach(el => observer.observe(el));
+}
+// No IntersectionObserver support: elements simply stay in their default
+// (fully visible) .reveal state — no scroll-in effect, but readable.
 
 // =====================
 // QUIZ
