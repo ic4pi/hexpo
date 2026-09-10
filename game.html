@@ -7,7 +7,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
-#c{display:block;width:100vw;height:100vh;filter:sepia(.16) saturate(1.08) contrast(1.05) brightness(1.02)}
+#c{display:block;width:100vw;height:100vh;touch-action:none;filter:sepia(.16) saturate(1.08) contrast(1.05) brightness(1.02)}
 
 /* FILM LOOK — 70s/80s reel-to-reel 8mm overlay. Sits above the canvas but
    below the HUD/overlay DOM so text stays crisp while the scene gets the
@@ -25,6 +25,16 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
   box-shadow:inset 0 0 160px 40px rgba(0,0,0,.5)}
 @keyframes grainShift{0%{background-position:0 0}33%{background-position:-20px 10px}66%{background-position:15px -15px}100%{background-position:0 0}}
 @keyframes grainFlicker{0%,100%{opacity:.13}50%{opacity:.2}}
+
+/* TOUCH STICK — anchored wherever the finger lands, so there is no fixed
+   pad to hunt for. Hidden until a pointer goes down. */
+#stick{position:fixed;width:156px;height:156px;margin:-78px 0 0 -78px;z-index:8;
+  pointer-events:none;border-radius:50%;opacity:0;transition:opacity .18s;
+  border:1px solid rgba(232,25,106,.35);background:radial-gradient(circle,rgba(232,25,106,.10),transparent 70%)}
+#stick.on{opacity:1}
+#stickKnob{position:absolute;left:50%;top:50%;width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,25,106,.55),rgba(123,43,226,.35));
+  border:1px solid rgba(255,255,255,.35);box-shadow:0 0 18px rgba(232,25,106,.5)}
 
 /* HUD */
 #hud{position:fixed;top:0;left:0;right:0;pointer-events:none;z-index:10}
@@ -65,6 +75,7 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 <div id="filmTint"></div>
 <div id="filmGrain"></div>
 <div id="filmVignette"></div>
+<div id="stick"><div id="stickKnob"></div></div>
 
 <!-- HUD -->
 <div id="hud">
@@ -81,14 +92,14 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 <div id="overlay">
   <span class="ov-eyebrow">hexposed — a witch's boutique by new earth frequency</span>
   <h1 class="ov-title" id="ovTitle">Broomstick Run</h1>
-  <p class="ov-sub" id="ovSub">Race the pack over the neighborhood. Thread the gates. Collect moon crystals.</p>
+  <p class="ov-sub" id="ovSub">Drag anywhere to steer. Race the pack, thread the gates, collect moon crystals.</p>
   <div id="ovScoreBlock" style="display:none">
     <div class="ov-score" id="ovScore"></div>
     <div class="ov-hi" id="ovHi"></div>
     <div class="ov-new" id="ovNew" style="display:none">//new high score//</div>
   </div>
   <button class="ov-btn" id="ovBtn" onclick="startGame()">enter the sky</button>
-  <p class="ov-controls">← → · A D · steer  ·  SPACE · ↑ · climb</p>
+  <p class="ov-controls">drag anywhere to fly  ·  arrows / WASD to steer</p>
 </div>
 
 <a href="index.html" id="back">//back to hexposition</a>
@@ -132,11 +143,22 @@ const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 300)
 camera.position.set(0, 2.4, 7);
 camera.lookAt(0, 0.6, -10);
 
-window.addEventListener('resize', ()=>{
+/* A phone in portrait is far narrower than 16:9. With a fixed vertical FOV
+   that crops the view inward, turning the player's own broom into a
+   close-up and hiding the gates. Hold the HORIZONTAL field of view steady
+   instead, so a narrow screen gets a taller view rather than a tighter one. */
+const BASE_FOV = 62, BASE_ASPECT = 16/9;
+const BASE_HFOV = 2*Math.atan(Math.tan(BASE_FOV*Math.PI/360)*BASE_ASPECT);
+function fitCamera(){
   camera.aspect = innerWidth/innerHeight;
+  camera.fov = camera.aspect < BASE_ASPECT
+    ? Math.min(100, 2*Math.atan(Math.tan(BASE_HFOV/2)/camera.aspect)*180/Math.PI)
+    : BASE_FOV;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-});
+}
+fitCamera();
+window.addEventListener('resize', fitCamera);
 
 /* ═══════════════════════════════════════════
    LIGHTING
@@ -615,14 +637,20 @@ let invincible = 0; // frames of invincibility after hit
 
 // Player position — fixed at z=0, steering in X (lanes) and Y (altitude)
 let px=0, py=0, vx=0, vy=0;
-let steerDir=0; // -1 left, 0 none, 1 right, driven by keys held
+// Steering vector, -1..1 on each axis (+Y is up). Keyboard and touch both
+// write into this, so the flight code has a single input to read.
+let inputX=0, inputY=0;
+let keyX=0, keyY=0;      // from held keys
+let touchX=0, touchY=0;  // from the drag stick
 
-const GRAVITY   = 0.0042;
-const THRUST    = -0.115;
-const MAX_VY    = 0.092;
+// Flight model: the broom is steered, not flapped. Both axes work the same
+// way — accelerate while held, coast to a stop when released — so the player
+// can hold an altitude the way the AI racers do. There is no constant fall.
 const XACCEL    = 0.026;
+const YACCEL    = 0.023;
 const MAX_VX    = 0.15;
-const XFRICTION = 0.86;
+const MAX_VY    = 0.125;
+const FRICTION  = 0.86;
 const PX_RANGE  = 4.4; // half-width of the flight corridor
 const PY_RANGE  = 3.6; // half-height
 
@@ -718,7 +746,8 @@ function startGame(){
   particles.forEach(p=>scene.remove(p.mesh));
   gates.length=0;crystals.length=0;particles.length=0;
 
-  score=0;lives=3;vx=0;vy=0;px=0;py=0;frame=0;invincible=0;steerDir=0;
+  score=0;lives=3;vx=0;vy=0;px=0;py=0;frame=0;invincible=0;
+  held.clear();applyKeys();stickEnd();
   gateSpawnTimer=0;crystalSpawnTimer=0;
   broom.position.set(0,0,0);
   broom.rotation.z=0;
@@ -748,24 +777,79 @@ function die(){
   }
 }
 
-function flap(){
-  if(state==='idle'||state==='dead'){startGame();return;}
-  if(state==='playing') vy=THRUST;
+/* ═══════════════════════════════════════════
+   CONTROLS
+   Keyboard steers on both axes. Touch uses a drag stick anchored wherever
+   the finger lands — there is no fixed on-screen pad to hunt for, and the
+   broom never jumps to the touch point.
+═══════════════════════════════════════════ */
+const held=new Set();
+function applyKeys(){
+  keyX = (held.has('right')?1:0) - (held.has('left')?1:0);
+  keyY = (held.has('up')?1:0)    - (held.has('down')?1:0);
 }
-
+const KEYMAP={
+  ArrowLeft:'left', KeyA:'left',
+  ArrowRight:'right', KeyD:'right',
+  ArrowUp:'up', KeyW:'up',
+  ArrowDown:'down', KeyS:'down',
+};
 window.addEventListener('keydown',e=>{
-  if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();flap();}
-  if(e.code==='ArrowLeft'||e.code==='KeyA'){steerDir=-1;}
-  if(e.code==='ArrowRight'||e.code==='KeyD'){steerDir=1;}
+  if(e.code==='Space'){ e.preventDefault(); if(state!=='playing') startGame(); return; }
+  const k=KEYMAP[e.code];
+  if(k){ e.preventDefault(); if(state!=='playing'){ startGame(); } held.add(k); applyKeys(); }
 });
 window.addEventListener('keyup',e=>{
-  if((e.code==='ArrowLeft'||e.code==='KeyA')&&steerDir===-1) steerDir=0;
-  if((e.code==='ArrowRight'||e.code==='KeyD')&&steerDir===1) steerDir=0;
+  const k=KEYMAP[e.code];
+  if(k){ held.delete(k); applyKeys(); }
 });
-window.addEventListener('pointerdown',()=>flap());
+window.addEventListener('blur',()=>{ held.clear(); applyKeys(); });
+
+// ── Touch / mouse drag stick ──
+let touchActive=false, touchId=null, originX=0, originY=0;
+const STICK_RADIUS=78; // px of travel for full deflection
+const stickEl=document.getElementById('stick');
+const knobEl=document.getElementById('stickKnob');
+
+function stickStart(id,x,y){
+  touchActive=true; touchId=id; originX=x; originY=y; touchX=0; touchY=0;
+  stickEl.style.left=x+'px'; stickEl.style.top=y+'px';
+  stickEl.classList.add('on');
+  knobEl.style.transform='translate(-50%,-50%)';
+}
+function stickMove(x,y){
+  if(!touchActive) return;
+  let dx=x-originX, dy=y-originY;
+  const d=Math.hypot(dx,dy);
+  if(d>STICK_RADIUS){ dx*=STICK_RADIUS/d; dy*=STICK_RADIUS/d; }
+  touchX=dx/STICK_RADIUS;
+  touchY=-dy/STICK_RADIUS; // screen Y grows downward; +Y is up in world
+  knobEl.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+}
+function stickEnd(){
+  touchActive=false; touchId=null; touchX=0; touchY=0;
+  stickEl.classList.remove('on');
+}
+
+const canvasEl=document.getElementById('c');
+canvasEl.addEventListener('pointerdown',e=>{
+  if(state!=='playing'){ startGame(); }
+  if(touchActive) return;
+  canvasEl.setPointerCapture(e.pointerId);
+  stickStart(e.pointerId,e.clientX,e.clientY);
+});
+canvasEl.addEventListener('pointermove',e=>{
+  if(e.pointerId!==touchId) return;
+  stickMove(e.clientX,e.clientY);
+});
+for(const evt of ['pointerup','pointercancel']){
+  canvasEl.addEventListener(evt,e=>{ if(e.pointerId===touchId) stickEnd(); });
+}
+// Stop the page itself panning/zooming under the finger.
+canvasEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
 // Show start overlay
-showOverlay('Broomstick Run','Race the pack over the neighborhood. Thread the gates. Collect moon crystals.',false,false);
+showOverlay('Broomstick Run','Drag anywhere to steer. Race the pack, thread the gates, collect moon crystals.',false,false);
 
 /* ═══════════════════════════════════════════
    COLLISION HELPERS
@@ -795,19 +879,33 @@ function animate(){
     const speed=14+score*0.09;
     const worldSpeed=speed*delta;
 
-    /* ── Player physics: X (lanes) + Y (altitude) ── */
-    vx+=steerDir*XACCEL;
-    vx*=XFRICTION;
-    vx=THREE.MathUtils.clamp(vx,-MAX_VX,MAX_VX);
-    px=THREE.MathUtils.clamp(px+vx,-PX_RANGE,PX_RANGE);
+    /* ── Player physics: X (lanes) + Y (altitude), both steered ── */
+    // Touch overrides keys while a finger is down, so a stray held key
+    // can't fight the stick.
+    inputX = touchActive ? touchX : keyX;
+    inputY = touchActive ? touchY : keyY;
 
-    vy+=GRAVITY;
-    vy=Math.min(vy,MAX_VY);
-    py=THREE.MathUtils.clamp(py-vy,-PY_RANGE,PY_RANGE);
+    // Steering is scaled by real elapsed time, not applied once per frame.
+    // The world already scrolls on delta, so per-frame steering meant a
+    // phone at 30fps got half the control authority of a desktop at 60 —
+    // the broom felt sluggish exactly where it was hardest to fly.
+    // `step` is 1.0 at 60fps; clamped so a background tab can't teleport you.
+    const step = Math.min(delta, 0.05) * 60;
+    const damp = Math.pow(FRICTION, step);
+
+    vx+=inputX*XACCEL*step;
+    vx*=damp;
+    vx=THREE.MathUtils.clamp(vx,-MAX_VX,MAX_VX);
+    px=THREE.MathUtils.clamp(px+vx*step,-PX_RANGE,PX_RANGE);
+
+    vy+=inputY*YACCEL*step;
+    vy*=damp;
+    vy=THREE.MathUtils.clamp(vy,-MAX_VY,MAX_VY);
+    py=THREE.MathUtils.clamp(py+vy*step,-PY_RANGE,PY_RANGE);
 
     broom.position.set(px,py,0);
     broom.rotation.z=THREE.MathUtils.clamp(-vx*3.0,-.5,.5); // bank into turns
-    broom.rotation.x=THREE.MathUtils.clamp(vy*3.2,-.35,.35); // pitch with climb/dive
+    broom.rotation.x=THREE.MathUtils.clamp(-vy*3.2,-.35,.35); // pitch with climb/dive
 
     if(invincible>0) invincible--;
 
@@ -870,8 +968,11 @@ function animate(){
     aiRacers.forEach((r,i)=>{
       const targetX = nextGate ? nextGate.x+(i-1)*0.4 : r.x*0.98;
       const targetY = nextGate ? nextGate.y : r.y*0.98;
-      r.x+=(targetX-r.x)*r.skill;
-      r.y+=(targetY-r.y)*r.skill;
+      // Exponential homing, time-scaled to match the player's step.
+      const aiStep = Math.min(delta, 0.05) * 60;
+      const k = 1 - Math.pow(1 - r.skill, aiStep);
+      r.x+=(targetX-r.x)*k;
+      r.y+=(targetY-r.y)*k;
       r.mesh.position.set(r.x, r.y+Math.sin(t*2+r.bobSeed)*.1, r.z);
       r.mesh.rotation.z=THREE.MathUtils.clamp((targetX-r.x)*-1.5,-.4,.4);
     });
