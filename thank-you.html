@@ -20,6 +20,9 @@ body{background:var(--black);color:var(--text);font-family:var(--serif);font-siz
 h1{font-family:var(--display);font-size:clamp(2rem,6vw,3rem);font-weight:300;letter-spacing:.15em;text-transform:uppercase;color:var(--white);margin-bottom:1.5rem}
 p{font-size:1.05rem;font-style:italic;color:var(--muted);line-height:1.7;margin-bottom:1rem}
 p strong{color:var(--text);font-style:normal}
+p.session{font-family:var(--mono);font-size:.8rem;font-style:normal;color:var(--white);letter-spacing:.03em;line-height:1.8;border:1px solid rgba(201,147,46,.3);padding:1rem 1.2rem;margin-bottom:1.5rem}
+p.session b{color:var(--pink);font-weight:400;display:block;font-size:.62rem;letter-spacing:.1em;margin-bottom:.4rem}
+p.session em{color:var(--muted);font-style:normal;font-size:.68rem;display:block;margin-top:.4rem}
 a.back{display:inline-block;margin-top:1.5rem;font-family:var(--mono);font-size:.8rem;color:var(--pink);text-decoration:none;border:1px solid var(--pink);padding:.9rem 2rem;letter-spacing:.08em;transition:all .3s}
 a.back:hover{background:rgba(201,147,46,.12)}
 </style>
@@ -28,16 +31,50 @@ a.back:hover{background:rgba(201,147,46,.12)}
 <div class="box">
   <span class="label" id="pageLabel">payment received</span>
   <h1 id="pageTitle">Your Reading Is Booked</h1>
-  <p id="pageBody1">We've got your payment and your question. Your written reading will land in the email you checked out with — the one tied to your Zoom account — within the turnaround window shown at booking.</p>
-  <p id="pageBody2"><strong>Confirmation emails aren't automated yet</strong>, so if you don't hear from us within that window, feel free to check in.</p>
+  <p class="session" id="sessionLine" style="display:none"></p>
+  <p id="pageBody1">We've got your payment and your question. Your Zoom link goes to the email you checked out with, before your session.</p>
+  <p id="pageBody2"><strong>Confirmation emails aren't automated yet</strong>, so you may not hear from us right away — your session time is recorded and held.</p>
   <a href="index.html" class="back">back to hexposed</a>
 </div>
 <script>
-if (new URLSearchParams(window.location.search).get('type') === 'order') {
+const params = new URLSearchParams(window.location.search);
+
+if (params.get('type') === 'order') {
   document.getElementById('pageLabel').textContent = 'payment received';
   document.getElementById('pageTitle').textContent = 'Your Spells Are Ordered';
   document.getElementById('pageBody1').textContent = "We've got your payment and your shipping address. Your jars are made to order under the appropriate moon phase, then shipped to the address you provided.";
   document.getElementById('pageBody2').innerHTML = "<strong>Confirmation emails aren't automated yet</strong>, so you may not hear from us right away — your order is recorded and will be fulfilled.";
+} else {
+  // Stripe redirects here with the PaymentIntent id + client secret;
+  // the API only answers when the two match, so this can't be used to
+  // read anyone else's booking. Shows the session time back to the
+  // customer in their own timezone, with ours alongside.
+  showBookedSession();
+}
+
+async function showBookedSession() {
+  const id = params.get('payment_intent');
+  const secret = params.get('payment_intent_client_secret');
+  if (!id || !secret) return;
+  try {
+    const res = await fetch(`/api/booking-details?payment_intent=${encodeURIComponent(id)}&client_secret=${encodeURIComponent(secret)}`);
+    const data = await res.json();
+    if (!res.ok || data.kind !== 'reading' || !data.slotStart) return;
+    const start = new Date(data.slotStart);
+    const local = new Intl.DateTimeFormat(undefined, {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    }).format(start);
+    // Their clock first, ours underneath — the same pairing the picker showed.
+    const ours = data.timezone
+      ? new Intl.DateTimeFormat(undefined, { timeZone: data.timezone, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(start) + ' our time'
+      : data.slotShopTime;
+    const el = document.getElementById('sessionLine');
+    el.innerHTML = `<b>your session</b>${data.reading}<br>${local}<em>${ours}</em>`;
+    el.style.display = 'block';
+  } catch (err) {
+    // Non-fatal — the confirmation still stands without the time line.
+  }
 }
 </script>
 </body>
