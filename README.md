@@ -12,6 +12,8 @@ hexposed/
 ├── thank-you.html   ← Post-payment confirmation page (Stripe redirects here)
 ├── api/
 │   ├── create-payment-intent.js  ← Vercel serverless fn: starts a Stripe payment
+│   ├── create-order-payment-intent.js ← prices the bag (jars + apparel)
+│   ├── merchize.js               ← pushes paid apparel orders to Merchize to print
 │   └── webhook.js                ← Vercel serverless fn: verifies Stripe payment events
 ├── package.json      ← declares the `stripe` dependency the two functions above need
 ├── models/          ← Create this folder — put your .glb files here
@@ -113,6 +115,79 @@ prices are set by Stripe Price ID in `SPELL_PRICE_IDS` in
 for what's actually charged. `SPELL_PRICE_CENTS` in `index.html` is
 display-only (the bag subtotal shown before checkout), so update it too
 when a price changes so the displayed total doesn't drift from Stripe's.
+
+---
+
+## Apparel Checkout (Stripe) + Merchize Fulfillment
+
+Merchize sells two separate things: a **hosted storefront** (paid) and
+**fulfillment** (free — you pay only the item base cost plus shipping,
+per order). We use only the free half. Apparel is sold on *this* site,
+through the same bag and Stripe checkout as the spell jars, and once the
+payment clears the order is handed to Merchize to print and ship.
+
+```
+customer picks size → same bag → Stripe checkout (your money)
+                                      ↓ payment_intent.succeeded
+                            api/webhook.js → Merchize Order API
+                                      ↓
+                          Merchize prints + ships to customer
+```
+
+Your margin is your price minus Merchize's base cost + shipping, and it
+lands in your Stripe balance immediately — there's no Merchize payout to
+wait on, because the customer never pays Merchize.
+
+### Setup steps
+
+1. **Create a Stripe Price** for the garment (Stripe dashboard →
+   Products), then paste its `price_...` ID into `APPAREL_PRICE_IDS` in
+   `api/create-order-payment-intent.js`. `default` covers every size at
+   one price; add a size key next to it (e.g. `'2XL': 'price_...'`) only
+   if a size costs more.
+2. **Turn on Fulfillment by Merchize** — Merchize dashboard →
+   Settings → Fulfillment → Enable. Without this, pushed orders sit
+   unfulfilled.
+3. **Get your API credentials** — Merchize dashboard → API menu. It shows
+   a store URL shaped `https://<your-store>.merchize.store/bo-api`, plus
+   **two tabs with two different token values**: Access Token and API
+   Key. These are alternate ways to authenticate, not two credentials
+   used together — pick one. `api/merchize.js` sends the **Access
+   Token** as a Bearer token (`Authorization: Bearer <token>`), since
+   that's the method Merchize's own docs name explicitly. If a push
+   comes back 401, switch to the API Key tab's value and header — the
+   one place to change that is `sendAuthHeader` in `api/merchize.js`.
+4. **Set them in Vercel** (Settings → Environment Variables — never in
+   this repo, never in chat):
+   - `MERCHIZE_API_BASE` — that store URL
+   - `MERCHIZE_API_KEY` — the **Access Token** tab's value
+5. **Fill in the variant SKUs** in `MERCHIZE_SKUS` in `api/merchize.js` —
+   one per size, from the product's variant list in Merchize. This is what
+   tells Merchize *which* garment to print.
+6. **Add the product photo** — set `img` on the shirt in `index.html` to a
+   direct image URL (ending `.jpg` / `.png` / `.webp`). Without it the card
+   shows the emoji tile.
+7. **Place one real test order** and watch the Vercel function logs.
+
+### Failure behavior (deliberate)
+
+The Merchize push runs *after* the card has already been charged, so it
+never fails the webhook:
+
+- **Env vars unset** → payment still succeeds, order logged as
+  `Merchize not configured — fulfil this order by hand`.
+- **Missing SKU for a size** → that line is logged for manual fulfillment.
+- **Merchize returns an error** → full request and response are logged, so
+  a field-name mismatch is a one-line fix in `buildMerchizeOrderPayload`
+  in `api/merchize.js` rather than a guessing game.
+
+Nothing is ever silently dropped: every un-pushed order appears in the
+Vercel logs with the address needed to place it manually.
+
+> **Verify the payload once.** `buildMerchizeOrderPayload` follows
+> Merchize's documented order-import fields, but your dashboard's API page
+> is the authority for your store. Check it against your first test order
+> and correct that one function if the field names differ.
 
 ---
 

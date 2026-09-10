@@ -1,6 +1,7 @@
 const Stripe = require('stripe');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const { createMerchizeOrder } = require('./merchize');
 
 // Webhook signature verification needs the raw request body, so Vercel's
 // default JSON body parser has to be turned off for this route.
@@ -40,13 +41,34 @@ module.exports = async (req, res) => {
     // from manually. Once a domain + mailbox exist, send the confirmation
     // email to `pi.receipt_email` right here.
     if (pi.metadata.kind === 'spell_order') {
-      console.log('Spell order placed:', {
+      console.log('Order placed:', {
         email: pi.metadata.order_email,
         items: pi.metadata.items,
         shipping: pi.shipping,
         amount: pi.amount,
         paymentIntentId: pi.id,
       });
+
+      // Any apparel in the order goes to Merchize to print and ship. Spell
+      // jars are yours to pack, so they're deliberately not sent.
+      let apparel = [];
+      try {
+        apparel = JSON.parse(pi.metadata.apparel || '[]');
+      } catch (err) {
+        console.error('Could not read apparel metadata:', pi.metadata.apparel);
+      }
+
+      if (apparel.length && pi.shipping) {
+        // The PaymentIntent id doubles as the external order number, so a
+        // Stripe webhook retry re-sends the same number instead of
+        // creating a second print job.
+        await createMerchizeOrder({
+          externalNumber: pi.id,
+          email: pi.metadata.order_email,
+          shipping: pi.shipping,
+          items: apparel.map((a) => ({ name: a.n, size: a.s, qty: a.q })),
+        });
+      }
     } else {
       console.log('Reading booked:', {
         reading: pi.metadata.reading,
