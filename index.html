@@ -546,9 +546,9 @@ async function postJSON(url, body){
    tampered client request can't change what's actually charged.
 ── */
 const SPELL_PRICE_CENTS = {
-  'Love Spell No. 4': 2899,
-  'Protection Spell': 1999,
-  'Success Spell': 3499,
+  'Love Spell No. 4': 2200,
+  'Protection Spell': 2200,
+  'Success Spell': 2200,
 };
 
 // Apparel sells through this same bag and checkout. Merchize's hosted
@@ -558,6 +558,18 @@ const SPELL_PRICE_CENTS = {
 const APPAREL_PRICE_CENTS = {
   'Occupied Skies Ugly Sweater': 4400,
 };
+
+// Shipping, mirrored from api/create-order-payment-intent.js so the bag can
+// show it before checkout. The server recomputes it and is authoritative —
+// keep these two in sync if you change the rate.
+const SPELL_SHIPPING_CENTS = 600;
+const FREE_SHIPPING_THRESHOLD_CENTS = 6600;
+function cartHasSpell(){ return Object.keys(cart).some(k=>parseCartKey(k).kind==='spell'); }
+function cartShippingCents(){
+  if(!cartHasSpell()) return 0;
+  if(cartSubtotalCents() >= FREE_SHIPPING_THRESHOLD_CENTS) return 0;
+  return SPELL_SHIPPING_CENTS;
+}
 
 // A bag entry is keyed by variant, not just name, so two sizes of the
 // same sweater stay separate lines: 'spell|Success Spell' or
@@ -640,7 +652,18 @@ function renderCartItems(){
         <button class="cart-item-remove" onclick="removeFromCart('${k}')">remove</button>
       </div>`;
     }).join('');
-    document.getElementById('cartSubtotal').textContent=`subtotal: $${(cartSubtotalCents()/100).toFixed(2)}`;
+    const sub=cartSubtotalCents(), ship=cartShippingCents();
+    const money=c=>`$${(c/100).toFixed(2)}`;
+    let totals=`subtotal: ${money(sub)}`;
+    if(cartHasSpell()){
+      totals += ship>0 ? `<br>shipping: ${money(ship)}` : `<br>shipping: free`;
+      totals += `<br>total: ${money(sub+ship)}`;
+      if(ship>0){
+        const away=FREE_SHIPPING_THRESHOLD_CENTS-sub;
+        totals += `<br><span style="color:var(--muted)">${money(away)} away from free shipping</span>`;
+      }
+    }
+    document.getElementById('cartSubtotal').innerHTML=totals;
   }
 
   if(!stripe){ btn.disabled=true; btn.textContent='checkout coming soon'; }
@@ -866,21 +889,21 @@ const spells = [
   {
     img:'images/love-spell-no4.webp', name:'Love Spell No. 4', rarity:'legendary',
     desc:'Rosemary, cinnamon, rose bud, and clear quartz sealed under red wax. Charged to attract true love and open the door to a soulmate connection.',
-    tags:['love','romance','soulmate'], price:'$28.99',
+    tags:['love','romance','soulmate'], price:'$22.00',
     bundle:'Includes: Love Spell No. 4 sigil sticker',
     sticker:'Love Spell No. 4 Sticker' // Merchize product name
   },
   {
     img:'images/protection-spell.webp', name:'Protection Spell', rarity:'rare',
     desc:'Rosemary, selenite, bay leaf, and black tourmaline sealed under black wax. Shields your space from negativity and keeps you grounded.',
-    tags:['protection','warding','grounding'], price:'$19.99',
+    tags:['protection','warding','grounding'], price:'$22.00',
     bundle:'Includes: Protection Spell sigil sticker',
     sticker:'Protection Spell Sticker'
   },
   {
     img:'images/success-spell.webp', name:'Success Spell', rarity:'legendary',
     desc:'Cinnamon, dried lemon, rose bud, and tiger’s eye sealed under gold wax. Charged to attract abundance and fuel achievement.',
-    tags:['abundance','success','achievement'], price:'$34.99',
+    tags:['abundance','success','achievement'], price:'$22.00',
     bundle:'Includes: Success Spell sigil sticker',
     sticker:'Success Spell Sticker'
   },

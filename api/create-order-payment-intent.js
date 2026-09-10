@@ -35,6 +35,25 @@ function apparelPriceId(name, size) {
   return entry[size] || entry.default || '';
 }
 
+// ── SHIPPING ──
+// Spell jars are packed and shipped by hand, so they carry a shipping
+// charge. Apparel does not: the print partner's fulfillment cost is
+// already inside the garment price.
+//
+// Free shipping once the order subtotal reaches the threshold — three
+// jars at $22 hits $66 exactly, which is the intended trigger.
+//
+// TODO(capi): SPELL_SHIPPING_CENTS is a placeholder flat rate. Replace it
+// with your real rate (or a calculated rate) before this goes live.
+const SPELL_SHIPPING_CENTS = 600;
+const FREE_SHIPPING_THRESHOLD_CENTS = 6600;
+
+function shippingCents(subtotal, hasSpellItems) {
+  if (!hasSpellItems) return 0;
+  if (subtotal >= FREE_SHIPPING_THRESHOLD_CENTS) return 0;
+  return SPELL_SHIPPING_CENTS;
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 module.exports = async (req, res) => {
@@ -72,12 +91,14 @@ module.exports = async (req, res) => {
   // Apparel needs to survive into the webhook so it can be pushed to
   // Merchize for printing — spell jars you pack and ship yourself.
   const apparelItems = [];
+  let hasSpellItems = false;
   try {
     for (const item of items) {
       const name = item && item.name;
       const size = item && item.size;
       const qty = Number(item && item.qty);
       const isApparel = Boolean(APPAREL_PRICE_IDS[name]);
+      if (!isApparel) hasSpellItems = true;
 
       if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
         res.status(400).json({ error: 'Invalid item in bag' });
@@ -115,6 +136,11 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'Could not price your bag. Please try again.' });
     return;
   }
+
+  const subtotal = amount;
+  const shippingAmount = shippingCents(subtotal, hasSpellItems);
+  amount += shippingAmount;
+  if (shippingAmount > 0) lineItems.push(`Shipping $${(shippingAmount / 100).toFixed(2)}`);
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({

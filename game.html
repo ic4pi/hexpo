@@ -93,7 +93,8 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 
 <a href="index.html" id="back">//back to hexposition</a>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
 <script>
 /* ═══════════════════════════════════════════
    HEXPOSITION — BROOMSTICK RUN
@@ -258,6 +259,80 @@ ground.rotation.x = -Math.PI/2;
 ground.position.set(0,-6.4,-70);
 scene.add(ground);
 
+/* ═══════════════════════════════════════════
+   MODEL LIBRARY (GLB)
+   Every scenery/player model is a real asset from assets/kit. Models load
+   asynchronously, so each builder returns an EMPTY Group immediately and
+   the mesh is dropped in when it arrives. That keeps all the gameplay
+   code below — which positions and rotates these groups every frame —
+   completely unaware that loading is async.
+═══════════════════════════════════════════ */
+const gltfLoader = new THREE.GLTFLoader();
+const modelCache = {};   // file -> loaded template scene
+const pendingSlots = []; // slots waiting on a template
+
+// Base scale per model: the kit is authored around a ~1 unit grid, while
+// this scene's world units are much larger.
+const KIT = {
+  'building-type-a.glb':{scale:2.6}, 'building-type-d.glb':{scale:2.6}, 'building-type-f.glb':{scale:2.6},
+  'tree-small.glb':{scale:3.6}, 'tree-large.glb':{scale:3.6},
+  'fence.glb':{scale:2.2}, 'fence-1x2.glb':{scale:2.2},
+  'firetruck.glb':{scale:1.5}, 'garbage-truck.glb':{scale:1.5},
+  'kart-ooli.glb':{scale:1.5}, 'kart-oodi.glb':{scale:1.5}, 'race-future.glb':{scale:1.5},
+  'debris-plate-a.glb':{scale:2.4},
+};
+
+let modelsLoading = 0, modelsDone = 0;
+
+function prepMaterial(o){
+  if(!o.isMesh) return;
+  o.castShadow = true;
+  if(o.material && o.material.map){
+    // The atlas is a palette strip; mipmaps would blend adjacent columns.
+    o.material.map.generateMipmaps = false;
+    o.material.map.minFilter = THREE.LinearFilter;
+    // Lift it slightly so the kit reads against this very dark scene.
+    o.material.emissive = new THREE.Color(0x120826);
+    o.material.emissiveIntensity = 1;
+  }
+}
+
+function loadTemplate(file, cb){
+  if(modelCache[file]) return cb(modelCache[file]);
+  const waiting = pendingSlots.filter(x=>x.file===file);
+  if(waiting.length===0){
+    modelsLoading++;
+    gltfLoader.load('assets/kit/'+file, gltf=>{
+      gltf.scene.traverse(prepMaterial);
+      modelCache[file]=gltf.scene;
+      modelsDone++;
+      pendingSlots.filter(x=>x.file===file).forEach(x=>x.cb(gltf.scene));
+    }, undefined, err=>{
+      modelsDone++;
+      console.error('model failed:', file, err);
+    });
+  }
+  pendingSlots.push({file, cb});
+}
+
+/* An empty Group that fills itself in once its model loads. `pick` lets a
+   caller pass several files and get a random one, so a prop layer varies. */
+function modelSlot(files, opts){
+  opts = opts || {};
+  const g = new THREE.Group();
+  const file = Array.isArray(files) ? files[Math.floor(Math.random()*files.length)] : files;
+  loadTemplate(file, template=>{
+    const m = template.clone(true);
+    const base = (KIT[file] && KIT[file].scale) || 1;
+    m.scale.setScalar(base * (opts.scale||1));
+    if(opts.rotY!==undefined) m.rotation.y = opts.rotY;
+    else m.rotation.y = Math.random()*Math.PI*2;
+    if(opts.onReady) opts.onReady(m);
+    g.add(m);
+  });
+  return g;
+}
+
 const silhouetteMat = new THREE.MeshStandardMaterial({color:0x060309, roughness:1, metalness:0});
 const warmWindowMat = new THREE.MeshStandardMaterial({
   color:0x2a1a08, roughness:.6,
@@ -267,59 +342,32 @@ const treeMat = new THREE.MeshStandardMaterial({color:0x0d0710, roughness:1, met
 const lampGlowMat = new THREE.MeshBasicMaterial({color:0xf0c46b});
 
 function buildHouse(){
-  const g=new THREE.Group();
-  const w=1.4+Math.random()*1.0, h=1.6+Math.random()*1.4, d=1.1+Math.random()*.6;
-  const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), silhouetteMat);
-  body.position.y=h/2;
-  g.add(body);
-  const roofH=.9+Math.random()*.5;
-  const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.78,roofH,4), silhouetteMat);
-  roof.rotation.y=Math.PI/4;
-  roof.position.y=h+roofH/2-.05;
-  g.add(roof);
-  const winCount=1+Math.floor(Math.random()*2);
-  for(let i=0;i<winCount;i++){
-    const win=new THREE.Mesh(new THREE.PlaneGeometry(.16,.22), warmWindowMat);
-    win.position.set((Math.random()-.5)*w*.5, h*.35+Math.random()*h*.3, d/2+.01);
-    g.add(win);
-  }
-  return g;
+  return modelSlot(['building-type-a.glb','building-type-d.glb','building-type-f.glb']);
 }
 
 function buildTree(){
-  const g=new THREE.Group();
-  const trunkH=1.1+Math.random()*.8;
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.05,.09,trunkH,5), treeMat);
-  trunk.position.y=trunkH/2;
-  g.add(trunk);
-  const branchCount=4+Math.floor(Math.random()*3);
-  for(let i=0;i<branchCount;i++){
-    const len=.5+Math.random()*.6;
-    const branch=new THREE.Mesh(new THREE.CylinderGeometry(.015,.04,len,4), treeMat);
-    const angle=(i/branchCount)*Math.PI*2+Math.random()*.4;
-    const tilt=.5+Math.random()*.6;
-    branch.position.set(0, trunkH*.7+Math.random()*trunkH*.25, 0);
-    branch.rotation.z=Math.cos(angle)*tilt;
-    branch.rotation.x=Math.sin(angle)*tilt;
-    branch.translateY(len/2);
-    g.add(branch);
-  }
-  return g;
+  return modelSlot(['tree-small.glb','tree-large.glb']);
 }
 
 function buildStreetlight(){
   const g=new THREE.Group();
-  const poleH=1.8+Math.random()*.4;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,poleH,6), silhouetteMat);
-  pole.position.y=poleH/2;
-  g.add(pole);
+  g.add(modelSlot(['fence.glb','fence-1x2.glb']));
+  // The warm lamp glow is what actually lights the neighborhood, so it
+  // stays even though the pole is now a kit fence.
   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,8,8), lampGlowMat);
-  lamp.position.y=poleH+.05;
+  lamp.position.y=1.9;
   g.add(lamp);
   const glow=new THREE.PointLight(0xf0c46b,.8,3.5);
-  glow.position.y=poleH+.05;
+  glow.position.y=1.9;
   g.add(glow);
   return g;
+}
+
+/* Parked ground vehicles — the trucks and karts from the kit, scattered
+   along the route as neighborhood detail. They are scenery, not obstacles:
+   the flight corridor stays clear. */
+function buildVehicle(){
+  return modelSlot(['firetruck.glb','garbage-truck.glb','kart-ooli.glb','kart-oodi.glb','race-future.glb']);
 }
 
 /* Props scroll toward the camera along Z (flying forward over them),
@@ -343,6 +391,7 @@ function makePropLayer(count, buildFn, xWidth, span, yBase, scaleRange){
 const treeProps        = makePropLayer(12, buildTree,        16, 70, -6.4, [.8,1.3]);
 const houseProps       = makePropLayer(10, buildHouse,       22, 90, -6.4, [.9,1.6]);
 const streetlightProps = makePropLayer(9,  buildStreetlight, 10, 60, -6.4, [.85,1.15]);
+const vehicleProps     = makePropLayer(7,  buildVehicle,     18, 80, -6.4, [.9,1.25]);
 
 function scrollProps(list, speed, span, wrapPad){
   for(const p of list){
@@ -357,71 +406,119 @@ function scrollProps(list, speed, span, wrapPad){
 }
 
 /* ═══════════════════════════════════════════
-   WITCH + BROOM MODEL (Three.js primitives)
-   Swap broomGroup children for GLB loader
-   when you have model files ready.
+   WITCH + BROOM MODEL (assets/kit/broom.glb)
+   Real model, loaded async. The Group is returned
+   immediately so the flight code never waits.
 ═══════════════════════════════════════════ */
+/* The broom mesh lies diagonally across its bounding box, so it must be
+   rotated onto the axis the flight code assumes. Rather than hard-coding a
+   measured axis (which is wrong the moment a node transform changes), find
+   it at runtime: the dominant eigenvector of the vertex cloud's covariance
+   IS the long axis of the broom. Power iteration converges in a few passes
+   on a 3x3. */
+function principalAxis(points, centroid){
+  let c=[0,0,0,0,0,0,0,0,0];
+  for(const p of points){
+    const x=p[0]-centroid[0], y=p[1]-centroid[1], z=p[2]-centroid[2];
+    c[0]+=x*x; c[1]+=x*y; c[2]+=x*z;
+    c[3]+=x*y; c[4]+=y*y; c[5]+=y*z;
+    c[6]+=x*z; c[7]+=y*z; c[8]+=z*z;
+  }
+  let v=new THREE.Vector3(1,1,1).normalize();
+  for(let i=0;i<64;i++){
+    const x=c[0]*v.x+c[1]*v.y+c[2]*v.z;
+    const y=c[3]*v.x+c[4]*v.y+c[5]*v.z;
+    const z=c[6]*v.x+c[7]*v.y+c[8]*v.z;
+    const n=Math.hypot(x,y,z);
+    if(n<1e-12) break;
+    v.set(x/n,y/n,z/n);
+  }
+  return v;
+}
+
 function buildBroom(){
   const g = new THREE.Group();
 
-  const woodMat  = new THREE.MeshStandardMaterial({color:0x6b3a1a,roughness:.8,metalness:.05});
-  const brstMat  = new THREE.MeshStandardMaterial({color:0xd97706,roughness:.9});
-  const bodyMat  = new THREE.MeshStandardMaterial({color:0x1a0a2e,roughness:.7,emissive:new THREE.Color(0x200040),emissiveIntensity:.3});
-  const skinMat  = new THREE.MeshStandardMaterial({color:0x5a3a5a,roughness:.6});
-  const hatMat   = new THREE.MeshStandardMaterial({color:0x0a0015,roughness:.5,emissive:new THREE.Color(0xe8196a),emissiveIntensity:.1});
-  const cloakMat = new THREE.MeshStandardMaterial({color:0x12003a,roughness:.8,emissive:new THREE.Color(0x7b2be2),emissiveIntensity:.15,side:THREE.DoubleSide});
+  loadTemplate('broom.glb', template=>{
+    const m = template.clone(true);
+    // The AI-generated mesh carries no material at all — give it the
+    // scene's neon-witch look.
+    m.traverse(o=>{
+      if(!o.isMesh) return;
+      o.castShadow = true;
+      o.material = new THREE.MeshStandardMaterial({
+        color:0x8a5a2a, roughness:.55, metalness:.2,
+        emissive:new THREE.Color(0x7b2be2), emissiveIntensity:.35,
+      });
+    });
 
-  // Stick
-  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,4.5,8),woodMat);
-  stick.rotation.z=Math.PI/2;stick.castShadow=true;g.add(stick);
+    // Sample the mesh in the model's own space.
+    m.updateMatrixWorld(true);
+    const pts=[];
+    const inv=new THREE.Matrix4().copy(m.matrixWorld).invert();
+    m.traverse(o=>{
+      if(!o.isMesh) return;
+      const pos=o.geometry.attributes.position;
+      const toModel=new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld);
+      const step=Math.max(1, Math.floor(pos.count/4000)); // sampling is plenty for an axis
+      const v=new THREE.Vector3();
+      for(let i=0;i<pos.count;i+=step){
+        v.fromBufferAttribute(pos,i).applyMatrix4(toModel);
+        pts.push([v.x,v.y,v.z]);
+      }
+    });
+    const ctr=[0,0,0];
+    for(const p of pts){ ctr[0]+=p[0]; ctr[1]+=p[1]; ctr[2]+=p[2]; }
+    ctr[0]/=pts.length; ctr[1]/=pts.length; ctr[2]/=pts.length;
 
-  // Bristle cone
-  const brist=new THREE.Mesh(new THREE.ConeGeometry(.45,1.1,8),brstMat);
-  brist.position.set(2.5,-.1,0);brist.rotation.z=-Math.PI/2;brist.castShadow=true;g.add(brist);
+    const axis=principalAxis(pts, ctr);
 
-  // Bristle strands
-  for(let i=0;i<10;i++){
-    const s=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.8+Math.random()*.4,4),brstMat);
-    const ang=(i/10)*Math.PI*2,rad=.2+Math.random()*.2;
-    s.position.set(2.6+Math.random()*.5,Math.sin(ang)*rad,Math.cos(ang)*rad);
-    s.rotation.z=-Math.PI/2+(Math.random()-.5)*.4;g.add(s);
-  }
+    // Which end is the bristles? The bristle tassel is the fat end, so
+    // compare mean distance-off-axis for the two halves.
+    let negR=0,negN=0,posR=0,posN=0;
+    const cv=new THREE.Vector3(ctr[0],ctr[1],ctr[2]);
+    const tmp=new THREE.Vector3();
+    for(const p of pts){
+      tmp.set(p[0],p[1],p[2]).sub(cv);
+      const t=tmp.dot(axis);
+      const r=tmp.clone().addScaledVector(axis,-t).length();
+      if(t<0){ negR+=r; negN++; } else { posR+=r; posN++; }
+    }
+    const bristlesAtNeg = (negN?negR/negN:0) > (posN?posR/posN:0);
+    // Moon tip leads along world -Z, bristles trail toward the camera.
+    const noseDir = bristlesAtNeg ? axis.clone() : axis.clone().negate();
 
-  // Torso
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,.7,8),bodyMat);
-  torso.position.set(-.8,.45,0);torso.castShadow=true;g.add(torso);
+    const q=new THREE.Quaternion().setFromUnitVectors(noseDir, new THREE.Vector3(0,0,-1));
 
-  // Head
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.2,10,10),skinMat);
-  head.position.set(-.75,.95,0);head.castShadow=true;g.add(head);
+    // Exact post-rotation bounds. Box3.setFromObject would transform each
+    // geometry's AABB instead of its vertices, which inflates badly for a
+    // mesh sitting diagonally like this one (3.30 vs the true 2.76 here) —
+    // so measure the rotated vertices directly.
+    const lo=new THREE.Vector3(Infinity,Infinity,Infinity);
+    const hi=new THREE.Vector3(-Infinity,-Infinity,-Infinity);
+    const cv2=new THREE.Vector3(ctr[0],ctr[1],ctr[2]), pt=new THREE.Vector3();
+    for(const pp of pts){
+      pt.set(pp[0],pp[1],pp[2]).sub(cv2).applyQuaternion(q);
+      lo.min(pt); hi.max(pt);
+    }
+    const size=hi.clone().sub(lo);
 
-  // Hat brim + cone
-  const brim=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.04,12),hatMat);
-  brim.position.set(-.75,1.1,0);g.add(brim);
-  const cone=new THREE.Mesh(new THREE.ConeGeometry(.18,.55,8),hatMat);
-  cone.position.set(-.75,1.42,0);g.add(cone);
+    const align=new THREE.Group();
+    align.quaternion.copy(q);
+    m.position.set(-ctr[0],-ctr[1],-ctr[2]);
+    align.add(m);
+    // The old primitive rig was 4.5 long, but it was a bare stick — this
+    // model's bristle tassel carries far more visual mass, so it reads
+    // better shorter.
+    const sc = 2.9 / (size.z || 1);
+    align.scale.setScalar(sc);
+    // The vertex centroid sits off-centre (the bristle tassel is dense), so
+    // shift onto the geometric middle — the group origin is the flight pivot.
+    const mid = hi.clone().add(lo).multiplyScalar(0.5);
+    align.position.set(-mid.x*sc, -mid.y*sc, -mid.z*sc);
 
-  // Cloak
-  const cloak=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,7),cloakMat);
-  cloak.position.set(-.5,.1,0);cloak.rotation.z=-.3;g.add(cloak);
-
-  // Legs
-  for(const side of[-1,1]){
-    const leg=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.55,6),bodyMat);
-    leg.position.set(-.5,.15,side*.18);leg.rotation.x=side*.3;leg.rotation.z=-.15;g.add(leg);
-  }
-
-  // Arms
-  for(const side of[-1,1]){
-    const arm=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.45,6),bodyMat);
-    arm.position.set(-.2,.45,side*.22);arm.rotation.z=side*1.1;g.add(arm);
-  }
-
-  // The rig above is built lying along local X (witch at -X, bristles at
-  // +X). The camera now chases from behind looking down -Z, so rotate
-  // the whole group -90° around Y to point the witch-end forward along
-  // world -Z, with the bristle/tail trailing back toward +Z (the camera).
-  g.rotation.y = -Math.PI/2;
+    g.add(align);
+  });
 
   return g;
 }
@@ -722,6 +819,7 @@ function animate(){
     scrollProps(streetlightProps, worldSpeed*1.1, 60, 10);
     scrollProps(treeProps, worldSpeed*1.0, 70, 10);
     scrollProps(houseProps, worldSpeed*0.9, 90, 10);
+    scrollProps(vehicleProps, worldSpeed*0.95, 80, 10);
 
     /* ── Spawn (time-based, not frame-count — stays correct at any
        framerate instead of drifting slower on slower devices) ── */
@@ -816,6 +914,7 @@ function animate(){
     scrollProps(streetlightProps, delta*3.2, 60, 10);
     scrollProps(treeProps, delta*3.0, 70, 10);
     scrollProps(houseProps, delta*2.6, 90, 10);
+    scrollProps(vehicleProps, delta*2.8, 80, 10);
     aiRacers.forEach((r,i)=>{
       r.mesh.position.set(r.x, r.y+Math.sin(t*1.2+r.bobSeed)*.25, r.z+2);
     });
