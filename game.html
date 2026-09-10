@@ -81,7 +81,7 @@ body{background:#000;overflow:hidden;font-family:'Courier New',monospace}
 <div id="overlay">
   <span class="ov-eyebrow">hexposed — a witch's boutique by new earth frequency</span>
   <h1 class="ov-title" id="ovTitle">Broomstick Run</h1>
-  <p class="ov-sub" id="ovSub">Race the pack over the neighborhood. Thread the gates. Collect moon crystals.</p>
+  <p class="ov-sub" id="ovSub">Race the pack over the midnight meadow. Thread the gates. Collect moon crystals.</p>
   <div id="ovScoreBlock" style="display:none">
     <div class="ov-score" id="ovScore"></div>
     <div class="ov-hi" id="ovHi"></div>
@@ -128,8 +128,8 @@ scene.fog = new THREE.FogExp2(0x18140f, 0.019);
    Chase cam: sits behind and above the player, looking forward down
    the track (into -Z) instead of watching from the side. */
 const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 300);
-camera.position.set(0, 2.4, 7);
-camera.lookAt(0, 0.6, -10);
+camera.position.set(0, 3.2, 7);
+camera.lookAt(0, 0.8, -10);
 
 window.addEventListener('resize', ()=>{
   camera.aspect = innerWidth/innerHeight;
@@ -233,58 +233,41 @@ function makeCityTexture(){
   return new THREE.CanvasTexture(cv);
 }
 
-const cityTex = makeCityTexture();
-cityTex.wrapS = THREE.RepeatWrapping;
-cityTex.repeat.x = 2;
-const cityMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(260,60),
-  new THREE.MeshBasicMaterial({map:cityTex,depthWrite:false,fog:false})
-);
-cityMesh.position.set(0,4,-95);
-scene.add(cityMesh);
 
 /* ═══════════════════════════════════════════
-   GROUND + MID-GROUND SKYLINE
-   Trees, gothic houses, streetlights — dark
-   silhouettes with warm windows/lamps, sitting
-   between the lane and the city backdrop.
+   TERRAIN — ROLLING MEADOW
 ═══════════════════════════════════════════ */
-const groundMat = new THREE.MeshStandardMaterial({
-  color:0x05030a, roughness:1, metalness:0,
-  emissive:new THREE.Color(0x0a0018), emissiveIntensity:.25,
-});
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(70,300), groundMat);
-ground.rotation.x = -Math.PI/2;
-ground.position.set(0,-6.4,-70);
-scene.add(ground);
+function createRollingTerrain(){
+  const w=120, d=200, wSeg=60, dSeg=100;
+  const geo=new THREE.PlaneGeometry(w, d, wSeg, dSeg);
+  geo.rotateX(-Math.PI/2);
 
-const silhouetteMat = new THREE.MeshStandardMaterial({color:0x060309, roughness:1, metalness:0});
-const warmWindowMat = new THREE.MeshStandardMaterial({
-  color:0x2a1a08, roughness:.6,
-  emissive:new THREE.Color(0xd9a441), emissiveIntensity:1.1,
-});
-const treeMat = new THREE.MeshStandardMaterial({color:0x0d0710, roughness:1, metalness:0});
-const lampGlowMat = new THREE.MeshBasicMaterial({color:0xf0c46b});
+  const pos=geo.attributes.position;
+  const arr=pos.array;
 
-function buildHouse(){
-  const g=new THREE.Group();
-  const w=1.4+Math.random()*1.0, h=1.6+Math.random()*1.4, d=1.1+Math.random()*.6;
-  const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), silhouetteMat);
-  body.position.y=h/2;
-  g.add(body);
-  const roofH=.9+Math.random()*.5;
-  const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.78,roofH,4), silhouetteMat);
-  roof.rotation.y=Math.PI/4;
-  roof.position.y=h+roofH/2-.05;
-  g.add(roof);
-  const winCount=1+Math.floor(Math.random()*2);
-  for(let i=0;i<winCount;i++){
-    const win=new THREE.Mesh(new THREE.PlaneGeometry(.16,.22), warmWindowMat);
-    win.position.set((Math.random()-.5)*w*.5, h*.35+Math.random()*h*.3, d/2+.01);
-    g.add(win);
+  for(let i=0;i<arr.length;i+=3){
+    const x=arr[i], z=arr[i+2];
+    const h1=Math.sin(x*0.08)*1.2+Math.sin(z*0.06)*1.5;
+    const h2=Math.sin(x*0.035+5)*0.8+Math.sin(z*0.028+3)*0.9;
+    const noise=(Math.sin(x*0.12)*Math.cos(z*0.14)+Math.sin(z*0.09))*0.6;
+    arr[i+1]=h1+h2+noise;
   }
-  return g;
+  pos.needsUpdate=true;
+  geo.computeVertexNormals();
+
+  const grassMat=new THREE.MeshStandardMaterial({
+    color:0x2d5016, roughness:.95, metalness:0,
+    emissive:new THREE.Color(0x1a3008), emissiveIntensity:.2,
+  });
+  const mesh=new THREE.Mesh(geo, grassMat);
+  mesh.receiveShadow=true;
+  scene.add(mesh);
+  return mesh;
 }
+
+createRollingTerrain();
+
+const treeMat = new THREE.MeshStandardMaterial({color:0x0d0710, roughness:1, metalness:0});
 
 function buildTree(){
   const g=new THREE.Group();
@@ -307,24 +290,7 @@ function buildTree(){
   return g;
 }
 
-function buildStreetlight(){
-  const g=new THREE.Group();
-  const poleH=1.8+Math.random()*.4;
-  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,poleH,6), silhouetteMat);
-  pole.position.y=poleH/2;
-  g.add(pole);
-  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,8,8), lampGlowMat);
-  lamp.position.y=poleH+.05;
-  g.add(lamp);
-  const glow=new THREE.PointLight(0xf0c46b,.8,3.5);
-  glow.position.y=poleH+.05;
-  g.add(glow);
-  return g;
-}
-
-/* Props scroll toward the camera along Z (flying forward over them),
-   scattered across X like buildings/trees either side of the flight
-   corridor, and wrap back out to the far distance once passed. */
+/* Props scroll toward the camera along Z */
 function makePropLayer(count, buildFn, xWidth, span, yBase, scaleRange){
   const items=[];
   for(let i=0;i<count;i++){
@@ -340,9 +306,7 @@ function makePropLayer(count, buildFn, xWidth, span, yBase, scaleRange){
   return items;
 }
 
-const treeProps        = makePropLayer(12, buildTree,        16, 70, -6.4, [.8,1.3]);
-const houseProps       = makePropLayer(10, buildHouse,       22, 90, -6.4, [.9,1.6]);
-const streetlightProps = makePropLayer(9,  buildStreetlight, 10, 60, -6.4, [.85,1.15]);
+const treeProps = makePropLayer(16, buildTree, 20, 80, 0, [.9,1.4]);
 
 function scrollProps(list, speed, span, wrapPad){
   for(const p of list){
@@ -511,7 +475,6 @@ let score      = 0;
 let highScore  = 0;
 let lives      = 3;
 let frame      = 0;
-let cityOffset = 0;
 let gateSpawnTimer    = 0;
 let crystalSpawnTimer = 0;
 let invincible = 0; // frames of invincibility after hit
@@ -626,7 +589,6 @@ function startGame(){
   broom.position.set(0,0,0);
   broom.rotation.z=0;
   broom.rotation.x=0;
-  cityOffset=0;
   aiRacers.forEach((r,i)=>{
     r.x=(i-(AI_COUNT-1)/2)*1.6;
     r.y=(Math.random()-.5)*2;
@@ -714,14 +676,8 @@ function animate(){
 
     if(invincible>0) invincible--;
 
-    /* ── City backdrop drift ── */
-    cityOffset+=delta*0.02;
-    cityTex.offset.x=cityOffset;
-
-    /* ── Neighborhood scroll — flying forward over it ── */
-    scrollProps(streetlightProps, worldSpeed*1.1, 60, 10);
-    scrollProps(treeProps, worldSpeed*1.0, 70, 10);
-    scrollProps(houseProps, worldSpeed*0.9, 90, 10);
+    /* ── Meadow scroll — trees in the field ── */
+    scrollProps(treeProps, worldSpeed*1.0, 80, 10);
 
     /* ── Spawn (time-based, not frame-count — stays correct at any
        framerate instead of drifting slower on slower devices) ── */
@@ -809,13 +765,9 @@ function animate(){
     broom.position.set(0,py,0);
     broom.rotation.z=Math.sin(t*.8)*.1;
     camera.position.x+=(0-camera.position.x)*0.05;
-    camera.position.y+=(2.4-camera.position.y)*0.05;
-    camera.lookAt(0,0.6,-14);
-    cityOffset+=delta*.015;
-    cityTex.offset.x=cityOffset;
-    scrollProps(streetlightProps, delta*3.2, 60, 10);
-    scrollProps(treeProps, delta*3.0, 70, 10);
-    scrollProps(houseProps, delta*2.6, 90, 10);
+    camera.position.y+=(3.2-camera.position.y)*0.05;
+    camera.lookAt(0,0.8,-14);
+    scrollProps(treeProps, delta*3.0, 80, 10);
     aiRacers.forEach((r,i)=>{
       r.mesh.position.set(r.x, r.y+Math.sin(t*1.2+r.bobSeed)*.25, r.z+2);
     });
