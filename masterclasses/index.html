@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masterclasses — Hexposed</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=Cinzel:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:   #050302;
+  --deep:    #0c0704;
+  --pink:    #c9932e;
+  --purple:  #5b3a8f;
+  --muted:   #8a7860;
+  --text:    #d6c9b0;
+  --white:   #f2e8d5;
+  --card-bg: #140d08;
+  --card-border: rgba(201,147,46,0.3);
+  --glow-pink:   0 0 20px rgba(201,147,46,0.4), 0 0 60px rgba(201,147,46,0.15);
+  --glow-purple: 0 0 20px rgba(91,58,143,0.5), 0 0 60px rgba(91,58,143,0.2);
+  --mono:    'Space Mono', monospace;
+  --serif:   'Cormorant Garamond', Georgia, serif;
+  --display: 'Cinzel', Georgia, serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:var(--serif);font-size:18px;font-weight:300;overflow-x:hidden;line-height:1.7}
+.label{font-family:var(--mono);font-size:.72rem;color:var(--pink);letter-spacing:.05em}
+.label::before{content:'//';margin-right:.2em}.label::after{content:'//';margin-left:.2em}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.4rem 2.5rem;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(201,147,46,.12)}
+.nav-logo{font-family:var(--display);font-size:1rem;font-weight:300;letter-spacing:.35em;text-transform:uppercase;color:var(--white);text-decoration:none}
+.nav-back{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.05em;transition:color .3s}
+.nav-back:hover{color:var(--pink)}
+
+.hero{min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10rem 2rem 4rem;position:relative;background:radial-gradient(ellipse at 50% 30%,rgba(91,58,143,.14) 0%,transparent 60%),var(--black)}
+.hero-eyebrow{font-family:var(--mono);font-size:.7rem;color:var(--pink);letter-spacing:.1em;margin-bottom:2rem;display:block}
+.hero-title{font-family:var(--display);font-size:clamp(2.4rem,7vw,5rem);font-weight:300;letter-spacing:.15em;text-transform:uppercase;color:var(--white);line-height:1.05}
+.hero-sub{font-size:1.1rem;font-style:italic;color:var(--muted);max-width:560px;margin:1.5rem auto 0}
+
+.section-inner{max-width:1100px;margin:0 auto;padding:2rem 2rem 8rem}
+.mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.75rem;margin-top:2.5rem}
+.mc-card{background:var(--card-bg);border:1px solid var(--card-border);padding:2rem;text-decoration:none;color:inherit;display:block;transition:all .4s;position:relative;overflow:hidden}
+.mc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--pink),transparent);opacity:0;transition:opacity .4s}
+.mc-card:hover{border-color:rgba(201,147,46,.6);transform:translateY(-3px);box-shadow:var(--glow-pink)}
+.mc-card:hover::before{opacity:1}
+.mc-kicker{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:.9rem}
+.mc-name{font-family:var(--display);font-size:1.3rem;font-weight:400;letter-spacing:.06em;color:var(--white);margin-bottom:.7rem;line-height:1.3}
+.mc-desc{font-size:.95rem;font-style:italic;color:var(--muted);line-height:1.6;margin-bottom:1.3rem}
+.mc-enter{font-family:var(--mono);font-size:.66rem;color:var(--pink);letter-spacing:.05em}
+.mc-enter::before{content:'// ';color:rgba(201,147,46,.4)}
+.mc-enter::after{content:' //';color:rgba(201,147,46,.4)}
+
+footer{text-align:center;padding:3rem 2rem 4rem;font-family:var(--mono);font-size:.68rem;color:var(--muted);letter-spacing:.05em}
+
+@media (max-width:640px){
+  nav{padding:1.1rem 1.5rem}
+  .hero{padding:8rem 1.5rem 3rem}
+  .section-inner{padding:1.5rem 1.25rem 5rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-logo">Hexposed</a>
+  <a href="../index.html" class="nav-back">// back to the shop //</a>
+</nav>
+
+<section class="hero">
+  <span class="hero-eyebrow">//new earth frequency — the archive//</span>
+  <h1 class="hero-title">Masterclasses</h1>
+  <p class="hero-sub">Long-form, interactive courses on the esoteric, the occult, and the strange edges of physics and mind. Each one runs entirely in your browser — nothing you write in them ever leaves your device.</p>
+</section>
+
+<div class="section-inner">
+  <span class="label">the archive</span>
+  <div class="mc-grid" id="mcGrid"></div>
+</div>
+
+<footer>Hexposed — A Witch's Boutique by New Earth Frequency</footer>
+
+<script>
+/* Each new masterclass gets one entry here — name, one-line description,
+   and the filename it lives at in this folder. That's the entire
+   process for adding a new one to the site. */
+const masterclasses = [
+  {
+    file: 'boundary-reality.html',
+    kicker: 'physics · six parts',
+    name: 'Boundary Reality',
+    desc: 'The holographic principle, from black hole entropy to the possibility that 3D space itself is a projection.'
+  },
+  {
+    file: 'novelty-theory.html',
+    kicker: 'physics · fringe theory',
+    name: 'Novelty Theory',
+    desc: "Terence McKenna's Timewave Zero — the I Ching, fractal time, and the mathematics of an idea that didn't pan out."
+  },
+  {
+    file: 'distributed-mind.html',
+    kicker: 'collective cognition · four parts',
+    name: 'The Distributed Mind',
+    desc: 'From ant trails to egregores: how groups think, decide, and want things no individual member does.'
+  },
+  {
+    file: 'chosen-one.html',
+    kicker: 'myth & archetype · five parts',
+    name: 'Hexpose! The Chosen One',
+    desc: 'Why the "chosen one" story structure recurs across myth, prophecy, and your own life — mapped, not mystified.'
+  },
+  {
+    file: 'shadow-codex.html',
+    kicker: 'jungian shadow work · six parts',
+    name: 'The Shadow Codex',
+    desc: 'A structured, trauma-informed journey into recognition, mapping, and integration of the disowned self.'
+  },
+  {
+    file: 'chaos-belief-hacking.html',
+    kicker: 'chaos magick · reflection',
+    name: 'Chaos Belief Hacking',
+    desc: 'Treat belief systems as swappable lenses on the same situation — a short, interactive reframing exercise.'
+  },
+];
+
+const grid = document.getElementById('mcGrid');
+masterclasses.forEach(m => {
+  const a = document.createElement('a');
+  a.className = 'mc-card';
+  a.href = m.file;
+  a.innerHTML = `<div class="mc-kicker">${m.kicker}</div><div class="mc-name">${m.name}</div><div class="mc-desc">${m.desc}</div><div class="mc-enter">enter</div>`;
+  grid.appendChild(a);
+});
+</script>
+
+</body>
+</html>

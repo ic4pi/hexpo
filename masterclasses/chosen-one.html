@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexpose! — The Chosen One Masterclass</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --ink:#0a0a0d;
+    --panel:#141319;
+    --panel-2:#1c1a24;
+    --bone:#e8e3d3;
+    --bone-dim:#a8a394;
+    --brass:#b8934a;
+    --brass-bright:#d4af6a;
+    --oxblood:#7a2430;
+    --oxblood-bright:#a53342;
+    --indigo:#4a3f6b;
+    --indigo-bright:#6b5a96;
+    --line:rgba(232,227,211,0.12);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:var(--ink);
+    color:var(--bone);
+    font-family:'Inter',sans-serif;
+    font-weight:300;
+    line-height:1.7;
+    overflow-x:hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  ::selection{background:var(--brass); color:var(--ink);}
+
+  /* ---------- texture ---------- */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:999;
+    opacity:0.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- top progress ---------- */
+  .progress-rail{
+    position:fixed; top:0; left:0; height:2px; width:100%;
+    background:var(--line); z-index:200;
+  }
+  .progress-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg,var(--brass),var(--oxblood-bright));
+    transition:width .1s linear;
+  }
+
+  /* ---------- header / nav ---------- */
+  header{
+    position:sticky; top:0; z-index:100;
+    background:rgba(10,10,13,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    padding:0 clamp(20px,5vw,56px);
+  }
+  .header-row{
+    display:flex; align-items:center; justify-content:space-between;
+    height:72px; max-width:1180px; margin:0 auto;
+  }
+  .wordmark{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.35rem;
+    letter-spacing:0.02em; color:var(--bone);
+    display:flex; align-items:center; gap:10px;
+  }
+  .wordmark .bang{ color:var(--oxblood-bright); font-style:italic; }
+  .wordmark svg{ width:22px; height:22px; }
+
+  nav.parts{ display:flex; gap:2px; }
+  nav.parts a{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--bone-dim); text-decoration:none;
+    padding:8px 14px; border-radius:3px;
+    transition:color .2s, background .2s;
+    position:relative;
+  }
+  nav.parts a:hover{ color:var(--bone); background:var(--panel-2); }
+  nav.parts a.active{ color:var(--brass-bright); }
+  nav.parts a.locked{ color:rgba(168,163,148,0.35); cursor:default; }
+  nav.parts a.locked:hover{ background:none; color:rgba(168,163,148,0.35); }
+
+  @media (max-width:900px){
+    nav.parts{ display:none; }
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    min-height:88vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:80px 24px 60px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 20%, rgba(122,36,48,0.16), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(74,63,107,0.14), transparent 70%);
+    pointer-events:none;
+  }
+  #sigil-canvas{
+    width:min(280px,60vw); height:min(280px,60vw);
+    margin-bottom:8px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
+    letter-spacing:0.22em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:22px;
+  }
+  h1.title{
+    font-family:'Fraunces',serif; font-weight:500; font-style:italic;
+    font-size:clamp(1.9rem,7vw,4.6rem); line-height:1.05;
+    max-width:820px; color:var(--bone);
+  }
+  @media (max-width:420px){
+    h1.title{ font-size:clamp(1.6rem,8vw,2.2rem); }
+  }
+  h1.title em{ color:var(--oxblood-bright); font-style:normal; font-weight:600; }
+  .subhead{
+    margin-top:22px; max-width:560px; color:var(--bone-dim);
+    font-size:1.05rem; font-weight:300;
+  }
+  .hero-meta{
+    margin-top:40px; display:flex; gap:28px; flex-wrap:wrap; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
+    color:var(--bone-dim); letter-spacing:0.05em; text-transform:uppercase;
+  }
+  .hero-meta span b{ color:var(--brass-bright); font-weight:500; }
+
+  /* ---------- part shell ---------- */
+  .part{
+    max-width:760px; margin:0 auto;
+    padding:120px 24px 40px;
+    border-bottom:1px solid var(--line);
+  }
+  .part-kicker{
+    display:flex; align-items:center; gap:16px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--bone-dim);
+    margin-bottom:18px;
+  }
+  .part-kicker .num{
+    font-family:'Fraunces',serif; font-style:italic; font-size:1.1rem;
+    color:var(--oxblood-bright);
+  }
+  .part-kicker::after{
+    content:''; flex:1; height:1px; background:var(--line);
+  }
+  h2.part-title{
+    font-family:'Fraunces',serif; font-weight:500; font-size:clamp(1.9rem,4vw,2.6rem);
+    margin-bottom:8px; color:var(--bone);
+  }
+  .part-dek{
+    color:var(--bone-dim); font-size:1.02rem; max-width:600px; margin-bottom:48px;
+  }
+
+  .part p{ margin-bottom:20px; font-size:1.02rem; color:#d8d3c4; }
+  .part p b{ color:var(--bone); font-weight:500; }
+  .part h3{
+    font-family:'Fraunces',serif; font-weight:500; font-style:italic;
+    font-size:1.35rem; margin:40px 0 16px; color:var(--brass-bright);
+  }
+  .term{
+    color:var(--brass-bright); border-bottom:1px dotted var(--brass);
+    cursor:help; font-weight:500;
+  }
+
+  blockquote{
+    border-left:2px solid var(--oxblood-bright);
+    padding:4px 0 4px 22px; margin:32px 0;
+    font-family:'Fraunces',serif; font-style:italic; font-size:1.15rem;
+    color:var(--bone);
+  }
+
+  /* ---------- exercise box ---------- */
+  .exercise{
+    margin:44px 0; padding:28px 30px;
+    background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    position:relative;
+  }
+  .exercise::before{
+    content:'EXERCISE'; position:absolute; top:-11px; left:24px;
+    background:var(--ink); padding:0 10px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.68rem;
+    letter-spacing:0.14em; color:var(--brass);
+  }
+  .exercise h4{
+    font-family:'Fraunces',serif; font-weight:500; font-size:1.15rem;
+    margin-bottom:12px; color:var(--bone);
+  }
+  .exercise ol, .exercise ul{ padding-left:20px; color:#d8d3c4; }
+  .exercise li{ margin-bottom:8px; }
+  .exercise textarea{
+    width:100%; margin-top:16px; background:var(--ink);
+    border:1px solid var(--line); border-radius:4px;
+    color:var(--bone); font-family:'Inter',sans-serif; font-size:0.92rem;
+    padding:12px; resize:vertical; min-height:70px;
+  }
+  .exercise textarea:focus{ outline:2px solid var(--brass); outline-offset:1px; }
+
+  /* ---------- collapsible drawers ---------- */
+  details.drawer{
+    margin:20px 0; border:1px solid var(--line); border-radius:6px;
+    background:var(--panel-2); overflow:hidden;
+  }
+  details.drawer summary{
+    list-style:none; cursor:pointer;
+    padding:16px 22px; display:flex; align-items:center; gap:12px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.78rem;
+    letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--bone-dim); transition:color .2s;
+  }
+  details.drawer summary::-webkit-details-marker{ display:none; }
+  details.drawer summary:hover{ color:var(--bone); }
+  details.drawer summary .chev{
+    transition:transform .25s ease; color:var(--brass); font-size:0.7rem;
+  }
+  details.drawer[open] summary .chev{ transform:rotate(90deg); }
+  details.drawer[open] summary{ border-bottom:1px solid var(--line); color:var(--brass-bright); }
+  .drawer-body{ padding:22px 24px 26px; }
+  .drawer-body p{ font-size:0.96rem; color:#c9c4b6; }
+  .drawer.deeper summary::before{ content:'◆ '; color:var(--indigo-bright); }
+  .drawer.glossary summary::before{ content:'▸ '; color:var(--brass); }
+
+  .gloss-item{ margin-bottom:16px; }
+  .gloss-term{
+    font-family:'Fraunces',serif; font-style:italic; font-weight:600;
+    color:var(--brass-bright); font-size:1.02rem;
+  }
+  .gloss-def{ color:#c9c4b6; font-size:0.94rem; margin-top:2px; }
+
+  /* ---------- opposition callout ---------- */
+  .oxblood-box{
+    margin:36px 0; padding:24px 26px;
+    background:linear-gradient(135deg, rgba(122,36,48,0.14), rgba(122,36,48,0.04));
+    border:1px solid rgba(165,51,66,0.35); border-radius:6px;
+  }
+  .oxblood-box h4{
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--oxblood-bright);
+    margin-bottom:10px;
+  }
+
+  /* ---------- coming parts strip ---------- */
+  .locked-parts{
+    max-width:760px; margin:0 auto; padding:60px 24px 120px;
+  }
+  .locked-parts .label{
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--bone-dim);
+    margin-bottom:20px;
+  }
+  .locked-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden;
+  }
+  .locked-card{
+    background:var(--panel); padding:22px; opacity:0.55;
+  }
+  .locked-card .n{
+    font-family:'Fraunces',serif; font-style:italic; color:var(--brass); font-size:0.85rem;
+  }
+  .locked-card .t{
+    font-family:'Fraunces',serif; font-weight:500; font-size:1.05rem; margin-top:6px;
+  }
+  .locked-card .s{
+    font-family:'IBM Plex Mono',monospace; font-size:0.65rem;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--bone-dim);
+    margin-top:10px; display:inline-block;
+  }
+
+  footer{
+    text-align:center; padding:40px 24px 60px;
+    font-family:'IBM Plex Mono',monospace; font-size:0.68rem;
+    letter-spacing:0.08em; color:var(--bone-dim); text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+
+<header>
+  <div class="header-row">
+    <div class="wordmark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>
+      HEXPOSE<span class="bang">!</span>
+    </div>
+    <nav class="parts">
+      <a href="#part1">I. Archetype</a>
+      <a href="#part2">II. Claim</a>
+      <a class="locked">III. Opposition</a>
+      <a class="locked">IV. Defense</a>
+      <a class="locked">V. Integration</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <canvas id="sigil-canvas" width="280" height="280"></canvas>
+  <div class="eyebrow">A Masterclass in Five Parts</div>
+  <h1 class="title">You were not chosen.<br><em>You were hexposed.</em></h1>
+  <p class="subhead">The chosen one is not a fantasy trope — it's a structure that recurs across myth, prophecy, and consciousness practice. Learn to recognize it, work it, and defend the signal once you're carrying it.</p>
+  <div class="hero-meta">
+    <span>Part <b>I</b> of V — The Archetype</span>
+    <span>≈ <b>25</b> min</span>
+    <span><b>Chaos Magic</b> / <b>Myth</b> / <b>Self-Defense</b></span>
+  </div>
+</section>
+
+<article class="part" id="part1">
+  <div class="part-kicker"><span class="num">I.</span> The Archetype</div>
+  <h2 class="part-title">Why This Pattern Never Leaves Us</h2>
+  <p class="part-dek">Before there's a defense practice, there's a shape you have to see clearly: the chosen one as a recurring structure in how humans tell the story of significance and threat.</p>
+
+  <p>Every tradition that has ever needed to explain why an ordinary person suddenly matters reaches for the same shape. A figure, often unaware, is marked — by birth, by vision, by accident — as carrying something the world needs. And almost immediately, something moves against them.</p>
+
+  <p>This isn't a coincidence of storytelling. It's what the mythologist Joseph Campbell mapped as the <span class="term" title="Campbell's structure describing the common narrative arc of a figure called to adventure, tested, and transformed before returning changed.">hero's journey</span> — call, threshold, trial, return — and what Carl Jung, working from a different angle, described through the <span class="term" title="In Jungian psychology, the disowned or repressed parts of the self, often projected outward as an antagonist or persecutor.">shadow</span>: the disowned, denied material of a psyche that shows up externally as an opponent because it cannot yet be integrated internally.</p>
+
+  <p>Put those together and the "chosen one" stops being a fantasy convenience and starts being a <b>diagnostic structure</b> — a way of describing what happens, internally and socially, when someone begins to matter more than they did before.</p>
+
+  <h3>The Three Constants</h3>
+  <p>Strip away the setting — Nazareth, Tatooine, the Shire, a 1960s ashram — and three elements remain constant across almost every version of this pattern:</p>
+
+  <div class="exercise" style="background:var(--panel-2); border-style:dashed;">
+    <ol style="list-style:none; padding-left:0;">
+      <li style="margin-bottom:14px;"><b style="color:var(--brass-bright)">1. The Mark.</b> Something distinguishes the figure before they've done anything to earn it — a birth circumstance, a vision, a talent that surfaces unbidden. The mark precedes the merit.</li>
+      <li style="margin-bottom:14px;"><b style="color:var(--brass-bright)">2. The Concealment.</b> The figure is, for a period, hidden or unaware — raised in obscurity, kept from their own significance. This isn't padding; it's structurally necessary. Development happens in the dark.</li>
+      <li><b style="color:var(--brass-bright)">3. The Opposition.</b> The moment the mark becomes visible — to the figure or to others — something begins actively working against it. Not randomly. Specifically, and often disproportionately.</li>
+    </ol>
+  </div>
+
+  <p>That third constant is where this course actually lives. Fiction resolves it with a final battle. Esoteric traditions and depth psychology ask a harder question: <b>what is the opposition actually made of, and how do you work with it while you're still inside the story?</b></p>
+
+  <blockquote>"The shadow is a moral problem that challenges the whole ego-personality... one has to acknowledge the dark aspects as present and real."<br><span style="font-family:'IBM Plex Mono',monospace; font-style:normal; font-size:0.7rem; color:var(--bone-dim);">— paraphrased from Jung's framing of shadow integration</span></blockquote>
+
+  <h3>Reading the Pattern in Your Own Frame</h3>
+  <p>You don't need a prophecy to notice this structure operating. Anyone who has developed a skill, a voice, or an idea worth having has likely felt some version of the three constants — an early, unearned pull toward something; a quiet period of building it where no one was watching; and then, once it became visible, a noticeable increase in friction, doubt, or resistance, external or internal.</p>
+
+  <p>The esoteric traditions don't ask you to believe you're prophesied. They ask you to notice: <b>where has this pattern already been running in your life, and what did you call the opposition when it showed up?</b></p>
+
+  <div class="exercise">
+    <h4>Map Your Own Three Constants</h4>
+    <p style="margin-bottom:14px; color:var(--bone-dim); font-size:0.92rem;">Fifteen minutes, no wrong answers. This is raw material for Part IV, where you'll turn it into working material — a sigil, a shield, a name for the opposition.</p>
+    <ol>
+      <li><b>The Mark</b> — Name one thing that pulled at you before you'd earned it or explained it.</li>
+      <li><b>The Concealment</b> — Where did you build it quietly, before anyone was paying attention?</li>
+      <li><b>The Opposition</b> — Since it became visible, what has pushed back? Be specific: a person, an internal voice, a pattern of circumstance.</li>
+    </ol>
+    <textarea placeholder="Write here — this stays on your device, nothing is submitted or shared."></textarea>
+  </div>
+
+  <div class="oxblood-box">
+    <h4>A Note on the Opposition</h4>
+    <p style="margin:0; font-size:0.95rem; color:#d8d3c4;">Nothing here asks you to believe a literal external force is hunting you personally. In Part III we'll define the opposition precisely — as entropy, as social leveling pressure, as internal resistance, as an <span class="term" title="A thoughtform or collective psychic pattern that can take on autonomous-seeming behavior once enough attention feeds it — a concept used in chaos magic and occultism.">egregore</span> — rather than leaving it as a vague, personified "evil." Precision is the entire point of this course. Vague enemies can't be worked with. Named ones can.</p>
+  </div>
+
+  <details class="drawer deeper">
+    <summary><span class="chev">▸</span> Go Deeper — Campbell, Jung, and the Gnostic Spark</summary>
+    <div class="drawer-body">
+      <p>Campbell synthesized the hero's journey from comparative mythology spanning cultures with no contact with one another — which is itself the argument for treating it as structural rather than cultural. The pattern isn't inherited from one story; it's generated independently, repeatedly, by human minds solving the same problem: how do we narrate the emergence of significance?</p>
+      <p>Jung's shadow concept adds the internal mechanism. What gets projected as "the evil trying to destroy the chosen one" in a story is very often, at the psychological level, the disowned capability or shadow-self of the protagonist — the part of them not yet integrated, showing up as an antagonist because integration hasn't happened yet. This reframes "defense" in an important way: some of what you're defending against in Part IV isn't purely external.</p>
+      <p>Gnostic traditions add a third layer worth knowing: the idea of a divine spark (<span class="term" title="Greek: 'spark.' In Gnostic cosmology, a fragment of divine light trapped within matter, present in some or all humans, which the material world and its rulers act to keep unaware of its own nature.">spinther</span>) trapped in matter, present in some or all people, which the material order actively works to keep unconscious of itself. This is one of the oldest textual sources for "a hidden significance that the world opposes" as a literal cosmological claim rather than a psychological metaphor — and it's the thread Part II picks up directly.</p>
+    </div>
+  </details>
+
+  <details class="drawer glossary">
+    <summary><span class="chev">▸</span> Glossary — New Terms in This Section</summary>
+    <div class="drawer-body">
+      <div class="gloss-item">
+        <div class="gloss-term">Hero's Journey</div>
+        <div class="gloss-def">Joseph Campbell's comparative-mythology model of the common narrative arc: call to adventure, threshold crossing, trials, and return transformed.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Shadow</div>
+        <div class="gloss-def">In Jungian psychology, the parts of the self a person represses or refuses to own, which tend to appear projected outward — often as an antagonist.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Egregore</div>
+        <div class="gloss-def">A collective thoughtform or psychic pattern, built from shared attention and belief, that can behave with seeming autonomy once it has enough energy feeding it. Central to Part III and IV.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Spinther (Gnostic Spark)</div>
+        <div class="gloss-def">From Gnostic cosmology: a fragment of divine light trapped in matter, which the material world's rulers (archons) act to keep unaware of its own origin.</div>
+      </div>
+    </div>
+  </details>
+
+</article>
+
+<article class="part" id="part2">
+  <div class="part-kicker"><span class="num">II.</span> The Esoteric Claim</div>
+  <h2 class="part-title">Where Chosenness Leaves Fiction</h2>
+  <p class="part-dek">Part I treated the chosen one as a story structure. Here we look at where traditions have made the claim literally — that certain people, or certain moments of consciousness, really do carry something the ordinary run of things does not.</p>
+
+  <p>Once you stop reading "chosen one" as a plot device, three very different bodies of thought turn out to be making a version of the same claim: that significance can arrive unearned, that it announces itself through specific signs, and that the world responds to it — sometimes by elevating the carrier, more often by resisting them.</p>
+
+  <h3>The Prophetic Model</h3>
+  <p>The oldest and most literal version of the claim comes from prophetic and messianic traditions. In the Hebrew prophetic books, figures are called — often against their own wishes — to speak for something larger than themselves. The call is rarely comfortable and rarely convenient; several of the prophetic figures explicitly try to refuse it before accepting.</p>
+  <p>What matters structurally is the <b>mechanism of the call</b>: it is external, not chosen by the person, and it comes with both a mandate and an opposition built in from the start — the prophet is chosen <i>to</i> something, and that something has enemies before the prophet has said a word.</p>
+
+  <h3>The Avatar Model</h3>
+  <p>A different version shows up in traditions that speak of periodic descent — the idea that when a certain kind of imbalance or crisis reaches a threshold, something incarnates specifically to correct it. This is less about an individual's biography and more about <b>timing</b>: the claim isn't just "this person is special," it's "this moment required someone, and this is who showed up." That distinction matters for how you'll use this material later — it reframes chosenness as a function of conditions, not just of the person carrying it.</p>
+
+  <h3>The Gnostic Spark</h3>
+  <p>The most useful model for this course comes from Gnostic cosmology. In this framework, a fragment of divine light — the <span class="term" title="Greek for 'spark.' A fragment of divine origin trapped within matter, according to Gnostic cosmology.">spinther</span> — is said to be trapped inside matter, present in some or all people, but forgotten. The material world and its rulers, the <span class="term" title="In Gnostic thought, the rulers or governors of the material world, sometimes cast as ignorant or hostile to awakening.">archons</span>, are described as actively structured to keep that spark unconscious of what it is.</p>
+  <p>This is the first tradition in this course to make the "opposition" claim explicit and cosmological rather than just narrative: the forces working against the chosen figure aren't villains in a story, they're <b>built into the structure of the world itself</b> — inertia, forgetting, and distraction functioning as a kind of ambient, non-personal resistance to waking up.</p>
+
+  <div class="oxblood-box">
+    <h4>Why This Framing Matters More Than the Others</h4>
+    <p style="margin:0; font-size:0.95rem; color:#d8d3c4;">The Gnostic model gives you something the prophetic and avatar models don't: a way to think about opposition that isn't a person, a demon, or a plot. It's closer to <b>entropy</b> — the natural pull toward forgetting, dilution, and averaging-out that any signal faces. That reframe is what makes Part III workable instead of paranoid.</p>
+  </div>
+
+  <h3>Novelty as a Modern Version of the Claim</h3>
+  <p>Terence McKenna's <span class="term" title="McKenna's theory that the universe trends toward increasing complexity, connection, and 'novelty' over time, moving toward a maximum novelty point he called the Eschaton.">novelty theory</span> gives this claim a modern, non-religious vocabulary. In McKenna's framing, the universe has a directional bias toward increasing complexity and connection — toward <b>novelty</b> — punctuated by moments where novelty concentrates unusually fast.</p>
+  <p>A person, an idea, or a movement that happens to sit at one of those concentration points isn't chosen by a deity or a bloodline — they're chosen by <b>timing and resonance</b>, the way a lightning rod doesn't summon the storm but is simply positioned to receive it. This is the version of the claim most compatible with a chaos-magic worldview: chosenness as a structural position, not a mystical bloodline.</p>
+
+  <div class="exercise">
+    <h4>Which Model Fits Your Mark?</h4>
+    <p style="margin-bottom:14px; color:var(--bone-dim); font-size:0.92rem;">Revisit "the Mark" you wrote down in Part I. Now hold it up against each model below.</p>
+    <ol>
+      <li><b>Prophetic</b> — Did it arrive as something you'd have refused if you could have?</li>
+      <li><b>Avatar</b> — Did it arrive in response to a specific need or crisis, in you or around you?</li>
+      <li><b>Gnostic</b> — Does it feel like something you forgot and are recovering, rather than something new?</li>
+      <li><b>Novelty</b> — Does it feel like timing — being in the right position when something concentrated?</li>
+    </ol>
+    <textarea placeholder="Note which model (or combination) fits — this becomes the language you'll use to name your own 'signal' in Part III."></textarea>
+  </div>
+
+  <details class="drawer deeper">
+    <summary><span class="chev">▸</span> Go Deeper — Concrescence, the Timewave, and the Eschaton</summary>
+    <div class="drawer-body">
+      <p>McKenna borrowed the term <span class="term" title="A term (from Alfred North Whitehead) McKenna used to describe the accelerating coming-together of complexity and connection as novelty concentrates.">concrescence</span> to describe how novelty doesn't increase evenly — it clusters, gathering speed as it approaches points of maximum complexity and connection. He mapped this idea onto what he called the <span class="term" title="McKenna's proposed mathematical model plotting the rise and fall of novelty across history, built from patterns he identified in the I Ching.">timewave</span>, a model built from I Ching-derived patterns, which he used to argue that history itself accelerates toward a final point of maximum novelty — the <span class="term" title="In McKenna's theory, the theoretical endpoint of maximum novelty and complexity toward which history trends.">Eschaton</span>.</p>
+      <p>You don't need to accept the timewave as literal prediction for the underlying structural idea to be useful here: that certain periods, and certain people within them, sit closer to a concentration of novelty than others — and that proximity to that concentration is what "chosenness" is actually describing, stripped of supernatural language.</p>
+    </div>
+  </details>
+
+  <details class="drawer glossary">
+    <summary><span class="chev">▸</span> Glossary — New Terms in This Section</summary>
+    <div class="drawer-body">
+      <div class="gloss-item">
+        <div class="gloss-term">Archons</div>
+        <div class="gloss-def">In Gnostic cosmology, the rulers or governing forces of the material world, often depicted as ignorant of or hostile to the divine spark's awakening.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Novelty Theory</div>
+        <div class="gloss-def">Terence McKenna's idea that the universe trends toward increasing complexity and connection over time, with novelty concentrating unevenly at certain points.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Concrescence</div>
+        <div class="gloss-def">The accelerating gathering-together of complexity as novelty concentrates — a term McKenna borrowed to describe how novelty clusters rather than increasing evenly.</div>
+      </div>
+      <div class="gloss-item">
+        <div class="gloss-term">Eschaton</div>
+        <div class="gloss-def">In McKenna's theory, the theoretical endpoint of maximum novelty toward which history trends.</div>
+      </div>
+    </div>
+  </details>
+
+</article>
+
+  <div class="label">The Rest of the Curriculum</div>
+  <div class="locked-grid">
+    <div class="locked-card"><div class="n">III.</div><div class="t">The Opposition</div><div class="s">In development</div></div>
+    <div class="locked-card"><div class="n">IV.</div><div class="t">Psychic Self-Defense</div><div class="s">In development</div></div>
+    <div class="locked-card"><div class="n">V.</div><div class="t">Integration</div><div class="s">In development</div></div>
+  </div>
+</section>
+
+<footer>Hexpose! — Part I of V</footer>
+
+<script>
+  // progress bar
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+  });
+
+  // signature element: sigil that draws itself
+  const canvas = document.getElementById('sigil-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 280 * dpr; canvas.height = 280 * dpr;
+  ctx.scale(dpr, dpr);
+
+  // generate a fixed set of points on a circle (sigil-like random-walk star)
+  const cx = 140, cy = 140, r = 95;
+  const pointCount = 9;
+  const points = [];
+  for (let i = 0; i < pointCount; i++) {
+    const angle = (i / pointCount) * Math.PI * 2 - Math.PI / 2;
+    points.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+  }
+  // deterministic shuffled path order (looks like a sigil condensation)
+  const order = [0, 4, 8, 3, 7, 2, 6, 1, 5, 0];
+
+  let progress = 0;
+  const totalLen = order.length - 1;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function drawFrame() {
+    ctx.clearRect(0, 0, 280, 280);
+
+    // faint circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(184,147,74,0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // points
+    points.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(232,227,211,0.35)';
+      ctx.fill();
+    });
+
+    // draw path up to current progress
+    const shown = Math.min(progress, totalLen);
+    ctx.beginPath();
+    for (let i = 0; i <= Math.floor(shown); i++) {
+      const p = points[order[i]];
+      if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    // partial segment
+    const frac = shown - Math.floor(shown);
+    if (Math.floor(shown) < totalLen && frac > 0) {
+      const p1 = points[order[Math.floor(shown)]];
+      const p2 = points[order[Math.floor(shown) + 1]];
+      const mx = p1.x + (p2.x - p1.x) * frac;
+      const my = p1.y + (p2.y - p1.y) * frac;
+      ctx.lineTo(mx, my);
+    }
+    const grad = ctx.createLinearGradient(0, 0, 280, 280);
+    grad.addColorStop(0, '#d4af6a');
+    grad.addColorStop(1, '#a53342');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // slow glow pulse once complete
+    if (shown >= totalLen) {
+      const pulse = (Math.sin(Date.now() / 900) + 1) / 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(212,175,106,${0.05 + pulse * 0.06})`;
+      ctx.fill();
+    }
+  }
+
+  if (reduceMotion) {
+    progress = totalLen;
+    drawFrame();
+  } else {
+    function animate() {
+      if (progress < totalLen) {
+        progress += 0.045;
+        drawFrame();
+        requestAnimationFrame(animate);
+      } else {
+        drawFrame();
+        function pulseLoop(){ drawFrame(); requestAnimationFrame(pulseLoop); }
+        pulseLoop();
+      }
+    }
+    animate();
+  }
+</script>
+
+</body>
+</html>

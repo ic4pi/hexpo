@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boundary Reality — The Holographic Principle</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --void:#08070c;
+    --void-2:#0d0b16;
+    --panel:#120f1c;
+    --line: rgba(237,234,227,0.08);
+    --text:#edeae3;
+    --text-dim:#9891b0;
+    --text-faint:#5f5a72;
+    --horizon:#f5a623;
+    --horizon-dim: rgba(245,166,35,0.35);
+    --info:#7b5fff;
+    --info-dim: rgba(123,95,255,0.35);
+    --boundary:#6fe7dd;
+    --boundary-dim: rgba(111,231,221,0.3);
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --maxw: 760px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.65;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  ::selection{background:var(--info-dim); color:var(--text);}
+
+  a{color:var(--boundary);}
+
+  /* ---------- layout shell ---------- */
+  .page{position:relative; z-index:1;}
+
+  .container{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:0 24px;
+  }
+
+  /* ---------- side nav ---------- */
+  .sidenav{
+    position:fixed;
+    top:0;
+    right:0;
+    height:100vh;
+    width:52px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    z-index:50;
+  }
+  .sidenav a{
+    display:block;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--text-faint);
+    text-decoration:none;
+    transition:all .35s ease;
+    position:relative;
+  }
+  .sidenav a::after{
+    content:attr(data-label);
+    position:absolute;
+    right:20px;
+    top:50%;
+    transform:translateY(-50%);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.04em;
+    color:var(--text-dim);
+    white-space:nowrap;
+    opacity:0;
+    transition:opacity .25s ease;
+    pointer-events:none;
+  }
+  .sidenav a:hover::after{opacity:1;}
+  .sidenav a.active{
+    background:var(--horizon);
+    box-shadow:0 0 12px var(--horizon-dim), 0 0 24px var(--horizon-dim);
+    transform:scale(1.4);
+  }
+  @media (max-width:820px){ .sidenav{display:none;} }
+
+  /* ---------- mobile progress bar ---------- */
+  .progress{
+    position:fixed; top:0; left:0; height:2px; width:100%;
+    background:var(--line); z-index:60;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--info), var(--boundary), var(--horizon));
+    transition:width .1s linear;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:80px 24px;
+    overflow:hidden;
+  }
+  #horizonCanvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+  }
+  .hero-content{
+    position:relative;
+    z-index:2;
+    max-width:640px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--boundary);
+    margin-bottom:22px;
+    display:inline-block;
+  }
+  .hero h1{
+    font-family:var(--display);
+    font-weight:700;
+    font-size:clamp(2.4rem, 7vw, 4.4rem);
+    line-height:1.04;
+    letter-spacing:-0.01em;
+    background:linear-gradient(180deg, #ffffff 0%, var(--text) 55%, var(--text-dim) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    margin-bottom:22px;
+  }
+  .hero p.sub{
+    font-size:1.08rem;
+    color:var(--text-dim);
+    max-width:520px;
+    margin:0 auto 36px;
+  }
+  .hero .cta{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:.06em;
+    color:var(--void);
+    background:var(--boundary);
+    border:none;
+    padding:14px 26px;
+    border-radius:2px;
+    text-decoration:none;
+    display:inline-block;
+    transition:transform .25s ease, box-shadow .25s ease;
+    box-shadow:0 0 0 rgba(111,231,221,0);
+  }
+  .hero .cta:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 30px var(--boundary-dim);
+  }
+  .scroll-hint{
+    position:absolute;
+    bottom:36px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    color:var(--text-faint);
+    z-index:2;
+    text-transform:uppercase;
+  }
+
+  /* ---------- section framework ---------- */
+  section.part{
+    position:relative;
+    padding:120px 0 100px;
+    border-top:1px solid var(--line);
+  }
+  section.part:first-of-type{border-top:none;}
+
+  .part-index{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--horizon);
+    letter-spacing:.1em;
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .part-index .line{
+    height:1px; width:36px; background:var(--horizon-dim);
+  }
+
+  .part h2{
+    font-family:var(--display);
+    font-weight:600;
+    font-size:clamp(1.8rem, 4.4vw, 2.6rem);
+    letter-spacing:-0.01em;
+    margin-bottom:8px;
+    line-height:1.12;
+  }
+  .part .deck{
+    color:var(--text-dim);
+    font-size:1.02rem;
+    margin-bottom:44px;
+    max-width:560px;
+  }
+
+  .part .lesson p{
+    margin-bottom:20px;
+    color:#e4e1da;
+  }
+  .part .lesson p.emph{
+    font-size:1.12rem;
+    color:var(--text);
+    border-left:2px solid var(--boundary);
+    padding-left:18px;
+    margin:32px 0;
+  }
+  .part .lesson strong{color:var(--boundary); font-weight:600;}
+  .part .lesson em{color:var(--horizon); font-style:normal;}
+
+  /* ---------- exercise block ---------- */
+  .exercise{
+    margin:44px 0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:2px solid var(--info);
+    border-radius:3px;
+    padding:26px 28px;
+  }
+  .exercise .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--info);
+    margin-bottom:12px;
+    display:block;
+  }
+  .exercise p{color:#d9d6ce; margin-bottom:12px;}
+  .exercise p:last-child{margin-bottom:0;}
+
+  /* ---------- further knowledge (expand) ---------- */
+  details.further{
+    margin:36px 0;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:linear-gradient(180deg, rgba(123,95,255,0.03), transparent);
+  }
+  details.further summary{
+    list-style:none;
+    cursor:pointer;
+    padding:18px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:.05em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+  details.further summary::-webkit-details-marker{display:none;}
+  details.further summary::after{
+    content:'+';
+    font-family:var(--mono);
+    font-size:18px;
+    color:var(--info);
+    transition:transform .3s ease;
+  }
+  details.further[open] summary::after{transform:rotate(45deg);}
+  details.further .further-body{
+    padding:0 24px 24px;
+    color:#c9c6bf;
+  }
+  details.further .further-body p{margin-bottom:16px;}
+  details.further .further-body p:last-child{margin-bottom:0;}
+
+  /* ---------- glossary ---------- */
+  .glossary{
+    margin-top:56px;
+    padding-top:32px;
+    border-top:1px dashed var(--line);
+  }
+  .glossary .tag{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--horizon);
+    margin-bottom:18px;
+    display:block;
+  }
+  .glossary dl{
+    display:grid;
+    gap:18px;
+  }
+  .glossary dt{
+    font-family:var(--mono);
+    font-size:14px;
+    color:var(--boundary);
+    margin-bottom:4px;
+  }
+  .glossary dd{
+    color:var(--text-dim);
+    font-size:.95rem;
+  }
+
+  /* ---------- narrative panel (used in Part 3's Black Hole War) ---------- */
+  .duel{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    margin:40px 0;
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .duel > div{
+    background:var(--void-2);
+    padding:22px 20px;
+  }
+  .duel h4{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .duel .hawking h4{color:#ff8a8a;}
+  .duel .susskind h4{color:var(--boundary);}
+  .duel p{font-size:.92rem; color:var(--text-dim);}
+  @media (max-width:600px){ .duel{grid-template-columns:1fr;} }
+
+  /* ---------- final section ---------- */
+  .landing{
+    text-align:center;
+    padding:140px 0 160px;
+  }
+  .landing h2{
+    font-family:var(--display);
+    font-size:clamp(1.8rem,5vw,2.8rem);
+    margin-bottom:20px;
+  }
+  .landing p{
+    color:var(--text-dim);
+    max-width:520px;
+    margin:0 auto 36px;
+  }
+  #meditation{
+    width:100%;
+    max-width:520px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--text);
+    font-family:var(--body);
+    font-size:.95rem;
+    padding:16px 18px;
+    resize:vertical;
+    min-height:100px;
+  }
+  #meditation:focus{outline:2px solid var(--boundary); outline-offset:2px;}
+  .landing .note{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-faint);
+    margin-top:12px;
+  }
+
+  footer{
+    text-align:center;
+    padding:60px 24px 80px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-faint);
+    letter-spacing:.06em;
+  }
+
+  /* accessibility: focus + reduced motion */
+  a:focus-visible, button:focus-visible, summary:focus-visible{
+    outline:2px solid var(--boundary);
+    outline-offset:3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+<nav class="sidenav" id="sidenav">
+  <a href="#hero" data-label="start"></a>
+  <a href="#part1" data-label="01 — entropy"></a>
+  <a href="#part2" data-label="02 — holography"></a>
+  <a href="#part3" data-label="03 — the war"></a>
+  <a href="#part4" data-label="04 — er = epr"></a>
+  <a href="#part5" data-label="05 — as above"></a>
+  <a href="#part6" data-label="06 — the projection"></a>
+</nav>
+
+<div class="page">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero" id="hero">
+    <canvas id="horizonCanvas"></canvas>
+    <div class="hero-content">
+      <span class="eyebrow">A masterclass in six parts</span>
+      <h1>Boundary Reality</h1>
+      <p class="sub">Everything inside a region of space can be described, completely, by data written on its edge. This is not a metaphor. It is one of the strangest results in modern physics — and it may be the closest thing science has to "as above, so below."</p>
+      <a href="#part1" class="cta">Begin at the entropy problem →</a>
+    </div>
+    <div class="scroll-hint">scroll to descend</div>
+  </section>
+
+  <!-- ================= PART 1 ================= -->
+  <section class="part" id="part1">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART ONE</div>
+      <h2>The Entropy Problem</h2>
+      <p class="deck">Where the whole story starts: a black hole shouldn't care how big it is inside — and that breaks something fundamental about how information works.</p>
+
+      <div class="lesson">
+        <p>Entropy is usually taught as a measure of disorder, but it's more precisely a measure of <strong>how much information</strong> it would take to fully specify a system's microscopic state. A box of gas has enormous entropy because there are astronomically many arrangements of its molecules consistent with what you can measure from the outside (temperature, pressure, volume). Entropy scales with the <em>volume</em> of the system — more space, more room for hidden arrangements, more entropy. This is true of essentially everything you've ever encountered. Until black holes.</p>
+
+        <p>In the early 1970s, Jacob Bekenstein was working through a strange consequence of black hole physics: if you drop something with entropy into a black hole, that entropy seems to vanish — which would violate the second law of thermodynamics, one of the most sacred rules in physics (entropy in a closed system never decreases). Bekenstein proposed that black holes must themselves carry entropy, to keep the books balanced. Stephen Hawking, initially skeptical, worked out the exact formula — and what he found was the first crack in the picture everyone assumed was obvious.</p>
+
+        <p class="emph">A black hole's entropy is proportional to the <strong>area of its event horizon</strong> — not the volume enclosed within it.</p>
+
+        <p>Stop on that for a second, because it's easy to read past it. Every other system you know of — gas in a box, a hard drive, a brain — has entropy that scales with its volume. Give it more three-dimensional space, and it can hold more hidden information. A black hole doesn't play by that rule. Double a black hole's radius, and its interior volume grows by a factor of eight — but its horizon <em>area</em> only grows by a factor of four, and it's the area, not the volume, that tells you how much information it can hold. Something about the way information is stored inside a black hole is fundamentally two-dimensional, not three.</p>
+
+        <p>This single formula — the <strong>Bekenstein bound</strong> — turned out to be a hard limit on how much information can be packed into any region of space at all, black hole or not. Try to cram more information into a volume than its boundary area allows, in the right units, and you will inevitably form a black hole before you succeed. Nature enforces this. The universe, it turns out, has a storage limit, and that limit is set by surface area, not the space it seems to be limiting.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Feel the Mismatch</span>
+        <p>Picture a cube-shaped room, ten feet on each side. Its <em>volume</em> scales with the cube of its size; its <em>surface area</em> scales with the square. Now imagine doubling the room to twenty feet. Volume increases eightfold. Surface area only increases fourfold. Sit with that gap for a moment — under ordinary physics, the room's capacity to hold "stuff," including information, should track the volume. The Bekenstein bound says: for the ultimate limit on information, it doesn't. It tracks the walls. Write one sentence, in your own words, about why that feels wrong before you've accepted it, and one sentence about what changes once you do.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — The Second Law, Rescued</summary>
+        <div class="further-body">
+          <p>The reason this mattered so urgently to physicists wasn't philosophical curiosity — it was a rescue mission for the second law of thermodynamics. If you toss a hot cup of coffee (high entropy) into a black hole and the entropy simply disappears from the universe, then the total entropy of the universe has decreased, which the second law forbids. Bekenstein's proposal — that the black hole's horizon area increases to compensate, exactly tracking the entropy it swallowed — patches this hole (so to speak) perfectly. Hawking later derived the precise constant relating area to entropy, now called the Bekenstein-Hawking entropy formula, and in doing so predicted that black holes must have a temperature and therefore must radiate — which became Hawking radiation, and the doorway to the information paradox in Part 3.</p>
+          <p>The units matter too: the Bekenstein-Hawking formula involves the Planck length — the smallest physically meaningful unit of distance, roughly 1.6 × 10⁻³⁵ meters. A black hole's horizon, divided into Planck-length-sized cells, gives you (very roughly) the number of "bits" it can store. This is the first hint that spacetime itself might be pixelated at the smallest scales — a thread the holographic principle picks back up in Part 2.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Entropy</dt><dd>A measure of how much hidden microscopic information is consistent with a system's observable state; often described as "disorder," more precisely a count of possible configurations.</dd></div>
+          <div><dt>Event Horizon</dt><dd>The boundary around a black hole past which nothing, not even light, can escape.</dd></div>
+          <div><dt>Bekenstein Bound</dt><dd>The maximum amount of information that can be contained in a given region of space, proportional to the area of its boundary, not its volume.</dd></div>
+          <div><dt>Planck Length</dt><dd>The smallest length scale with physical meaning in current physics, roughly 1.6 × 10⁻³⁵ meters.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 2 ================= -->
+  <section class="part" id="part2">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART TWO</div>
+      <h2>The Holographic Principle</h2>
+      <p class="deck">If a black hole's information lives on its surface, maybe that's true of every region of space — including the one you're sitting in right now.</p>
+
+      <div class="lesson">
+        <p>Gerard 't Hooft made the leap first, in 1993, and Leonard Susskind sharpened it into a full proposal a few years later. If the Bekenstein bound is a genuine law of physics — not a black-hole-specific quirk, but a statement about how much information <em>any</em> region of space can hold — then it implies something enormous: the complete physical description of everything happening inside a volume of space can, in principle, be encoded entirely on its boundary, using roughly one bit of information per Planck-area-sized patch.</p>
+
+        <p>This is the <strong>holographic principle</strong>, and the name is deliberate. An ordinary hologram — the kind on a credit card or museum ticket — is a flat, two-dimensional piece of film that, when lit correctly, projects a fully three-dimensional image. The 3D image you see isn't stored in 3D anywhere; every bit of the depth information is encoded in interference patterns on the flat surface. 't Hooft and Susskind proposed that our universe might work the same way structurally: the "real," fundamental description of physics might live on a lower-dimensional boundary, and the three-dimensional space we experience — full of depth, volume, distance — might be something more like a projection.</p>
+
+        <p class="emph">Not a metaphorical projection. A mathematically precise claim: the physics of the boundary <strong>is</strong> the physics of the interior, just described in fewer dimensions.</p>
+
+        <p>For a long time this stayed a conjecture — compelling, but without a concrete working example anyone could actually calculate with. That changed in 1997, when Juan Maldacena discovered <strong>AdS/CFT correspondence</strong>: a specific, mathematically rigorous case where a theory of gravity in a particular curved space (anti-de Sitter space, a five-dimensional space with a boundary) is exactly equivalent to a completely different kind of theory — a conformal field theory, with no gravity at all — living on that space's four-dimensional boundary. Two theories, radically different on their face — one has gravity and extra dimensions, the other doesn't — turn out to be the <em>same physics</em>, viewed from two sides of a boundary.</p>
+
+        <p>This wasn't just philosophically satisfying. It became one of the most useful tools in theoretical physics. Problems that are nearly impossible to calculate directly in the gravity picture — like what happens inside a black hole, or how quark-gluon plasma behaves — sometimes become tractable when translated into the boundary theory, where there's no gravity to wrestle with. Physicists now routinely solve gravity problems by "going to the boundary," doing the math there, and translating the answer back. The equivalence isn't a toy — it's load-bearing.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — The Hologram in Your Hand</span>
+        <p>Find any holographic image — a security hologram on a card, a sticker, even a photo of one. Notice: the image looks three-dimensional, with real depth and parallax as you tilt it, but the object producing that image is flat. Every bit of the "3D-ness" you perceive is fully encoded in a 2D pattern. Hold that specific, mechanical fact in mind — not as poetry, but as the literal, physical model the holographic principle is proposing for the universe itself. Write down one thing that changes if depth is a decoded signal rather than a raw fact.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Why AdS, Not Our Universe (Yet)</summary>
+        <div class="further-body">
+          <p>An honest caveat worth sitting with: Maldacena's original AdS/CFT correspondence is proven for anti-de Sitter space, which has negative curvature and isn't the kind of universe we actually live in — our universe appears to have positive curvature and is expanding (it's closer to "de Sitter space"). Extending a rigorous holographic correspondence to our actual universe (dS/CFT or similar) is an active, unsolved area of research, not a settled result. What <em>is</em> settled: the holographic principle as a general information-theoretic bound (from Part 1) applies to any region of space, ours included. What's still open is whether there's a full, working "boundary theory" for a universe like ours the way there provably is for AdS space. This is the honest state of the physics — genuinely profound, and genuinely unfinished.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Holographic Principle</dt><dd>The proposal that the complete physical description of a volume of space can be encoded on its lower-dimensional boundary.</dd></div>
+          <div><dt>AdS/CFT Correspondence</dt><dd>Maldacena's discovery that a gravitational theory in anti-de Sitter space is mathematically equivalent to a gravity-free conformal field theory on its boundary.</dd></div>
+          <div><dt>Anti-de Sitter Space</dt><dd>A negatively curved model spacetime used in theoretical physics; distinct from the positively curved, expanding universe we appear to inhabit.</dd></div>
+          <div><dt>Bulk / Boundary</dt><dd>Standard terminology in holography: the "bulk" is the higher-dimensional interior; the "boundary" is the lower-dimensional edge that encodes it.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 3 ================= -->
+  <section class="part" id="part3">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART THREE</div>
+      <h2>The Black Hole War</h2>
+      <p class="deck">A real, decades-long fight between two of the world's leading physicists over whether the universe destroys information — and why the answer had to come from holography.</p>
+
+      <div class="lesson">
+        <p>In 1976, Stephen Hawking made a claim that split the physics community for the next three decades. He had shown that black holes aren't perfectly black — they emit faint radiation (now called <strong>Hawking radiation</strong>) and, over unimaginably long timescales, evaporate completely. That much wasn't controversial. What was controversial is what Hawking said happens to whatever fell in.</p>
+
+        <p>Hawking's calculation showed the radiation coming out is <em>thermal</em> — random, featureless, carrying no imprint of what fell in. If that's literally true, then when a black hole finishes evaporating, all the specific information about what it swallowed — the exact quantum state of every book, star, or person that fell in — is genuinely gone from the universe forever. Not hidden. Not scrambled somewhere retrievable. Erased. This became known as the <strong>black hole information paradox</strong>, and it isn't a small technical footnote — it directly contradicts one of the deepest principles in quantum mechanics: that information is never truly destroyed, only ever transformed (a property called <em>unitarity</em>).</p>
+      </div>
+
+      <div class="duel">
+        <div class="hawking">
+          <h4>Hawking's Position</h4>
+          <p>Black hole evaporation is a genuine exception to quantum mechanics. Information really is destroyed when a black hole evaporates completely. The universe, in this one specific case, is allowed to "forget."</p>
+        </div>
+        <div class="susskind">
+          <h4>Susskind &amp; 't Hooft's Position</h4>
+          <p>That can't be right — it would break physics everywhere, not just at black holes. The information must somehow be preserved, encoded in subtle correlations in the outgoing Hawking radiation itself, even though Hawking's original calculation didn't see it.</p>
+        </div>
+      </div>
+
+      <div class="lesson">
+        <p>Susskind (who later popularized this fight in his book <em>The Black Hole War</em>) argued the resolution had to involve something like the holographic principle: if the information inside a black hole is really encoded on its <em>horizon</em>, then it isn't trapped in the interior at all in the way everyone assumed — it's sitting on the boundary the whole time, and can leak out, encoded in the radiation, as the black hole evaporates. It would be scrambled almost beyond recognition, but not destroyed.</p>
+
+        <p>In 2004, Hawking conceded — publicly, at a physics conference, settling a long-standing bet with Kip Thorne and John Preskill (the loser owed the winner an encyclopedia "from which information can be retrieved at will"). Using tools from AdS/CFT — the same holographic correspondence from Part 2 — physicists showed rigorously that black hole evaporation, viewed through the boundary theory, is a fully unitary process. No information is lost. It's just extraordinarily well-hidden in the radiation.</p>
+
+        <p class="emph">The concession is important not because someone "won," but because of <strong>how</strong> the resolution came: holography wasn't just a nice reinterpretation of black hole entropy. It was the tool that rescued one of the deepest laws in physics from an apparent, decades-long violation.</p>
+
+        <p>Worth noting: the full technical picture of exactly how information escapes — including the more recent "island" and replica wormhole calculations from 2019 onward — is still an active research area. The broad resolution (information is preserved) is now the consensus. The precise mechanism is still being worked out in detail.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Sit With Both Sides</span>
+        <p>Before reading the resolution, most physicists in the 1970s and 80s were genuinely split, including brilliant, careful people on both sides. Write two or three sentences defending Hawking's original position as if you were arguing it in 1976 — that black holes really might be a place where quantum mechanics simply breaks. Then write two or three sentences defending Susskind's instinct that this couldn't be allowed to be true. Notice how much of physics progress happens by refusing to accept a "clean" answer that breaks something else you trust.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — The Bet, In Full</summary>
+        <div class="further-body">
+          <p>The 1997 bet was formalized in writing: Hawking and Kip Thorne, on one side, bet John Preskill that information is lost in black hole evaporation; Preskill bet it is preserved. The stakes were an encyclopedia of the winner's choice. When Hawking conceded in 2004, he gave Preskill a baseball encyclopedia — a nod to the American sport, and to the idea that information, however scrambled, "can always be recovered in principle." 't Hooft, notably, had never taken the bet — he considered information conservation obviously non-negotiable from the start, which is part of why he's credited alongside Susskind as an originator of the holographic resolution rather than a late convert to it.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Hawking Radiation</dt><dd>Faint thermal radiation predicted to be emitted by black holes, causing them to slowly evaporate over immense timescales.</dd></div>
+          <div><dt>Information Paradox</dt><dd>The apparent conflict between Hawking's original calculation (information is destroyed) and quantum mechanics' requirement that information is always conserved.</dd></div>
+          <div><dt>Unitarity</dt><dd>The principle in quantum mechanics that the total information in a closed system is always preserved, never truly destroyed.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 4 ================= -->
+  <section class="part" id="part4">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART FOUR</div>
+      <h2>ER = EPR</h2>
+      <p class="deck">The single strangest sentence in this course: two entangled particles anywhere in the universe might be connected by a microscopic wormhole. Same phenomenon, two names, seventy years apart.</p>
+
+      <div class="lesson">
+        <p>In 1935, two unrelated papers were published, months apart, by overlapping sets of authors, about two apparently unrelated topics. Einstein, Podolsky, and Rosen (<strong>EPR</strong>) described what we now call quantum entanglement — a strange correlation between particles where measuring one instantly determines the state of the other, no matter how far apart they are, with no signal passing between them. Einstein hated this implication and called it "spooky action at a distance," using it as an argument that quantum mechanics must be incomplete.</p>
+
+        <p>In the same year, Einstein and Nathan Rosen (<strong>ER</strong>) separately described a solution to Einstein's own equations of general relativity that looked like a bridge connecting two distant points in spacetime — a wormhole, though they didn't use that word and didn't think it was physically traversable. For nearly eighty years, these were treated as two completely separate ideas from two completely separate branches of physics: entanglement lived in quantum mechanics, wormholes lived in general relativity, and the two fields notoriously don't play well together.</p>
+
+        <p class="emph">In 2013, Juan Maldacena and Leonard Susskind proposed that these are not two different phenomena. They are the <strong>same phenomenon</strong>, described in two different mathematical languages: <strong>ER = EPR.</strong></p>
+
+        <p>Using the AdS/CFT machinery from Part 2, they showed that two maximally entangled black holes — connected by nothing in ordinary space — are exactly equivalent, in the bulk gravity description, to two black holes connected by a wormhole (technically an "Einstein-Rosen bridge"). Not "similar to." Not "analogous to." The same object, viewed from two different sides of the boundary/bulk correspondence. Entanglement, in the boundary theory, translates into literal geometric connection — a bridge through spacetime — in the bulk theory.</p>
+
+        <p>The proposal generalizes beyond black holes: if ER = EPR holds broadly, then any two entangled particles, anywhere, however mundane, might be connected by an infinitesimally small, non-traversable wormhole — a literal thread of spacetime geometry, too small and too twisted to ever send anything through, but real in the same sense the correspondence in Part 2 is real. Entanglement wouldn't just correlate two particles statistically. It would <em>connect</em> them, geometrically, through the fabric of space itself.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Two Languages, One Fact</span>
+        <p>Entanglement (EPR) is usually described in the language of information and correlation: "measuring one tells you about the other." Wormholes (ER) are described in the language of geometry: "a bridge through spacetime." ER=EPR claims these are the same fact in two vocabularies — the way "the area of the boundary" and "the entropy of the interior" turned out to be the same fact in Part 1. Pick something else in your own life that you've been describing in two separate vocabularies — practical/emotional, technical/intuitive — and write a sentence proposing that they might secretly be the same underlying fact, seen from two sides.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Not Traversable, Not Yet Confirmed</summary>
+        <div class="further-body">
+          <p>Two honest caveats belong here, because this is the part of the course most likely to get overstated online. First: these ER=EPR wormholes, if the conjecture holds, are not traversable — you cannot send a signal, a person, or information through one faster than light; the geometry pinches off too fast. This does not enable faster-than-light communication or travel, and Maldacena and Susskind were explicit about this from the start. Second: ER=EPR remains a conjecture, not a proven theorem the way, say, the Bekenstein-Hawking formula is. It has passed a number of nontrivial theoretical checks since 2013 and is taken seriously by a wide range of researchers, but it has not achieved the same settled status as the black hole information resolution in Part 3. It sits at the genuine, active edge of theoretical physics — which is part of why it belongs in this course rather than a textbook.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Quantum Entanglement</dt><dd>A correlation between particles such that measuring one instantly determines information about the other, regardless of distance.</dd></div>
+          <div><dt>Einstein-Rosen Bridge</dt><dd>A theoretical solution in general relativity describing a bridge connecting two distant regions of spacetime; colloquially, a wormhole.</dd></div>
+          <div><dt>ER = EPR</dt><dd>Maldacena and Susskind's 2013 conjecture that quantum entanglement and Einstein-Rosen wormholes are the same underlying phenomenon, described in two different theoretical languages.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 5 ================= -->
+  <section class="part" id="part5">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART FIVE</div>
+      <h2>As Above, So Below</h2>
+      <p class="deck">Long before Bekenstein or Maldacena, a much older tradition insisted that the part encodes the whole. It's worth taking seriously as a pattern, and being precise about where it does and doesn't overlap with the physics.</p>
+
+      <div class="lesson">
+        <p>The Hermetic axiom "as above, so below" — first attributed to the semi-legendary <em>Emerald Tablet</em>, and central to centuries of alchemical and esoteric thought — makes a structural claim: the pattern of the macrocosm (the heavens, the universe, the "above") is reflected in the microcosm (the human body, the individual, the "below"). It's easy to hear this as poetic hand-waving. It's more interesting read as an early, intuitive grasp of something physics keeps rediscovering in different forms: <strong>that a smaller, lower-dimensional part can fully encode a larger, higher-dimensional whole.</strong></p>
+
+        <p>This structural idea shows up, independently, in places that have nothing to do with each other historically. A <strong>fractal</strong> — a mathematical object like the Mandelbrot set, or a real-world one like a fern frond or a coastline — has the property that a small piece, zoomed in, reveals the same structure as the whole. The part isn't just similar to the whole; in a precise mathematical sense, it contains the generative rule that produces the whole. An ordinary <strong>optical hologram</strong> — the physical object from Part 2 — takes this further: cut a piece of holographic film in half, and each half still projects the <em>entire</em> original 3D image, just at lower resolution. The information about the whole doesn't live in any one location on the film; it's distributed such that every part carries the whole.</p>
+
+        <p>Physicist David Bohm proposed something structurally similar for reality itself in the 1980s: the <strong>implicate order</strong>, a proposed deeper level of reality in which everything is "enfolded" into everything else, with the ordinary, separated-looking world we experience — the "explicate order" — unfolding from it the way a hologram's 3D image unfolds from flat film. Bohm's implicate order is worth being precise about: it has never been developed into a testable, predictive physical theory the way AdS/CFT has, and it remains a minority, largely philosophical position within physics, not a mainstream result. It's included here because the <em>structural</em> intuition — parts encoding wholes, rather than merely resembling them — is the same intuition Hermeticism reached for centuries earlier, and the same intuition the (rigorously proven) holographic principle formalizes in yet a third, independent way.</p>
+
+        <p class="emph">Three traditions — an ancient hermetic axiom, a rigorous physical theory, and a speculative physical philosophy — converge on the same structural claim, by three completely different routes. That convergence is worth taking seriously, without collapsing the very real differences in how well-evidenced each one is.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Find Your Fractal</span>
+        <p>Identify one place in your own life — a habit, a conversation pattern, a project — where a small, recent instance seems to contain the same "shape" as a much larger pattern in your history. Not a vague resemblance: try to describe, specifically, what generative rule the small instance and the large pattern share, the way a small piece of a fractal shares the exact generative rule of the whole. Write it down. This is the practical use of "as above, so below" — not as prophecy, but as a diagnostic lens for noticing self-similar structure in your own behavior.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Where the Analogy Breaks</summary>
+        <div class="further-body">
+          <p>It's worth being explicit about the limits of this parallel, because collapsing them is exactly how a real physics result gets diluted into vague mysticism. The holographic principle is a claim about <em>information encoding</em> across a specific dimensional boundary, with a precise mathematical correspondence (in the AdS/CFT case) that lets physicists actually calculate things. "As above, so below" is a much broader, pre-scientific structural intuition that doesn't specify a mechanism, a boundary, or a testable prediction. Fractals are a genuine mathematical phenomenon with a precise definition. Bohm's implicate order is a physical philosophy, respected by some physicists, that has not produced a widely accepted testable theory. Treating all four as literally "the same claim" would be sloppy. Treating them as <em>independent arrivals at a shared structural insight</em> — that parts can encode wholes — is honest, and arguably more interesting than a false equivalence would be.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Hermeticism</dt><dd>A philosophical and esoteric tradition originating in late-antique Egypt, centered on texts attributed to Hermes Trismegistus, including the Emerald Tablet.</dd></div>
+          <div><dt>Fractal</dt><dd>A mathematical or natural structure exhibiting self-similarity — smaller parts reproduce the generative pattern of the whole at different scales.</dd></div>
+          <div><dt>Implicate Order</dt><dd>David Bohm's proposed deeper level of reality in which all things are enfolded within one another, with ordinary separated reality unfolding from it.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 6 ================= -->
+  <section class="part" id="part6">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART SIX</div>
+      <h2>What If You're the Projection</h2>
+      <p class="deck">The stakes, stated plainly — and the one distinction almost every popular treatment of this topic gets wrong.</p>
+
+      <div class="lesson">
+        <p>Here is the honest, load-bearing claim this course has built toward: if the holographic principle generalizes the way many physicists suspect it does — and this remains an open research question, not a settled fact — then the three-dimensional space you're sitting in, with its depth and volume and distance, may not be the fundamental layer of reality. It may be something closer to a decoded signal: the "bulk" projection of information that is, in some deeper sense, actually encoded on a lower-dimensional boundary. Not fake. Not illusory in the dismissive sense. But possibly <em>derived</em>, rather than fundamental — the way the 3D image from a hologram is a completely real visual experience, generated from a flat piece of film that is the more fundamental object.</p>
+
+        <p class="emph">This is a genuinely different claim from "we live in a simulation," and conflating the two is the single most common mistake made when this topic reaches a general audience.</p>
+
+        <p>The simulation hypothesis, in its popular form (associated with philosopher Nick Bostrom's 2003 argument), is a claim about <em>substrate</em>: that our reality might be running as a computer program on hardware that exists in some "base" reality outside our own, built by some other civilization. It's a claim about who's running the show and on what machine. The holographic principle makes no such claim. It says nothing about computation, programmers, or an external base reality. It's a claim, purely within physics, about the <em>dimensional structure of information</em> — that the description of a 3D volume can be fully captured by data on a 2D boundary, full stop, with no simulator required. You can believe the holographic principle is likely true, on the physics alone, while finding the simulation hypothesis completely speculative and untestable — they are not the same bet, and this course has only ever been making the first one.</p>
+
+        <p>What the holographic principle does responsibly earn you is a genuine, physics-grounded reason to hold "inside vs. outside," and even "3D space is fundamental," more lightly than intuition insists you should. Not as a belief to adopt outright — the AdS caveat from Part 2 means this isn't proven for a universe like ours — but as a live possibility, sitting at the edge of a field that keeps finding, again and again, that the universe is stranger and more economical with its own information than direct experience would ever suggest.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — What's Actually Settled vs. Still Open</summary>
+        <div class="further-body">
+          <p><strong>Settled, mainstream physics:</strong> the Bekenstein bound (Part 1); the Bekenstein-Hawking entropy formula; AdS/CFT correspondence as a proven mathematical equivalence (Part 2); the resolution that black hole evaporation preserves information (Part 3).</p>
+          <p><strong>Serious, active research — not yet settled:</strong> whether the holographic principle extends rigorously to a de Sitter-like universe such as ours (Part 2); the precise mechanism by which information escapes an evaporating black hole (Part 3); ER=EPR as a general claim beyond black holes (Part 4).</p>
+          <p><strong>Philosophical, not physical claims:</strong> Bohm's implicate order (Part 5); the simulation hypothesis (this section); the Hermetic axiom itself, as a metaphysical rather than physical statement (Part 5).</p>
+          <p>Holding these three tiers separately, rather than flattening them into one undifferentiated "mind-blowing fact," is the actual discipline this course has been trying to teach — the content is more genuinely mind-blowing, not less, once you can see exactly how much of it is load-bearing.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Simulation Hypothesis</dt><dd>The proposal, popularized by Nick Bostrom, that reality may be a computer simulation run on hardware in an external base reality — a claim about substrate, distinct from the holographic principle's claim about information structure.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LANDING / MEDITATION ================= -->
+  <section class="landing" id="landing">
+    <div class="container">
+      <span class="eyebrow">Closing practice</span>
+      <h2>Where Is Your Boundary?</h2>
+      <p>Take the bulk/boundary distinction from Part 2 and apply it to yourself, honestly, for a minute. What in you feels like "surface" — the part that faces outward, that other people read you from? What feels like "interior" — the part you experience privately, that no boundary seems to fully capture? Write without editing. Nothing here is stored or sent anywhere; this is just a mirror.</p>
+      <textarea id="meditation" placeholder="Begin writing here..."></textarea>
+      <p class="note">Private to this session. Nothing you write leaves this page.</p>
+    </div>
+  </section>
+
+  <footer>
+    Boundary Reality — a masterclass on the holographic principle · Part of the interactive series alongside Novelty Theory, Strange Attractors, and It From Bit
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- progress bar ---------------- */
+  var progressFill = document.getElementById('progressFill');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressFill.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  /* ---------------- sidenav active state ---------------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.sidenav a'));
+  var sections = navLinks.map(function(a){
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+
+  function updateActiveNav(){
+    var pos = window.scrollY + window.innerHeight * 0.4;
+    var current = 0;
+    for(var i=0;i<sections.length;i++){
+      if(sections[i] && sections[i].offsetTop <= pos) current = i;
+    }
+    navLinks.forEach(function(a, idx){
+      a.classList.toggle('active', idx === current);
+    });
+  }
+  document.addEventListener('scroll', updateActiveNav, {passive:true});
+  updateActiveNav();
+
+  /* ---------------- horizon canvas: boundary/bulk visualization ----------------
+     Concept: a ring of particles sits on a "boundary" circle (the horizon).
+     Each boundary particle projects a faint "bulk" ghost point further out,
+     literalizing "the boundary encodes the interior/exterior."
+     Particles drift and reproject continuously; mouse position warps the field
+     slightly, echoing gravitational lensing near a horizon.
+  ------------------------------------------------------------------------------- */
+  var canvas = document.getElementById('horizonCanvas');
+  var ctx = canvas.getContext('2d');
+  var W, H, DPR;
+  var particles = [];
+  var mouse = {x:0, y:0, active:false};
+  var t = 0;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth = canvas.offsetWidth;
+    H = canvas.clientHeight = canvas.offsetHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildParticles();
+  }
+
+  function buildParticles(){
+    particles = [];
+    var count = Math.min(140, Math.floor((W*H)/9000));
+    var cx = W/2, cy = H*0.52;
+    var baseR = Math.min(W,H) * 0.28;
+    for(var i=0;i<count;i++){
+      var angle = (i/count) * Math.PI * 2 + Math.random()*0.06;
+      particles.push({
+        angle: angle,
+        speed: 0.0006 + Math.random()*0.0009,
+        r: baseR + (Math.random()-0.5)*10,
+        baseR: baseR,
+        cx: cx, cy: cy,
+        wobble: Math.random()*Math.PI*2,
+        wobbleSpeed: 0.001 + Math.random()*0.002,
+        size: 0.8 + Math.random()*1.6,
+        hueMix: Math.random()
+      });
+    }
+  }
+
+  function colorFor(hueMix, alpha){
+    // interpolate between horizon gold and boundary cyan and info violet
+    if(hueMix < 0.34){
+      return 'rgba(245,166,35,' + alpha + ')';
+    } else if(hueMix < 0.67){
+      return 'rgba(111,231,221,' + alpha + ')';
+    } else {
+      return 'rgba(123,95,255,' + alpha + ')';
+    }
+  }
+
+  function draw(){
+    t += 1;
+    ctx.clearRect(0,0,W,H);
+
+    // subtle void gradient
+    var grad = ctx.createRadialGradient(W/2, H*0.52, 0, W/2, H*0.52, Math.max(W,H)*0.7);
+    grad.addColorStop(0, 'rgba(18,15,28,0.9)');
+    grad.addColorStop(1, 'rgba(8,7,12,1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    var mouseInfluence = mouse.active ? 1 : 0;
+
+    particles.forEach(function(p){
+      p.angle += p.speed;
+      p.wobble += p.wobbleSpeed;
+
+      var wob = Math.sin(p.wobble) * 6;
+      var r = p.baseR + wob;
+
+      // mouse lensing: warp radius near cursor angle
+      if(mouse.active){
+        var mAngle = Math.atan2(mouse.y - p.cy, mouse.x - p.cx);
+        var diff = Math.atan2(Math.sin(p.angle - mAngle), Math.cos(p.angle - mAngle));
+        var lens = Math.exp(-Math.pow(diff*2.2,2)) * 22;
+        r += lens;
+      }
+
+      var bx = p.cx + Math.cos(p.angle) * r;
+      var by = p.cy + Math.sin(p.angle) * r * 0.55; // flatten into ellipse (accretion-disk feel)
+
+      // boundary point
+      ctx.beginPath();
+      ctx.arc(bx, by, p.size, 0, Math.PI*2);
+      ctx.fillStyle = colorFor(p.hueMix, 0.85);
+      ctx.shadowColor = colorFor(p.hueMix, 0.9);
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // bulk "ghost" projection further outward, fainter — literalizes boundary encoding bulk
+      var ghostR = r * 1.55;
+      var gx = p.cx + Math.cos(p.angle) * ghostR;
+      var gy = p.cy + Math.sin(p.angle) * ghostR * 0.55;
+      ctx.beginPath();
+      ctx.arc(gx, gy, p.size*0.6, 0, Math.PI*2);
+      ctx.fillStyle = colorFor(p.hueMix, 0.12);
+      ctx.fill();
+
+      // faint connecting thread between boundary and its bulk ghost
+      ctx.beginPath();
+      ctx.moveTo(bx,by);
+      ctx.lineTo(gx,gy);
+      ctx.strokeStyle = colorFor(p.hueMix, 0.05);
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    });
+
+    // faint horizon ring
+    ctx.beginPath();
+    ctx.ellipse(W/2, H*0.52, particles.length ? particles[0].baseR : 100, (particles.length ? particles[0].baseR : 100)*0.55, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(245,166,35,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    if(!reduceMotion){
+      requestAnimationFrame(draw);
+    }
+  }
+
+  window.addEventListener('resize', resize, {passive:true});
+  window.addEventListener('mousemove', function(e){
+    var rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    mouse.active = true;
+  }, {passive:true});
+  window.addEventListener('mouseleave', function(){ mouse.active = false; });
+
+  resize();
+  if(reduceMotion){
+    draw(); // draw one static frame, no rAF loop
+  } else {
+    requestAnimationFrame(draw);
+  }
+
+})();
+</script>
+
+</body>
+</html>

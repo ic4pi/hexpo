@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Distributed Mind — Egregores &amp; Collective Cognition</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --void:#0b0906;
+    --void-2:#120e09;
+    --panel:#171209;
+    --line: rgba(236,229,214,0.08);
+    --text:#ece5d6;
+    --text-dim:#a89a80;
+    --text-faint:#6b6152;
+    --trail:#9caf6b;
+    --trail-dim: rgba(156,175,107,0.35);
+    --brass:#c9973f;
+    --brass-dim: rgba(201,151,63,0.35);
+    --pulse:#a8577e;
+    --pulse-dim: rgba(168,87,126,0.35);
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --maxw: 760px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.65;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--pulse-dim); color:var(--text);}
+  a{color:var(--trail);}
+
+  .page{position:relative; z-index:1;}
+  .container{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+  /* ---------- side nav ---------- */
+  .sidenav{
+    position:fixed; top:0; right:0; height:100vh; width:52px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:22px; z-index:50;
+  }
+  .sidenav a{
+    display:block; width:8px; height:8px; border-radius:50%;
+    background:var(--text-faint); text-decoration:none;
+    transition:all .35s ease; position:relative;
+  }
+  .sidenav a::after{
+    content:attr(data-label); position:absolute; right:20px; top:50%;
+    transform:translateY(-50%); font-family:var(--mono); font-size:11px;
+    letter-spacing:.04em; color:var(--text-dim); white-space:nowrap;
+    opacity:0; transition:opacity .25s ease; pointer-events:none;
+  }
+  .sidenav a:hover::after{opacity:1;}
+  .sidenav a.active{
+    background:var(--brass);
+    box-shadow:0 0 12px var(--brass-dim), 0 0 24px var(--brass-dim);
+    transform:scale(1.4);
+  }
+  @media (max-width:820px){ .sidenav{display:none;} }
+
+  .progress{position:fixed; top:0; left:0; height:2px; width:100%; background:var(--line); z-index:60;}
+  .progress-fill{height:100%; width:0%; background:linear-gradient(90deg, var(--trail), var(--brass), var(--pulse)); transition:width .1s linear;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:80px 24px; overflow:hidden;
+  }
+  #swarmCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:0;}
+  .hero-content{position:relative; z-index:2; max-width:640px;}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--trail); margin-bottom:22px; display:inline-block;
+  }
+  .hero h1{
+    font-family:var(--display); font-weight:700; font-size:clamp(2.3rem, 6.6vw, 4.2rem);
+    line-height:1.05; letter-spacing:-0.01em;
+    background:linear-gradient(180deg, #ffffff 0%, var(--text) 55%, var(--text-dim) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:22px;
+  }
+  .hero p.sub{font-size:1.06rem; color:var(--text-dim); max-width:530px; margin:0 auto 36px;}
+  .hero .cta{
+    font-family:var(--mono); font-size:13px; letter-spacing:.06em; color:var(--void);
+    background:var(--trail); border:none; padding:14px 26px; border-radius:2px;
+    text-decoration:none; display:inline-block; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .hero .cta:hover{transform:translateY(-2px); box-shadow:0 8px 30px var(--trail-dim);}
+  .scroll-hint{
+    position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; color:var(--text-faint);
+    z-index:2; text-transform:uppercase;
+  }
+
+  section.part{position:relative; padding:120px 0 100px; border-top:1px solid var(--line);}
+  section.part:first-of-type{border-top:none;}
+  .part-index{
+    font-family:var(--mono); font-size:13px; color:var(--brass); letter-spacing:.1em;
+    margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .part-index .line{height:1px; width:36px; background:var(--brass-dim);}
+  .part h2{
+    font-family:var(--display); font-weight:600; font-size:clamp(1.8rem, 4.4vw, 2.6rem);
+    letter-spacing:-0.01em; margin-bottom:8px; line-height:1.12;
+  }
+  .part .deck{color:var(--text-dim); font-size:1.02rem; margin-bottom:44px; max-width:560px;}
+  .part .lesson p{margin-bottom:20px; color:#e3ded0;}
+  .part .lesson p.emph{
+    font-size:1.12rem; color:var(--text); border-left:2px solid var(--trail);
+    padding-left:18px; margin:32px 0;
+  }
+  .part .lesson strong{color:var(--trail); font-weight:600;}
+  .part .lesson em{color:var(--brass); font-style:normal;}
+
+  .exercise{
+    margin:44px 0; background:var(--panel); border:1px solid var(--line);
+    border-left:2px solid var(--pulse); border-radius:3px; padding:26px 28px;
+  }
+  .exercise .tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--pulse); margin-bottom:12px; display:block;
+  }
+  .exercise p{color:#d9d3c2; margin-bottom:12px;}
+  .exercise p:last-child{margin-bottom:0;}
+
+  details.further{
+    margin:36px 0; border:1px solid var(--line); border-radius:3px;
+    background:linear-gradient(180deg, rgba(168,87,126,0.04), transparent);
+  }
+  details.further summary{
+    list-style:none; cursor:pointer; padding:18px 24px; display:flex;
+    align-items:center; justify-content:space-between; font-family:var(--mono);
+    font-size:13px; letter-spacing:.05em; color:var(--text-dim); text-transform:uppercase;
+  }
+  details.further summary::-webkit-details-marker{display:none;}
+  details.further summary::after{content:'+'; font-family:var(--mono); font-size:18px; color:var(--pulse); transition:transform .3s ease;}
+  details.further[open] summary::after{transform:rotate(45deg);}
+  details.further .further-body{padding:0 24px 24px; color:#c7c1af;}
+  details.further .further-body p{margin-bottom:16px;}
+  details.further .further-body p:last-child{margin-bottom:0;}
+
+  .glossary{margin-top:56px; padding-top:32px; border-top:1px dashed var(--line);}
+  .glossary .tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:18px; display:block;
+  }
+  .glossary dl{display:grid; gap:18px;}
+  .glossary dt{font-family:var(--mono); font-size:14px; color:var(--trail); margin-bottom:4px;}
+  .glossary dd{color:var(--text-dim); font-size:.95rem;}
+
+  /* tiers panel used in part 4 */
+  .tiers{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--line); margin:40px 0; border-radius:3px; overflow:hidden;}
+  .tiers > div{background:var(--void-2); padding:20px 18px;}
+  .tiers h4{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px;}
+  .tiers .a h4{color:var(--trail);}
+  .tiers .b h4{color:var(--brass);}
+  .tiers .c h4{color:var(--pulse);}
+  .tiers p{font-size:.88rem; color:var(--text-dim);}
+  @media (max-width:700px){ .tiers{grid-template-columns:1fr;} }
+
+  .landing{text-align:center; padding:140px 0 160px;}
+  .landing h2{font-family:var(--display); font-size:clamp(1.8rem,5vw,2.8rem); margin-bottom:20px;}
+  .landing p{color:var(--text-dim); max-width:520px; margin:0 auto 36px;}
+  #fieldreport{
+    width:100%; max-width:520px; background:var(--panel); border:1px solid var(--line);
+    border-radius:3px; color:var(--text); font-family:var(--body); font-size:.95rem;
+    padding:16px 18px; resize:vertical; min-height:110px;
+  }
+  #fieldreport:focus{outline:2px solid var(--trail); outline-offset:2px;}
+  .landing .note{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:12px;}
+
+  footer{text-align:center; padding:60px 24px 80px; font-family:var(--mono); font-size:11px; color:var(--text-faint); letter-spacing:.06em;}
+
+  a:focus-visible, button:focus-visible, summary:focus-visible{outline:2px solid var(--trail); outline-offset:3px;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+<nav class="sidenav" id="sidenav">
+  <a href="#hero" data-label="start"></a>
+  <a href="#part1" data-label="01 — no center"></a>
+  <a href="#part2" data-label="02 — the swarm"></a>
+  <a href="#part3" data-label="03 — the egregore"></a>
+  <a href="#part4" data-label="04 — see & leave"></a>
+</nav>
+
+<div class="page">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero" id="hero">
+    <canvas id="swarmCanvas"></canvas>
+    <div class="hero-content">
+      <span class="eyebrow">A masterclass in four parts</span>
+      <h1>The Distributed Mind</h1>
+      <p class="sub">No one is in charge, and yet the pattern holds together, remembers things, wants things. This course traces that phenomenon from ant trails to online mobs to the occult concept of the egregore — and gives you a way to actually see the ones you're standing inside.</p>
+      <a href="#part1" class="cta">Begin with the ants →</a>
+    </div>
+    <div class="scroll-hint">scroll to trace the pattern</div>
+  </section>
+
+  <!-- ================= PART 1 ================= -->
+  <section class="part" id="part1">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART ONE</div>
+      <h2>Minds Without a Center</h2>
+      <p class="deck">No ant has a blueprint for the colony. The blueprint doesn't exist anywhere — it happens between them.</p>
+
+      <div class="lesson">
+        <p>Watch a single ant and you'll see something almost stupid: it wanders, mostly at random, occasionally following a faint chemical trace on the ground, occasionally leaving one of its own. There is no ant supervising the colony. There is no blueprint stored in any ant's tiny nervous system for the elaborate ventilation shafts, food-storage chambers, and nursery architecture that termite and ant colonies reliably build. And yet the structure appears, reliably, every time, built by thousands of individuals who couldn't describe it if you asked them to (they can't be asked anything — but the point holds).</p>
+
+        <p>In 1959, French biologist Pierre-Paul Grassé coined a term for the mechanism that makes this possible: <strong>stigmergy</strong> — coordination that happens not through direct communication between individuals, but through individuals modifying a shared environment, and reacting to those modifications left by others. An ant doesn't tell another ant "food is this way." It lays a pheromone trail. The next ant doesn't receive a message — it just happens to walk where the chemical signal is strongest, and, if it finds food there too, reinforces the trail further. No ant ever holds the plan. The plan exists only in the accumulating trace itself.</p>
+
+        <p class="emph">The coordination lives in the environment, not in any individual mind — which means you can have something that behaves like collective planning with zero planners.</p>
+
+        <p>This is worth sitting with because it violates a deep intuition: that complex, purposeful-looking structure requires a designer, or at minimum a shared plan somewhere. Stigmergy shows a third option — structure can emerge purely from many individuals independently reacting to the traces others leave, with the traces themselves accumulating into something that looks, from the outside, exactly like intention.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Find the Trail</span>
+        <p>Stigmergy isn't unique to insects. Think of a worn dirt path cutting across a lawn where no sidewalk was built — a <em>desire path</em>: the first person who crossed there left a faint trace; each subsequent person, seeing the faint trace, was slightly more likely to walk exactly there, reinforcing it, until it became an obvious, unplanned route that no single person designed. Now find a human-made "trail" you participate in daily — a Wikipedia article shaped by thousands of small edits, a subreddit's upvoted consensus, a well-worn Git repository's commit conventions. Write down: what's the "trail," who's leaving it, and what are you reinforcing every time you follow it instead of cutting your own path?</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Stigmergy Left the Anthill</summary>
+        <div class="further-body">
+          <p>Stigmergy turned out to be more than a biology curiosity — it became an actual engineering technique. Computer scientists Marco Dorigo and colleagues developed <strong>Ant Colony Optimization</strong> algorithms in the early 1990s, directly modeling artificial "ants" that lay down virtual pheromone trails while searching a problem space (routing networks, scheduling, logistics), letting a solution emerge the same way a foraging route does — through accumulated trace, not central computation. Some real-world delivery and network-routing systems still use variants of this approach today. The biological mechanism and the engineering technique are, in this case, doing the identical thing.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Stigmergy</dt><dd>Coordination between individuals achieved indirectly, by modifying a shared environment and reacting to modifications left by others, rather than through direct communication.</dd></div>
+          <div><dt>Desire Path</dt><dd>An unplanned route worn into terrain by repeated foot traffic, formed by the same trace-and-reinforce mechanism as an insect pheromone trail.</dd></div>
+          <div><dt>Self-Organization</dt><dd>The spontaneous emergence of order or structure from the local interactions of many individual parts, with no central controller.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 2 ================= -->
+  <section class="part" id="part2">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART TWO</div>
+      <h2>The Swarm Has a Preference You Don't</h2>
+      <p class="deck">Groups can want things, know things, and decide things that no individual member wants, knows, or decides — and this is a rigorously studied phenomenon, not a metaphor.</p>
+
+      <div class="lesson">
+        <p>In 1906, statistician Francis Galton attended a country fair where villagers were invited to guess the weight of an ox in a contest. Nearly 800 people submitted guesses — none of them experts, most wildly off in either direction. Galton, out of curiosity, averaged every single guess. The crowd's average came within one pound of the ox's actual weight — closer than nearly every individual guess, including the cattle experts'. No one in that field knew the ox's weight. The <em>crowd</em>, in aggregate, effectively did.</p>
+
+        <p>This isn't a fluke restricted to weight-guessing. One of the most rigorously documented examples of genuine collective intelligence comes from honeybees. Biologist Thomas Seeley spent decades studying how a swarm of bees — with no leader, no bee holding the full picture — chooses a new home. Scout bees independently explore candidate sites and report back via the famous "waggle dance," a dance whose vigor encodes the scout's assessment of site quality. Other bees observe multiple dances, and are more likely to check out sites danced about more enthusiastically. Gradually, dances for weaker sites fade out while dances for the best site intensify, until a quorum of scouts agree — at which point the whole swarm moves, with an accuracy rate that rivals or beats individual expert judgment. No bee compares all the options. The comparison happens across the group, encoded in dance intensity and observation, exactly the way a pheromone trail encodes a foraging decision in Part 1.</p>
+
+        <p class="emph">This only works under specific conditions — and getting those conditions wrong is exactly what turns collective intelligence into its evil twin: groupthink.</p>
+
+        <p>Journalist James Surowiecki, synthesizing this research in <em>The Wisdom of Crowds</em> (2004), identified the conditions genuine collective intelligence requires: <strong>diversity</strong> of perspective, <strong>independence</strong> of individual judgment (not influenced by what neighbors think before forming an opinion), <strong>decentralization</strong> (no single authority dictating the answer), and a working method of <strong>aggregation</strong> to combine individual judgments into a collective one. Galton's crowd worked because guesses were independent and then averaged. A room where everyone defers to the loudest voice, or where dissent gets socially punished before it's spoken — classic groupthink — fails on exactly the independence condition, and produces worse decisions than a single competent individual would, not better ones.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Wisdom or Groupthink?</span>
+        <p>Pick a group you belong to that regularly reaches some kind of collective judgment — a team at work, a friend group deciding where to eat, an online community reaching a consensus opinion. Check it against Surowiecki's four conditions: are opinions actually formed independently before being shared, or does everyone wait to hear what others think first? Is there real diversity of perspective, or is everyone selected from the same background? Is there an actual aggregation mechanism (a vote, an average), or does the loudest or highest-status voice just win? Write down which conditions hold and which don't — and whether that changes how much you'd trust that group's next collective call.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Quorum Sensing, and Where the Metaphor Is Literal</summary>
+        <div class="further-body">
+          <p>The honeybee mechanism has a formal name — <strong>quorum sensing</strong> — and it shows up far outside insect colonies: bacteria use a genuinely chemical version of quorum sensing to coordinate collective behaviors like bioluminescence or biofilm formation, only "switching on" a coordinated group behavior once a threshold concentration of a signaling molecule (proportional to population density) is reached. It's worth being precise about which parts of "collective intelligence" are a loose analogy and which are the literal same mechanism recurring at different scales: bacterial quorum sensing and honeybee site-selection both involve a real threshold-crossing aggregation dynamic; describing a human committee's decision-making as "quorum sensing" is a metaphorical borrowing of the term, useful for intuition, not a claim that the identical biochemical mechanism is at work.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Wisdom of Crowds</dt><dd>The phenomenon where the aggregated judgment of a large, diverse, independent group outperforms most individual experts within it.</dd></div>
+          <div><dt>Groupthink</dt><dd>A failure mode in group decision-making where pressure for consensus suppresses independent judgment and dissent, producing worse outcomes than individual reasoning would.</dd></div>
+          <div><dt>Quorum Sensing</dt><dd>A mechanism, found in both biological systems and human groups, where collective behavior switches on once a threshold level of agreement or signal density is reached.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 3 ================= -->
+  <section class="part" id="part3">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART THREE</div>
+      <h2>The Egregore</h2>
+      <p class="deck">An old occult word for exactly the phenomenon Parts 1 and 2 just built up from the ground — a distributed pattern that starts to act like it has a will of its own.</p>
+
+      <div class="lesson">
+        <p>The word <strong>egregore</strong> was popularized in 19th-century occultism by Éliphas Lévi, borrowed from a Greek term (<em>egrēgoroi</em>, "watchers") used in older apocryphal texts. In the occult tradition running through the Hermetic Order of the Golden Dawn and later chaos magic (Lévi, later Dion Fortune, and in the 20th century practitioners building on Austin Osman Spare's work), an egregore is described as an autonomous psychic entity, formed and sustained by the collective belief, attention, and ritual practice of a group of people — powerful enough, in this tradition, to act back on the very people who created it, sometimes in ways they didn't intend or want.</p>
+
+        <p>Read cold, that sounds like superstition. Read against Parts 1 and 2, it sounds like an early, intuitive name for something real: <strong>a self-reinforcing information pattern, distributed across many minds, that persists and behaves in ways no single participant fully controls or intends</strong> — the same structural shape as a pheromone trail (Part 1) or a honeybee's collective site choice (Part 2), just running on human attention and belief instead of chemical trace or waggle dance.</p>
+
+        <p class="emph">A brand identity. A subculture's shared aesthetic. An ideology. A meme that mutates as it spreads. An inside joke that outlives the people who understand its origin. All of these are low-grade, real-world egregores — patterns that took on a life exceeding any one participant's intention, sustained by the same trace-and-reinforce loop as an ant trail, just made of attention instead of pheromone.</p>
+
+        <p>The closest secular equivalent in modern intellectual history is Richard Dawkins' concept of the <strong>meme</strong>, introduced in <em>The Selfish Gene</em> (1976) — a unit of cultural information (an idea, tune, phrase, or practice) that replicates by jumping from mind to mind, subject to something like natural selection: memes that are better at getting copied spread, regardless of whether they benefit the people carrying them. Dawkins' framing and the occult egregore concept were developed in completely separate traditions, centuries apart in the case of the underlying intuition, but they're describing structurally the same object: a self-propagating pattern that uses minds as its substrate and outlives, exceeds, or even works against the intentions of any individual mind carrying it.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — Field Report from Inside</span>
+        <p>Identify one egregore you're currently embedded in — a brand you're loyal to, a subculture, an ideology, a running joke in a friend group, even a fandom. Write a short field report as if observing it from the outside, as an anthropologist would: What does it demand of its participants? What does it reward? What does it punish or exclude? Does it seem to act in your interest, or does it seem to be optimizing for something else — its own spread, its own persistence — regardless of what happens to you individually?</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Servitors: Building One on Purpose</summary>
+        <div class="further-body">
+          <p>Chaos magic, as a modern occult tradition (emerging in the late 1970s around figures like Peter Carroll), took the egregore concept further with the practice of deliberately constructing a <strong>servitor</strong> — a thoughtform built intentionally, with a specific purpose, through sustained ritual focus and belief, then in principle released to operate semi-autonomously. Practitioners describe this as a technology for externalizing a specific psychological function (a habit-reinforcer, a creative-focus aid) into something that feels like it operates with its own momentum, separate from ongoing conscious effort — worth noting as a genuinely different claim from the group-scale egregore above: a servitor is usually described as built and sustained by a single practitioner's attention rather than a distributed group. Whether this is "really" an autonomous entity or a sophisticated way of describing self-reinforcing habit formation within one mind is exactly the kind of question this course keeps declining to flatten — the practice is real and widely reported; the ontological status of what's produced is genuinely contested, including among practitioners.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Egregore</dt><dd>An occult term for an autonomous entity or pattern formed by the collective belief and attention of a group, said to act back on its participants.</dd></div>
+          <div><dt>Meme (Dawkins sense)</dt><dd>A unit of cultural information that replicates between minds, subject to selective pressure based on how well it spreads, independent of whether it benefits its carriers.</dd></div>
+          <div><dt>Servitor</dt><dd>In chaos magic practice, a thoughtform deliberately constructed by an individual practitioner for a specific purpose, through sustained ritual attention.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PART 4 ================= -->
+  <section class="part" id="part4">
+    <div class="container">
+      <div class="part-index"><span class="line"></span>PART FOUR</div>
+      <h2>Seeing It, Feeding It, Leaving It</h2>
+      <p class="deck">The practical payoff of everything before this: once you can see the pattern, you get to decide whether you're still feeding it.</p>
+
+      <div class="lesson">
+        <p>Every egregore, at any scale, runs on the same fuel: attention, repeated and reinforced, the same way a pheromone trail runs on ants repeatedly choosing the strongest existing trace over cutting a new path. This gives you real leverage, because it means the mechanism that sustains an egregore is not mysterious or inaccessible — it's the accumulated, ordinary choice, made moment to moment, of where you put your attention next.</p>
+
+        <p>Modern attention platforms understand this mechanism extremely well, whether or not they'd use this vocabulary for it. Variable-reward feeds, engagement-optimized recommendation systems, and outrage-cycle news ecosystems are, functionally, industrial-scale trail-reinforcement machines — engineered environments where the "pheromone" is your click, your scroll, your share, deliberately structured to make the strongest existing trail even stronger, the same feedback loop from Part 1, running at a scale and speed no ant colony ever achieved. This is the modern, secular infrastructure of egregore-feeding, and it's worth naming plainly: the <strong>attention economy</strong> is stigmergy, weaponized and monetized.</p>
+
+        <p class="emph">The traditional occult response to an unwanted or parasitic egregore is banishing — and it's worth separating what's testable about that practice from what's a metaphysical claim about it.</p>
+      </div>
+
+      <div class="tiers">
+        <div class="a"><h4>Testable, Practical</h4><p>A deliberate, decisive act of withdrawing attention from a pattern — rather than a slow, ambivalent fade — is well-supported by behavior-change research as more effective at actually breaking a reinforcement loop. This holds regardless of what you believe about egregores.</p></div>
+        <div class="b"><h4>Traditional Ritual Form</h4><p>Practices like the Golden Dawn's Lesser Banishing Ritual of the Pentagram use structured, repeatable ritual gesture and word to enact this decisive break — the specific form (a pentagram, particular words) is tradition-specific and not itself claimed to be load-bearing outside that tradition.</p></div>
+        <div class="c"><h4>Metaphysical Claim</h4><p>That banishing severs an actual autonomous entity's connection to you, rather than simply changing your own behavior and attention patterns, is a claim about the world this course takes no position on — it's genuinely contested, including within occult traditions.</p></div>
+      </div>
+
+      <div class="lesson">
+        <p>What survives, stripped of any particular ritual form or metaphysical commitment, is something you can actually use: name the pattern specifically (you did this in Part 3's field report). Identify concretely what it demands of your attention. Then make one decisive, deliberate act of withdrawal — not a vague intention to "use it less," but a specific, bounded act (an unfollow, a period of complete disengagement, a conversation you stop having) — and notice, honestly, what shifts. This is the entire practice. It requires no belief in autonomous entities to work, and it costs you nothing to test.</p>
+      </div>
+
+      <div class="exercise">
+        <span class="tag">Exercise — The Decisive Act</span>
+        <p>Return to the egregore you field-reported on in Part 3. Choose one specific, bounded way it currently claims your attention — a feed you check reflexively, a group chat you feel obligated to track, a narrative you keep re-litigating in your own head. Set a defined period (a week is a reasonable start) and make one decisive, specific act of withdrawal from that exact channel — not "I'll try to engage less," but a concrete action with a clear boundary. At the end of the period, write down what you noticed: about the pattern, about your own attention, and about whether the pattern tried to pull you back.</p>
+      </div>
+
+      <details class="further">
+        <summary>Further Knowledge — Why "Decisive" Beats "Gradual" Here</summary>
+        <div class="further-body">
+          <p>This isn't just occult folk wisdom — it lines up with real findings in habit and behavior-change research. Variable-ratio reinforcement schedules (the same mechanism behind slot machines and, deliberately, most social feeds) are notoriously resistant to gradual reduction, because each partial reduction in engagement is still intermittently rewarded, which paradoxically strengthens the habit loop rather than weakening it — psychologists sometimes call this the "extinction burst" problem. A clean, complete, time-bound break avoids re-triggering the reward loop in a way that "cutting back slowly" often doesn't. The traditional ritual insistence on a decisive, deliberate banishing act — rather than a vague resolution to disengage gradually — turns out to track something real about how reinforcement loops actually get broken, independent of any claim about what else the ritual might be doing.</p>
+        </div>
+      </details>
+
+      <div class="glossary">
+        <span class="tag">Glossary</span>
+        <dl>
+          <div><dt>Attention Economy</dt><dd>An economic framing of media and platforms in which human attention itself is the scarce resource being competed for and monetized.</dd></div>
+          <div><dt>Banishing</dt><dd>A ritual practice, in various occult traditions, for severing a person's connection to an unwanted entity, pattern, or influence.</dd></div>
+          <div><dt>Extinction Burst</dt><dd>A temporary intensification of a habitual behavior when its usual reward is withdrawn, before the behavior fades — a reason gradual reduction of a reinforced habit often backfires.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LANDING / FIELD REPORT ================= -->
+  <section class="landing" id="landing">
+    <div class="container">
+      <span class="eyebrow">Closing practice</span>
+      <h2>Name One, Right Now</h2>
+      <p>Before you close this page, write down the name of one specific pattern — a feed, a group, an ideology, a running argument in your own head — that has been claiming more of your attention lately than you'd choose if you were deciding fresh. No judgment. Just the field report.</p>
+      <textarea id="fieldreport" placeholder="Begin writing here..."></textarea>
+      <p class="note">Private to this session. Nothing you write leaves this page.</p>
+    </div>
+  </section>
+
+  <footer>
+    The Distributed Mind — a masterclass on egregores &amp; collective cognition · Part of the interactive series alongside Boundary Reality, Novelty Theory, Strange Attractors, and It From Bit
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- progress bar ---------------- */
+  var progressFill = document.getElementById('progressFill');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressFill.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  /* ---------------- sidenav active state ---------------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.sidenav a'));
+  var sections = navLinks.map(function(a){ return document.getElementById(a.getAttribute('href').slice(1)); });
+  function updateActiveNav(){
+    var pos = window.scrollY + window.innerHeight * 0.4;
+    var current = 0;
+    for(var i=0;i<sections.length;i++){
+      if(sections[i] && sections[i].offsetTop <= pos) current = i;
+    }
+    navLinks.forEach(function(a, idx){ a.classList.toggle('active', idx === current); });
+  }
+  document.addEventListener('scroll', updateActiveNav, {passive:true});
+  updateActiveNav();
+
+  /* ---------------- swarm canvas: stigmergic trail visualization ----------------
+     Concept: many small agents wander with slight randomness across a persistent
+     trail layer. Each agent deposits faint color on the trail canvas as it moves.
+     Trails decay slowly, so only repeatedly-reinforced paths stay bright —
+     literalizing stigmergy: structure emerging from accumulated trace, not design.
+     The mouse acts as an attractor (an "attention source"), pulling nearby agents
+     and creating a bright, human-caused trail — literalizing Part 4's feeding.
+  --------------------------------------------------------------------------------- */
+  var canvas = document.getElementById('swarmCanvas');
+  var ctx = canvas.getContext('2d');
+  var trailCanvas = document.createElement('canvas');
+  var tctx = trailCanvas.getContext('2d');
+  var W, H, DPR;
+  var agents = [];
+  var mouse = {x:0,y:0,active:false};
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth = canvas.offsetWidth;
+    H = canvas.clientHeight = canvas.offsetHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    trailCanvas.width = W*DPR; trailCanvas.height = H*DPR;
+    tctx.setTransform(DPR,0,0,DPR,0,0);
+    tctx.clearRect(0,0,W,H);
+
+    buildAgents();
+  }
+
+  function buildAgents(){
+    agents = [];
+    var count = Math.min(90, Math.floor((W*H)/11000));
+    for(var i=0;i<count;i++){
+      agents.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        vx: (Math.random()-0.5)*0.4,
+        vy: (Math.random()-0.5)*0.4,
+        hueMix: Math.random(),
+        wander: Math.random()*Math.PI*2
+      });
+    }
+  }
+
+  function colorFor(hueMix, alpha){
+    if(hueMix < 0.4){ return 'rgba(156,175,107,' + alpha + ')'; }      // trail sage
+    else if(hueMix < 0.75){ return 'rgba(201,151,63,' + alpha + ')'; } // brass
+    else { return 'rgba(168,87,126,' + alpha + ')'; }                 // pulse plum
+  }
+
+  function draw(){
+    // fade the trail layer slowly (decay) so unreinforced paths vanish
+    tctx.globalCompositeOperation = 'destination-out';
+    tctx.fillStyle = 'rgba(0,0,0,0.012)';
+    tctx.fillRect(0,0,W,H);
+    tctx.globalCompositeOperation = 'source-over';
+
+    agents.forEach(function(a){
+      a.wander += (Math.random()-0.5)*0.5;
+      a.vx += Math.cos(a.wander)*0.02;
+      a.vy += Math.sin(a.wander)*0.02;
+
+      // mouse attraction: agents drift toward attention source, reinforcing a bright trail
+      if(mouse.active){
+        var dx = mouse.x - a.x, dy = mouse.y - a.y;
+        var dist = Math.sqrt(dx*dx+dy*dy) || 1;
+        if(dist < 260){
+          a.vx += (dx/dist) * 0.05;
+          a.vy += (dy/dist) * 0.05;
+        }
+      }
+
+      // speed limit
+      var speed = Math.sqrt(a.vx*a.vx + a.vy*a.vy);
+      var maxSpeed = 0.9;
+      if(speed > maxSpeed){ a.vx = (a.vx/speed)*maxSpeed; a.vy = (a.vy/speed)*maxSpeed; }
+
+      a.x += a.vx; a.y += a.vy;
+
+      // wrap edges
+      if(a.x < 0) a.x = W; if(a.x > W) a.x = 0;
+      if(a.y < 0) a.y = H; if(a.y > H) a.y = 0;
+
+      // deposit faint trace on trail layer
+      tctx.beginPath();
+      tctx.arc(a.x, a.y, 1.4, 0, Math.PI*2);
+      tctx.fillStyle = colorFor(a.hueMix, 0.10);
+      tctx.fill();
+    });
+
+    // compose: void gradient, then trail layer, then agents on top
+    var grad = ctx.createRadialGradient(W/2,H*0.5,0,W/2,H*0.5,Math.max(W,H)*0.75);
+    grad.addColorStop(0,'rgba(23,18,9,0.9)');
+    grad.addColorStop(1,'rgba(11,9,6,1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    ctx.drawImage(trailCanvas,0,0,W,H);
+
+    agents.forEach(function(a){
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 1.6, 0, Math.PI*2);
+      ctx.fillStyle = colorFor(a.hueMix, 0.9);
+      ctx.shadowColor = colorFor(a.hueMix, 0.8);
+      ctx.shadowBlur = 5;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    if(!reduceMotion){ requestAnimationFrame(draw); }
+  }
+
+  window.addEventListener('resize', resize, {passive:true});
+  window.addEventListener('mousemove', function(e){
+    var rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    mouse.active = true;
+  }, {passive:true});
+  window.addEventListener('mouseleave', function(){ mouse.active = false; });
+
+  resize();
+  if(reduceMotion){ draw(); } else { requestAnimationFrame(draw); }
+
+})();
+</script>
+
+</body>
+</html>

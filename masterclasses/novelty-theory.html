@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Novelty Theory — Terence McKenna</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #030008;
+    --deep: #0a0118;
+    --purple: #5b0fa8;
+    --violet: #8b1fff;
+    --magenta: #d000ff;
+    --cyan: #00f5ff;
+    --gold: #ffd700;
+    --green: #00ff88;
+    --orange: #ff6b00;
+    --text: #e8deff;
+    --muted: #9b7dbf;
+    --glow-v: 0 0 20px #8b1fff88, 0 0 60px #d000ff44;
+    --glow-c: 0 0 20px #00f5ff88, 0 0 60px #00f5ff44;
+    --glow-g: 0 0 20px #00ff8888, 0 0 60px #00ff8844;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 18px;
+    line-height: 1.7;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  #cursor {
+    position: fixed;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #d000ff, #00f5ff);
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: screen;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease;
+    filter: blur(1px);
+  }
+  #cursor-trail {
+    position: fixed;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #8b1fff;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.15s ease;
+    opacity: 0.6;
+  }
+
+  /* STARFIELD */
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* FRACTAL BG */
+  #fractal-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.07;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, #030008ee 0%, transparent 100%);
+    backdrop-filter: blur(4px);
+  }
+  .nav-logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 14px;
+    color: var(--magenta);
+    text-shadow: var(--glow-v);
+    letter-spacing: 2px;
+  }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+  .nav-links a:hover {
+    color: var(--cyan);
+    text-shadow: var(--glow-c);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* SECTIONS */
+  section {
+    min-height: 100vh;
+    padding: 120px 60px 80px;
+    position: relative;
+  }
+
+  /* HERO */
+  #hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    text-shadow: var(--glow-c);
+    margin-bottom: 24px;
+    animation: fadeSlideUp 1s ease both;
+  }
+
+  .hero-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(42px, 8vw, 100px);
+    font-weight: 900;
+    line-height: 1.05;
+    color: #d000ff; /* fallback if background-clip:text isn't honored */
+    background: linear-gradient(135deg, #d000ff 0%, #8b1fff 30%, #00f5ff 60%, #00ff88 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 0 40px #d000ff88);
+    animation: fadeSlideUp 1s ease 0.2s both;
+    margin-bottom: 12px;
+  }
+
+  .hero-subtitle {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(16px, 2.5vw, 28px);
+    color: var(--gold);
+    text-shadow: 0 0 30px #ffd70066;
+    animation: fadeSlideUp 1s ease 0.4s both;
+    margin-bottom: 40px;
+  }
+
+  .hero-quote {
+    font-style: italic;
+    font-size: clamp(14px, 1.8vw, 20px);
+    color: var(--muted);
+    max-width: 700px;
+    animation: fadeSlideUp 1s ease 0.6s both;
+    margin-bottom: 60px;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeSlideUp 1s ease 0.8s both;
+  }
+
+  .btn {
+    padding: 14px 36px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.3s;
+    cursor: none;
+    border: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple), var(--magenta));
+    color: white;
+    box-shadow: 0 0 30px #d000ff44;
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 60px #d000ff88, 0 0 120px #d000ff44;
+    transform: translateY(-2px);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 20px #00f5ff22;
+  }
+  .btn-outline:hover {
+    background: #00f5ff11;
+    box-shadow: 0 0 40px #00f5ff44;
+    transform: translateY(-2px);
+  }
+
+  /* SCROLL INDICATOR */
+  .scroll-ind {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    animation: float 2s ease-in-out infinite;
+  }
+  .scroll-ind span {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .scroll-arrow {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, var(--magenta), transparent);
+  }
+
+  /* TIMEWAVE VISUALIZER */
+  #timewave-canvas {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid #8b1fff33;
+    border-radius: 4px;
+    box-shadow: 0 0 60px #8b1fff22;
+  }
+
+  /* SECTION STYLING */
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--magenta);
+    text-shadow: var(--glow-v);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(28px, 4vw, 52px);
+    line-height: 1.1;
+    margin-bottom: 32px;
+  }
+
+  .gradient-text {
+    color: #d000ff; /* fallback if background-clip:text isn't honored */
+    background: linear-gradient(135deg, #d000ff, #00f5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px #d000ff44);
+  }
+
+  .gold-text { color: var(--gold); text-shadow: 0 0 30px #ffd70066; }
+  .cyan-text { color: var(--cyan); text-shadow: var(--glow-c); }
+  .green-text { color: var(--green); text-shadow: var(--glow-g); }
+
+  /* CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .card {
+    background: linear-gradient(135deg, #0f0025, #1a003a);
+    border: 1px solid #5b0fa833;
+    border-radius: 4px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--magenta), var(--cyan));
+  }
+  .card:hover {
+    border-color: #8b1fff66;
+    box-shadow: 0 0 40px #5b0fa833;
+    transform: translateY(-4px);
+  }
+  .card-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .card h3 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 18px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .card p {
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  /* MATH SECTION */
+  .math-box {
+    background: #060012;
+    border: 1px solid #00f5ff33;
+    border-radius: 4px;
+    padding: 36px;
+    margin: 32px 0;
+    position: relative;
+    font-family: 'Space Mono', monospace;
+    box-shadow: 0 0 40px #00f5ff11;
+  }
+  .math-box h3 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 20px;
+    color: var(--cyan);
+    margin-bottom: 20px;
+  }
+  .formula {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(14px, 2vw, 22px);
+    color: var(--green);
+    text-shadow: var(--glow-g);
+    text-align: center;
+    padding: 24px;
+    background: #00ff0808;
+    border: 1px solid #00ff8833;
+    border-radius: 4px;
+    margin: 20px 0;
+    letter-spacing: 2px;
+  }
+  .formula-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+    font-family: 'Crimson Pro', serif;
+  }
+
+  /* INGRESSION TABLE */
+  .ingression-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 32px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+  .ingression-table th {
+    background: #1a003a;
+    color: var(--magenta);
+    padding: 14px 20px;
+    text-align: left;
+    letter-spacing: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #5b0fa844;
+  }
+  .ingression-table td {
+    padding: 12px 20px;
+    border-bottom: 1px solid #1a003a;
+    color: var(--muted);
+    vertical-align: top;
+  }
+  .ingression-table td:first-child {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+  .ingression-table tr:hover td {
+    background: #0f002088;
+    color: var(--text);
+  }
+
+  /* TIMEWAVE SECTION */
+  #timewave {
+    background: linear-gradient(180deg, var(--void) 0%, #0a0020 50%, var(--void) 100%);
+  }
+
+  .controls-bar {
+    display: flex;
+    gap: 16px;
+    margin: 24px 0;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .ctrl-btn {
+    padding: 10px 24px;
+    background: transparent;
+    border: 1px solid var(--violet);
+    color: var(--violet);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: none;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  .ctrl-btn:hover, .ctrl-btn.active {
+    background: var(--violet);
+    color: white;
+    box-shadow: var(--glow-v);
+  }
+  .ctrl-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  /* QUIZ */
+  #quiz-section {
+    background: linear-gradient(135deg, #050010, #0a0020);
+  }
+
+  .quiz-container {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .quiz-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #1a003a;
+    border-radius: 2px;
+    margin-bottom: 48px;
+    overflow: hidden;
+  }
+  .quiz-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--magenta), var(--cyan));
+    transition: width 0.5s ease;
+    border-radius: 2px;
+  }
+
+  .question-card {
+    background: linear-gradient(135deg, #0d001f, #1a003a);
+    border: 1px solid #5b0fa844;
+    border-radius: 4px;
+    padding: 48px;
+    animation: fadeSlideUp 0.5s ease both;
+  }
+
+  .q-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--magenta);
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+  }
+
+  .q-text {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(16px, 2.5vw, 24px);
+    color: var(--text);
+    margin-bottom: 36px;
+    line-height: 1.4;
+  }
+
+  .q-options {
+    display: grid;
+    gap: 14px;
+  }
+
+  .q-option {
+    padding: 18px 24px;
+    background: #060012;
+    border: 1px solid #5b0fa833;
+    border-radius: 4px;
+    cursor: none;
+    transition: all 0.3s;
+    font-size: 16px;
+    color: var(--muted);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .q-option:hover {
+    border-color: var(--violet);
+    color: var(--text);
+    background: #1a003a;
+    transform: translateX(6px);
+  }
+  .q-option .opt-letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--violet);
+    min-width: 24px;
+  }
+  .q-option.correct {
+    border-color: var(--green);
+    background: #00ff0810;
+    color: var(--green);
+  }
+  .q-option.incorrect {
+    border-color: #ff3333;
+    background: #ff000010;
+    color: #ff5555;
+  }
+  .q-option.disabled { pointer-events: none; }
+
+  .q-explanation {
+    margin-top: 28px;
+    padding: 24px;
+    background: #0a001a;
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 4px 4px 0;
+    color: var(--muted);
+    font-style: italic;
+    display: none;
+  }
+  .q-explanation.show { display: block; }
+
+  .quiz-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+  }
+
+  .score-display {
+    text-align: center;
+    padding: 60px 40px;
+  }
+  .score-number {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 80px;
+    color: #d000ff; /* fallback if background-clip:text isn't honored */
+    background: linear-gradient(135deg, #d000ff, #00f5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px #d000ff66);
+    display: block;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .score-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .score-message {
+    margin-top: 32px;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--gold);
+    text-shadow: 0 0 30px #ffd70066;
+  }
+
+  /* GLOSSARY */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+  }
+  .gloss-item {
+    border: 1px solid #5b0fa833;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .gloss-term {
+    padding: 18px 24px;
+    background: #0f0025;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 15px;
+    color: var(--gold);
+    cursor: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+  }
+  .gloss-term:hover { background: #1a003a; }
+  .gloss-term .chevron {
+    color: var(--violet);
+    transition: transform 0.3s;
+  }
+  .gloss-item.open .chevron { transform: rotate(180deg); }
+  .gloss-def {
+    padding: 0 24px;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .gloss-item.open .gloss-def {
+    max-height: 200px;
+    padding: 20px 24px;
+  }
+
+  /* STUDY GUIDE */
+  .guide-steps {
+    counter-reset: steps;
+    list-style: none;
+    margin-top: 40px;
+    display: grid;
+    gap: 24px;
+  }
+  .guide-step {
+    counter-increment: steps;
+    background: #0a0018;
+    border: 1px solid #5b0fa833;
+    border-radius: 4px;
+    padding: 32px 32px 32px 80px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .guide-step::before {
+    content: counter(steps);
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 32px;
+    color: #8b1fff; /* fallback if background-clip:text isn't honored */
+    background: linear-gradient(135deg, var(--purple), var(--magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .guide-step h4 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 17px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .guide-step p {
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .guide-step:hover {
+    border-color: #8b1fff55;
+    background: #0f0025;
+  }
+
+  /* DIVIDER */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--purple), var(--magenta), var(--cyan), transparent);
+    margin: 0;
+    opacity: 0.4;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 60px;
+    text-align: center;
+    border-top: 1px solid #1a003a;
+    position: relative;
+    z-index: 1;
+  }
+  footer p {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 3px;
+  }
+
+  /* NOVELTY METER */
+  .novelty-meter {
+    margin: 40px auto;
+    max-width: 500px;
+    text-align: center;
+  }
+  .meter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .meter-track {
+    width: 100%;
+    height: 24px;
+    background: #060012;
+    border: 1px solid #8b1fff44;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 20px #8b1fff22;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #5b0fa8, #d000ff, #00f5ff);
+    box-shadow: 0 0 20px #d000ff88;
+    transition: width 2s ease;
+    position: relative;
+  }
+  .meter-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 40px;
+    background: linear-gradient(90deg, transparent, #ffffff33);
+  }
+  .meter-value {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 36px;
+    color: var(--magenta);
+    text-shadow: var(--glow-v);
+    margin-top: 12px;
+  }
+
+  /* SPIRAL VISUAL */
+  #spiral-canvas {
+    display: block;
+    margin: 40px auto;
+    border-radius: 50%;
+    box-shadow: 0 0 60px #d000ff44, 0 0 120px #8b1fff22;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-10px); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes rotate-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* REVEAL ON SCROLL */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    section { padding: 100px 24px 60px; }
+    nav { padding: 12px 20px; }
+    .nav-links { display: none; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
+  /* TABS */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #5b0fa833;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 14px 28px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--magenta);
+    border-bottom-color: var(--magenta);
+    text-shadow: var(--glow-v);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ORBIT ANIMATION FOR HERO */
+  .orbit-container {
+    position: absolute;
+    width: 600px; height: 600px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0.15;
+  }
+  .orbit-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid;
+    animation: rotate-slow linear infinite;
+  }
+
+  /* PARTICLE burst for correct answer */
+  @keyframes burst {
+    0% { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(3); opacity: 0; }
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media(max-width:768px){ .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<canvas id="starfield"></canvas>
+<canvas id="fractal-bg"></canvas>
+
+<nav>
+  <span class="nav-logo">✦ Novelty Theory</span>
+  <ul class="nav-links">
+    <li><a href="#what">What It Is</a></li>
+    <li><a href="#math">The Math</a></li>
+    <li><a href="#timewave">Timewave</a></li>
+    <li><a href="#study">Study</a></li>
+    <li><a href="#quiz-section">Quiz</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <div class="orbit-container">
+    <div class="orbit-ring" style="width:200px;height:200px;border-color:#d000ff;animation-duration:8s;"></div>
+    <div class="orbit-ring" style="width:350px;height:350px;border-color:#00f5ff;animation-duration:14s;animation-direction:reverse;"></div>
+    <div class="orbit-ring" style="width:500px;height:500px;border-color:#8b1fff;animation-duration:22s;"></div>
+    <div class="orbit-ring" style="width:600px;height:600px;border-color:#00ff88;animation-duration:30s;animation-direction:reverse;"></div>
+  </div>
+
+  <p class="hero-eyebrow">✦ Terence McKenna ✦</p>
+  <h1 class="hero-title">Novelty<br>Theory</h1>
+  <h2 class="hero-subtitle">The Timewave Zero Hypothesis</h2>
+  <p class="hero-quote">"The universe is not only queerer than we suppose, but queerer than we can suppose — and it is getting more so, faster and faster."</p>
+  <div class="hero-cta">
+    <a href="#what" class="btn btn-primary">Begin the Journey</a>
+    <a href="#quiz-section" class="btn btn-outline">Take the Quiz</a>
+  </div>
+
+  <div class="scroll-ind">
+    <span>Scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== WHAT IS IT ===== -->
+<section id="what">
+  <div class="section-label">01 — Foundation</div>
+  <h2 class="section-title gradient-text">What Is<br>Novelty Theory?</h2>
+
+  <div class="two-col reveal">
+    <div>
+      <p style="margin-bottom:20px;">Terence McKenna proposed that the universe has a fundamental drive toward <strong style="color:var(--magenta)">novelty</strong> — the emergence of new patterns, forms, and complexity over time. This is not a metaphor. It is, he argued, a measurable, mathematical property of reality itself.</p>
+      <p style="margin-bottom:20px;">Novelty Theory (also called <strong style="color:var(--cyan)">Timewave Zero</strong> or the <strong style="color:var(--cyan)">Eschaton</strong> hypothesis) proposes that time is not a neutral medium through which events flow — it has a <em>texture</em>, oscillating between periods of <strong style="color:var(--green)">ingression of novelty</strong> (maximum complexity and connection) and <strong style="color:#ff6b00">habit</strong> (repetition and stasis).</p>
+      <p>McKenna derived this from the structure of the ancient <strong style="color:var(--gold)">I Ching</strong> — the 4,000-year-old Chinese oracle — claiming its 64 hexagrams encode a fractal map of time's unfolding.</p>
+    </div>
+    <div>
+      <canvas id="spiral-canvas" width="300" height="300"></canvas>
+    </div>
+  </div>
+
+  <div class="card-grid reveal">
+    <div class="card">
+      <span class="card-icon">🌀</span>
+      <h3>Novelty</h3>
+      <p>The degree of <em>connectedness</em> and <em>complexity</em> in a moment. High novelty = maximum possibility; the universe is most "itself." Low novelty = repetition; habit dominates over change.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">♾️</span>
+      <h3>Fractal Time</h3>
+      <p>The pattern of novelty repeats at every scale — days mirror years, years mirror centuries, centuries mirror ages — like a fractal coastline repeating its shape at every zoom level.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🎯</span>
+      <h3>The Eschaton</h3>
+      <p>The wave asymptotically approaches infinite novelty at a specific point in time — a singularity McKenna originally placed at December 21, 2012. Reality itself "ends" by becoming wholly novel.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔮</span>
+      <h3>I Ching Origin</h3>
+      <p>McKenna studied the 64 hexagrams and their 384 lines. He found a mathematical relationship between them that, when graphed, produced a wave mirroring historical novelty peaks and troughs.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🌊</span>
+      <h3>Historical Resonance</h3>
+      <p>McKenna overlaid the wave onto history and claimed peaks of novelty matched the Renaissance, WWII, 9/11, and technological accelerations — while troughs matched Dark Ages and stagnation.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">⚗️</span>
+      <h3>The Role of Mind</h3>
+      <p>Consciousness itself is novelty incarnate. As the universe becomes more novel, it necessarily produces more complex forms of mind — culminating in a kind of universal awakening.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== MATH ===== -->
+<section id="math" style="background: linear-gradient(180deg, var(--void), #08001a, var(--void))">
+  <div class="section-label">02 — The Mathematics</div>
+  <h2 class="section-title"><span class="gradient-text">The Math</span><br><span class="gold-text" style="font-size:50%">Behind the Wave</span></h2>
+
+  <div class="reveal">
+    <p style="max-width:800px;margin-bottom:40px;color:var(--muted)">McKenna, with his brother Dennis, developed a mathematical framework from the King Wen sequence of the I Ching. The resulting function generates what he called the <em>Timewave</em> — a fractal, self-similar wave of novelty through time.</p>
+  </div>
+
+  <div class="tab-bar reveal">
+    <div class="tab active" onclick="switchTab('foundations')">Foundations</div>
+    <div class="tab" onclick="switchTab('construction')">Wave Construction</div>
+    <div class="tab" onclick="switchTab('scaling')">Fractal Scaling</div>
+    <div class="tab" onclick="switchTab('zero')">Timewave Zero</div>
+  </div>
+
+  <div id="tab-foundations" class="tab-panel active reveal">
+    <div class="math-box">
+      <h3>Step 1 — The I Ching Difference Array</h3>
+      <p style="color:var(--muted);margin-bottom:20px;">Start with the 64 hexagrams of the King Wen sequence. For each adjacent pair of hexagrams, count the number of lines that <em>differ</em> (0–6). This produces a sequence of 64 difference values, called <strong style="color:var(--cyan)">W(n)</strong>.</p>
+      <div class="formula">W(n) = |lines_changed(hexagram_n → hexagram_{n+1})|</div>
+      <div class="formula-label">n ranges from 1 to 64 (with wraparound); each value ∈ {0, 1, 2, 3, 4, 5, 6}</div>
+      <p style="color:var(--muted);margin-top:20px;">McKenna claimed this sequence, when plotted and analyzed, reveals a hidden mathematical structure that reflects the flow of time's novelty. The 384 total lines in the I Ching (64 hexagrams × 6 lines) became foundational — 384 also appears in lunar calendrics.</p>
+    </div>
+
+    <div class="math-box">
+      <h3>Step 2 — Generating the Wave Values</h3>
+      <p style="color:var(--muted);margin-bottom:20px;">McKenna derived a novelty value N(t) for any moment t in time. Lower N(t) means <strong style="color:var(--green)">MORE novelty</strong>; higher N(t) means <strong style="color:#ff6b00">MORE habit</strong>. (Counter-intuitive: novelty is measured by the <em>inverse</em> of the wave height.)</p>
+      <div class="formula">N(t) = Σ W(n) · f(t, n, scale)</div>
+      <div class="formula-label">Where scale determines which temporal period is mapped</div>
+    </div>
+  </div>
+
+  <div id="tab-construction" class="tab-panel reveal">
+    <div class="math-box">
+      <h3>The Three-Level Construction</h3>
+      <p style="color:var(--muted);margin-bottom:24px;">The Timewave is not a single wave but a <strong style="color:var(--magenta)">hierarchical composite</strong> of three mathematical transformations of the difference array:</p>
+
+      <div style="display:grid;gap:20px;">
+        <div style="padding:20px;border:1px solid #5b0fa833;border-radius:4px;">
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--violet);letter-spacing:2px;margin-bottom:12px;">LEVEL 1 — TRIGRAMMATIC</div>
+          <div class="formula">T(n) = W(n) + W(n + 32) [mod 64]</div>
+          <p style="color:var(--muted);font-size:14px;margin-top:12px;">The first 32 values are added to the last 32 values, creating a 32-element array. This models the interaction of the first and second half of the hexagram sequence.</p>
+        </div>
+        <div style="padding:20px;border:1px solid #00f5ff33;border-radius:4px;">
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan);letter-spacing:2px;margin-bottom:12px;">LEVEL 2 — HEXAGRAMMATIC</div>
+          <div class="formula">H(n) = T(n) + T(n + 16) [mod 32]</div>
+          <p style="color:var(--muted);font-size:14px;margin-top:12px;">The process continues, folding the 32-element array into 16 elements. This captures the hexagram-trigram relationship in the I Ching structure.</p>
+        </div>
+        <div style="padding:20px;border:1px solid #00ff8833;border-radius:4px;">
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--green);letter-spacing:2px;margin-bottom:12px;">LEVEL 3 — COMPOSITE WAVE</div>
+          <div class="formula">TWZ(t) = ∫₀ᵗ [T(x) + H(x) + W(x)] dx · e^(-λt)</div>
+          <p style="color:var(--muted);font-size:14px;margin-top:12px;">All three levels are summed and integrated to produce the final Timewave function. The exponential term causes the wave to amplify as it approaches the zero point.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-scaling" class="tab-panel reveal">
+    <div class="math-box">
+      <h3>The Fractal Self-Similarity Principle</h3>
+      <p style="color:var(--muted);margin-bottom:24px;">The Timewave is <strong style="color:var(--magenta)">fractal</strong>: the same pattern repeats at different temporal scales, each 64× smaller than the last. McKenna identified six levels of scale:</p>
+    </div>
+
+    <table class="ingression-table reveal">
+      <thead>
+        <tr>
+          <th>Scale Level</th>
+          <th>Period Duration</th>
+          <th>Historical Analog</th>
+          <th>Novelty Character</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cosmic</td>
+          <td>72 billion years</td>
+          <td>Age of the universe × ~5</td>
+          <td>Emergence of matter, stars, galaxies</td>
+        </tr>
+        <tr>
+          <td>Biological</td>
+          <td>1.3 billion years</td>
+          <td>Rise of complex life</td>
+          <td>Cambrian explosion, evolution of nervous systems</td>
+        </tr>
+        <tr>
+          <td>Civilizational</td>
+          <td>~67,000 years</td>
+          <td>Modern human emergence</td>
+          <td>Language, art, ritual, agricultural revolution</td>
+        </tr>
+        <tr>
+          <td>Historical</td>
+          <td>~4,300 years</td>
+          <td>Bronze Age to present</td>
+          <td>Empires, religions, philosophy, science</td>
+        </tr>
+        <tr>
+          <td>Cultural</td>
+          <td>~67 years</td>
+          <td>Within a human lifetime</td>
+          <td>WWII, Cold War, Digital Age</td>
+        </tr>
+        <tr>
+          <td>Personal</td>
+          <td>~384 days</td>
+          <td>Just over a year</td>
+          <td>Seasonal and personal cycles of change</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="math-box reveal">
+      <h3>The Scaling Ratio</h3>
+      <p style="color:var(--muted);margin-bottom:16px;">Each level is exactly 64× larger than the one below it — the same number as the I Ching hexagrams. This ratio is the core fractal resonance:</p>
+      <div class="formula">Scale_{n+1} = Scale_n × 64</div>
+      <p style="color:var(--muted);margin-top:16px;">This means a single day within the personal scale mirrors an entire civilization-scale epoch. The <em>same events</em> — metaphorically — happen at every level, with the same proportional timing of novelty peaks and troughs.</p>
+    </div>
+  </div>
+
+  <div id="tab-zero" class="tab-panel reveal">
+    <div class="math-box">
+      <h3>Timewave Zero — The Singularity Condition</h3>
+      <p style="color:var(--muted);margin-bottom:24px;">As t approaches the terminal date, the Timewave function approaches zero asymptotically. This represents a state of <strong style="color:var(--magenta)">infinite novelty</strong> — a phase transition in which the universe transcends its own structure.</p>
+      <div class="formula">lim(t → t₀) TWZ(t) = 0</div>
+      <div class="formula-label">Where t₀ is the terminal date (McKenna's original: Dec 21, 2012)</div>
+      <p style="color:var(--muted);margin-top:20px;">The wave never actually <em>reaches</em> zero — it's asymptotic. McKenna interpreted this mathematically as the collapse of the distinction between possibility and actuality. Every potential pattern becomes simultaneously real.</p>
+    </div>
+
+    <div class="math-box" style="border-color:#ffd70033;">
+      <h3 style="color:var(--gold)">Why December 21, 2012?</h3>
+      <p style="color:var(--muted);margin-bottom:16px;">McKenna anchored the wave by aligning its major novelty peaks with historical events he could verify — primarily the <strong style="color:var(--gold)">dropping of the atomic bomb (August 6, 1945)</strong>, which he identified as the single most novel event of the 20th century.</p>
+      <p style="color:var(--muted);margin-bottom:16px;">Working backward from this anchor using the fractal ratios, the zero point fell on December 21, 2012 — which coincidentally aligned with the end of the Mayan Long Count calendar. McKenna saw this as confirmation.</p>
+      <div class="formula">t₀ = Aug 6, 1945 + (scale × resonance factor) = Dec 21, 2012</div>
+      <p style="color:var(--muted);margin-top:16px;font-style:italic;">Note: 2012 has passed without the predicted singularity. McKenna himself acknowledged the theory was speculative and that the zero date could be recalibrated. The theory's value lies more in its conceptual framework than predictive accuracy.</p>
+    </div>
+  </div>
+
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== TIMEWAVE VISUALIZER ===== -->
+<section id="timewave">
+  <div class="section-label">03 — Interactive Visualizer</div>
+  <h2 class="section-title"><span class="cyan-text">The Timewave</span><br><span style="font-size:50%;color:var(--muted)">Live Interactive Graph</span></h2>
+
+  <p class="reveal" style="max-width:700px;color:var(--muted);margin-bottom:32px;">Below is a generative approximation of the Timewave based on McKenna's published difference array. Lower values = more novelty (more interesting times). Peaks = habit. Valleys = novelty. Use the controls to explore different views.</p>
+
+  <div class="novelty-meter reveal">
+    <div class="meter-label">Current Novelty Level</div>
+    <div class="meter-track">
+      <div class="meter-fill" id="novelty-fill" style="width:73%"></div>
+    </div>
+    <div class="meter-value" id="novelty-val">73%</div>
+  </div>
+
+  <div class="controls-bar reveal">
+    <span class="ctrl-label">VIEW:</span>
+    <button class="ctrl-btn active" onclick="setView('history')">History</button>
+    <button class="ctrl-btn" onclick="setView('century')">20th C.</button>
+    <button class="ctrl-btn" onclick="setView('decade')">Decade</button>
+    <button class="ctrl-btn" onclick="setView('zoom')">Zoom to Now</button>
+    <button class="ctrl-btn" onclick="toggleAnimate()" id="anim-btn">▶ Animate</button>
+  </div>
+
+  <canvas id="timewave-canvas" height="300" class="reveal"></canvas>
+  <p style="text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:16px;letter-spacing:2px;">HOVER OVER GRAPH TO INSPECT TIMEPOINTS</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== STUDY GUIDE ===== -->
+<section id="study" style="background:linear-gradient(180deg,var(--void),#0a001a,var(--void))">
+  <div class="section-label">04 — Study Guide</div>
+  <h2 class="section-title"><span class="gold-text">Master the Theory</span></h2>
+
+  <div class="tab-bar reveal">
+    <div class="tab active" onclick="switchStudyTab('concepts')">Core Concepts</div>
+    <div class="tab" onclick="switchStudyTab('glossary')">Glossary</div>
+    <div class="tab" onclick="switchStudyTab('roadmap')">Study Roadmap</div>
+  </div>
+
+  <div id="study-concepts" class="tab-panel active reveal">
+    <div style="display:grid;gap:20px;max-width:900px">
+      <div style="padding:28px;background:#08001a;border:1px solid #d000ff33;border-radius:4px;">
+        <h3 style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--magenta);margin-bottom:16px;">🌀 The Core Claim</h3>
+        <p style="color:var(--muted)">Time is not neutral. It has a measurable "texture" that alternates between novelty (complexity, connection, newness) and habit (repetition, stasis, predictability). This texture follows a mathematical pattern derivable from the I Ching.</p>
+      </div>
+      <div style="padding:28px;background:#08001a;border:1px solid #00f5ff33;border-radius:4px;">
+        <h3 style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--cyan);margin-bottom:16px;">📐 The Mathematical Backbone</h3>
+        <p style="color:var(--muted)">The Timewave is computed from the King Wen sequence of I Ching hexagrams. Their line-change differences produce a numerical array. This array is transformed at three levels and combined to produce a fractal wave function. Lower wave values = more novelty.</p>
+      </div>
+      <div style="padding:28px;background:#08001a;border:1px solid #00ff8833;border-radius:4px;">
+        <h3 style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--green);margin-bottom:16px;">🔄 The Fractal Structure</h3>
+        <p style="color:var(--muted)">The same pattern repeats at 6 scales, each 64× larger than the last (cosmic → biological → civilizational → historical → cultural → personal). Events at one scale are metaphorical echoes of events at every other scale.</p>
+      </div>
+      <div style="padding:28px;background:#08001a;border:1px solid #ffd70033;border-radius:4px;">
+        <h3 style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold);margin-bottom:16px;">🎯 The Eschaton</h3>
+        <p style="color:var(--muted)">All lines of novelty converge on a terminal point where the wave approaches zero — infinite novelty. McKenna called this the Eschaton or Omega Point. He originally dated it to Dec 21, 2012, though he acknowledged the date was speculative and the theory's real value was philosophical-mathematical.</p>
+      </div>
+      <div style="padding:28px;background:#08001a;border:1px solid #8b1fff33;border-radius:4px;">
+        <h3 style="font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--violet);margin-bottom:16px;">🧠 What McKenna Meant by "Novelty"</h3>
+        <p style="color:var(--muted)">Novelty ≠ merely "new things." It means an increase in the <em>density of connection</em> — more relationships, more complexity, more integration across a system. The internet, for example, is not novel because it's new, but because it dramatically increases the number of connections between minds, ideas, and information.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="study-glossary" class="tab-panel reveal">
+    <div class="glossary-grid">
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Novelty <span class="chevron">▾</span></div>
+        <div class="gloss-def">The degree of connectedness, complexity, and newness in any given moment. McKenna used it technically to mean the density of causal connections and the emergence of genuinely new patterns that have not existed before.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Habit <span class="chevron">▾</span></div>
+        <div class="gloss-def">The opposite of novelty — repetition, stasis, and the dominance of established patterns over new ones. Periods of high habit are characterized by conservatism, slow change, and rote behavior at civilizational scales.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Timewave Zero <span class="chevron">▾</span></div>
+        <div class="gloss-def">The mathematical function McKenna developed, also the name of the software he used to display it. "Zero" refers to the terminal point where the wave asymptotically approaches zero — infinite novelty — at the end of time.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">King Wen Sequence <span class="chevron">▾</span></div>
+        <div class="gloss-def">The traditional ordering of the 64 I Ching hexagrams, attributed to King Wen of Zhou (c. 1100 BCE). McKenna used the mathematical relationships between adjacent hexagrams in this sequence as the raw data for his wave function.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Ingression of Novelty <span class="chevron">▾</span></div>
+        <div class="gloss-def">McKenna's phrase for a moment when novelty "enters" the world — a peak of connectivity, creativity, or transformation. These moments are mapped to the valleys (low points) of the Timewave graph.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Eschaton <span class="chevron">▾</span></div>
+        <div class="gloss-def">From Greek "éskhatos" (last). The terminal point of history — the attractor toward which all time flows. McKenna saw it as a kind of universal phase transition, not "the end of the world" but the end of time as a linear medium.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Fractal Resonance <span class="chevron">▾</span></div>
+        <div class="gloss-def">The property by which the same Timewave pattern appears at every scale of time. A "novelty peak" that occurs over the course of a year will have a mirroring structure within a single day within that year, scaled by the ratio of 64.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Omega Point <span class="chevron">▾</span></div>
+        <div class="gloss-def">A term McKenna borrowed from Jesuit philosopher Teilhard de Chardin — the convergence point of universal evolution toward maximum complexity and consciousness. McKenna equated it with his Eschaton and Timewave Zero.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Difference Array W(n) <span class="chevron">▾</span></div>
+        <div class="gloss-def">The foundational numerical sequence in McKenna's math. For each pair of adjacent I Ching hexagrams, it records how many of the 6 lines differ. This 64-element array is the raw data from which the entire Timewave is constructed.</div>
+      </div>
+      <div class="gloss-item" onclick="toggleGloss(this)">
+        <div class="gloss-term">Temporal Texture <span class="chevron">▾</span></div>
+        <div class="gloss-def">McKenna's metaphor for the quality of time at any given moment — some moments feel "thick" with possibility and change; others feel "thin" and static. The Timewave attempts to quantify this subjective sense into an objective mathematical function.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="study-roadmap" class="tab-panel reveal">
+    <ul class="guide-steps">
+      <li class="guide-step">
+        <h4>Understand the Core Claim</h4>
+        <p>Novelty Theory asserts that time is not neutral — it has a measurable quality (novelty vs. habit) that follows a mathematical pattern. This is the philosophical foundation. Grasp this before anything else.</p>
+      </li>
+      <li class="guide-step">
+        <h4>Learn the I Ching Basics</h4>
+        <p>You don't need to master the I Ching, but understand that it consists of 64 hexagrams (6-line symbols), each made of two trigrams (3-line symbols). The King Wen sequence orders these 64 hexagrams in a specific way.</p>
+      </li>
+      <li class="guide-step">
+        <h4>Grasp the Difference Array</h4>
+        <p>For each adjacent pair of hexagrams in the King Wen sequence, count how many of the 6 lines change. This 64-number sequence (W(n)) is the mathematical raw material. Values range from 0 to 6.</p>
+      </li>
+      <li class="guide-step">
+        <h4>Understand the Three-Level Transformation</h4>
+        <p>The difference array is transformed at three levels (trigrammatic, hexagrammatic, composite) by folding it on itself and summing. This produces a 384-point wave function — one point for each line in the I Ching.</p>
+      </li>
+      <li class="guide-step">
+        <h4>Master the Fractal Scaling</h4>
+        <p>The 384-point wave is mapped to time at six nested scales, each 64× larger. Learn the six scales: personal (384 days), cultural (67 years), historical (4,300 years), civilizational (67,000 years), biological (1.3 billion years), cosmic (72 billion years).</p>
+      </li>
+      <li class="guide-step">
+        <h4>Understand the Zero Condition</h4>
+        <p>As time approaches the terminal date, all scales of the wave simultaneously approach zero (their minimum, maximum novelty). This is the Eschaton — a mathematical singularity in which the wave can no longer progress forward in time.</p>
+      </li>
+      <li class="guide-step">
+        <h4>Evaluate the Theory Critically</h4>
+        <p>Consider both McKenna's arguments and his critics. The wave's mapping to history is not reproducible in a scientific sense. The 2012 prediction did not come true. Yet the conceptual framework — that novelty is increasing and accelerating — remains compelling and debated.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== QUIZ ===== -->
+<section id="quiz-section">
+  <div class="section-label">05 — Test Your Knowledge</div>
+  <h2 class="section-title reveal"><span class="gradient-text">The Novelty Quiz</span></h2>
+  <p class="reveal" style="color:var(--muted);max-width:600px;margin-bottom:48px;">Ten questions. Each one a portal deeper into McKenna's labyrinth. Answer carefully — the timewave is watching.</p>
+
+  <div class="quiz-container">
+    <div class="quiz-progress-bar">
+      <div class="quiz-progress-fill" id="quiz-progress" style="width:0%"></div>
+    </div>
+
+    <div id="quiz-body"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <p style="color:var(--magenta);font-size:14px;font-family:'Cinzel Decorative',serif;margin-bottom:16px;">✦ In Honor of Terence McKenna (1946–2000) ✦</p>
+  <p>"The syntactical nature of reality, the real secret of magic, is that the world is made of words."</p>
+  <p style="margin-top:20px;font-size:10px;letter-spacing:4px;">AN EDUCATIONAL JOURNEY THROUGH THE TIMEWAVE · FOR EXPLORERS OF MIND AND TIME</p>
+</footer>
+
+</main>
+
+<script>
+// =====================
+// CURSOR
+// =====================
+const cursor = document.getElementById('cursor');
+const trail = document.getElementById('cursor-trail');
+let mx = 0, my = 0, tx = 0, ty = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+});
+
+function animateTrail() {
+  tx += (mx - tx) * 0.15;
+  ty += (my - ty) * 0.15;
+  trail.style.left = tx + 'px';
+  trail.style.top = ty + 'px';
+  requestAnimationFrame(animateTrail);
+}
+animateTrail();
+
+// =====================
+// STARFIELD
+// =====================
+const starCanvas = document.getElementById('starfield');
+const sctx = starCanvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 300; i++) {
+    stars.push({
+      x: Math.random() * starCanvas.width,
+      y: Math.random() * starCanvas.height,
+      r: Math.random() * 1.5,
+      a: Math.random(),
+      speed: 0.002 + Math.random() * 0.005,
+      color: ['#ffffff','#d000ff','#00f5ff','#8b1fff'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+initStars();
+window.addEventListener('resize', initStars);
+
+function animateStars() {
+  sctx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  stars.forEach(s => {
+    s.a += s.speed;
+    const alpha = (Math.sin(s.a) * 0.5 + 0.5) * 0.8 + 0.1;
+    sctx.beginPath();
+    sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    sctx.fillStyle = s.color + Math.floor(alpha * 255).toString(16).padStart(2,'0');
+    sctx.fill();
+  });
+  requestAnimationFrame(animateStars);
+}
+animateStars();
+
+// =====================
+// SPIRAL
+// =====================
+const spiralCanvas = document.getElementById('spiral-canvas');
+const spctx = spiralCanvas.getContext('2d');
+let spiralAngle = 0;
+
+function drawSpiral() {
+  spctx.clearRect(0, 0, 300, 300);
+  const cx = 150, cy = 150;
+  
+  // Draw psychedelic spiral
+  for (let i = 0; i < 800; i++) {
+    const t = i * 0.05 + spiralAngle;
+    const r = i * 0.18;
+    const x = cx + r * Math.cos(t);
+    const y = cy + r * Math.sin(t);
+    const hue = (i * 0.9 + spiralAngle * 30) % 360;
+    spctx.beginPath();
+    spctx.arc(x, y, 1.5, 0, Math.PI * 2);
+    spctx.fillStyle = `hsla(${hue}, 100%, 70%, 0.8)`;
+    spctx.fill();
+  }
+  
+  // Center glow
+  const grad = spctx.createRadialGradient(cx, cy, 0, cx, cy, 40);
+  grad.addColorStop(0, '#ffffff44');
+  grad.addColorStop(1, 'transparent');
+  spctx.beginPath();
+  spctx.arc(cx, cy, 40, 0, Math.PI * 2);
+  spctx.fillStyle = grad;
+  spctx.fill();
+  
+  spiralAngle += 0.008;
+  requestAnimationFrame(drawSpiral);
+}
+drawSpiral();
+
+// =====================
+// TIMEWAVE
+// =====================
+const twCanvas = document.getElementById('timewave-canvas');
+const twctx = twCanvas.getContext('2d');
+
+// McKenna's actual King Wen difference array (simplified)
+const W = [6,2,4,4,2,6,6,4,4,6,2,4,4,2,4,2,2,6,2,4,4,2,4,4,2,4,2,4,2,2,2,6,
+           4,4,2,4,2,4,4,6,2,4,4,2,4,2,4,2,4,2,2,4,4,2,2,4,2,4,4,2,4,6,6,4];
+
+function buildTimewave(points) {
+  const wave = [];
+  for (let i = 0; i < points; i++) {
+    const t = i / points;
+    let val = 0;
+    // Three-level summation approximation
+    for (let j = 0; j < 64; j++) {
+      const base = W[j];
+      const phase1 = Math.sin(2 * Math.PI * (t * 64 + j) / 64);
+      const phase2 = Math.sin(2 * Math.PI * (t * 384 + j) / 384);
+      const phase3 = Math.cos(2 * Math.PI * (t * 16 + j) / 16);
+      val += base * (phase1 * 0.5 + phase2 * 0.3 + phase3 * 0.2);
+    }
+    // Approach-zero effect near end
+    const eschatonDrive = Math.pow(t, 4) * 3;
+    val = val + eschatonDrive * Math.sin(t * Math.PI * 8);
+    wave.push(val);
+  }
+  // Normalize
+  const mn = Math.min(...wave), mx2 = Math.max(...wave);
+  return wave.map(v => (v - mn) / (mx2 - mn));
+}
+
+const POINTS = 800;
+const waveData = buildTimewave(POINTS);
+
+let viewMode = 'history';
+let animating = false;
+let animOffset = 0;
+let hoverX = -1;
+
+const viewConfigs = {
+  history:  { label: '~75,000 BCE → 2012', start: 0, end: 1 },
+  century:  { label: '1900 → 2012',        start: 0.85, end: 1 },
+  decade:   { label: '2000 → 2012',        start: 0.95, end: 1 },
+  zoom:     { label: 'Terminal Approach',  start: 0.98, end: 1 }
+};
+
+const historicalEvents = [
+  { t: 0.33, label: 'Rise of Cities', y: 0 },
+  { t: 0.50, label: 'Classical Age', y: 0 },
+  { t: 0.72, label: 'Renaissance', y: 0 },
+  { t: 0.88, label: 'Industrial Rev.', y: 0 },
+  { t: 0.93, label: 'WWII', y: 0 },
+  { t: 0.97, label: 'Digital Age', y: 0 },
+  { t: 0.999, label: '2012 Zero', y: 0 },
+];
+
+function resizeTW() {
+  twCanvas.width = twCanvas.offsetWidth * window.devicePixelRatio;
+  twCanvas.height = twCanvas.offsetHeight * window.devicePixelRatio;
+  twctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+resizeTW();
+window.addEventListener('resize', resizeTW);
+
+function drawTimewave() {
+  const W2 = twCanvas.width / window.devicePixelRatio;
+  const H = twCanvas.height / window.devicePixelRatio;
+  const pad = { top: 40, bottom: 60, left: 60, right: 30 };
+  const gW = W2 - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  twctx.clearRect(0, 0, W2, H);
+
+  // BG
+  twctx.fillStyle = '#060012';
+  twctx.fillRect(0, 0, W2, H);
+
+  const cfg = viewConfigs[viewMode];
+  const startIdx = Math.floor(cfg.start * POINTS);
+  const endIdx = Math.ceil(cfg.end * POINTS);
+  const slice = waveData.slice(startIdx, endIdx);
+  if (slice.length < 2) return;
+
+  const sliceMin = Math.min(...slice);
+  const sliceMax = Math.max(...slice);
+  const range = sliceMax - sliceMin || 1;
+
+  function toScreenX(i) { return pad.left + (i / (slice.length - 1)) * gW; }
+  function toScreenY(v) { return pad.top + gH - ((v - sliceMin) / range) * gH; }
+
+  // Grid
+  twctx.strokeStyle = '#5b0fa811';
+  twctx.lineWidth = 1;
+  for (let g = 0; g <= 8; g++) {
+    const y = pad.top + (g / 8) * gH;
+    twctx.beginPath();
+    twctx.moveTo(pad.left, y);
+    twctx.lineTo(pad.left + gW, y);
+    twctx.stroke();
+  }
+  for (let g = 0; g <= 6; g++) {
+    const x = pad.left + (g / 6) * gW;
+    twctx.beginPath();
+    twctx.moveTo(x, pad.top);
+    twctx.lineTo(x, pad.top + gH);
+    twctx.stroke();
+  }
+
+  // Animate offset
+  if (animating) {
+    animOffset += 0.3;
+    twctx.setLineDash([8, 4]);
+    twctx.lineDashOffset = -animOffset;
+  } else {
+    twctx.setLineDash([]);
+    twctx.lineDashOffset = 0;
+  }
+
+  // Gradient fill under wave
+  const gradFill = twctx.createLinearGradient(0, pad.top, 0, pad.top + gH);
+  gradFill.addColorStop(0, '#d000ff22');
+  gradFill.addColorStop(0.5, '#8b1fff11');
+  gradFill.addColorStop(1, 'transparent');
+
+  twctx.beginPath();
+  twctx.moveTo(toScreenX(0), pad.top + gH);
+  slice.forEach((v, i) => twctx.lineTo(toScreenX(i), toScreenY(v)));
+  twctx.lineTo(toScreenX(slice.length - 1), pad.top + gH);
+  twctx.closePath();
+  twctx.fillStyle = gradFill;
+  twctx.fill();
+
+  // Wave line with gradient stroke (simulate with segments)
+  for (let i = 0; i < slice.length - 1; i++) {
+    const t = i / slice.length;
+    const hue = 280 + t * 80;
+    twctx.beginPath();
+    twctx.moveTo(toScreenX(i), toScreenY(slice[i]));
+    twctx.lineTo(toScreenX(i+1), toScreenY(slice[i+1]));
+    twctx.strokeStyle = `hsl(${hue}, 100%, 65%)`;
+    twctx.lineWidth = 2;
+    twctx.stroke();
+  }
+
+  twctx.setLineDash([]);
+
+  // Labels
+  twctx.fillStyle = '#9b7dbf';
+  twctx.font = '10px Space Mono, monospace';
+  twctx.textAlign = 'center';
+  twctx.fillText('HABIT', pad.left - 45, pad.top + 10);
+  twctx.fillText('NOVELTY', pad.left - 45, pad.top + gH);
+
+  // Y axis label
+  twctx.save();
+  twctx.translate(14, pad.top + gH / 2);
+  twctx.rotate(-Math.PI / 2);
+  twctx.fillText('NOVELTY LEVEL', 0, 0);
+  twctx.restore();
+
+  // Historical events
+  if (viewMode === 'history') {
+    historicalEvents.forEach(ev => {
+      const relT = (ev.t - cfg.start) / (cfg.end - cfg.start);
+      if (relT < 0 || relT > 1) return;
+      const i = Math.floor(relT * (slice.length - 1));
+      const sx = toScreenX(i);
+      const sy = toScreenY(slice[i]);
+      twctx.strokeStyle = '#ffd70066';
+      twctx.lineWidth = 1;
+      twctx.setLineDash([4, 3]);
+      twctx.beginPath();
+      twctx.moveTo(sx, sy);
+      twctx.lineTo(sx, pad.top + gH);
+      twctx.stroke();
+      twctx.setLineDash([]);
+      twctx.fillStyle = '#ffd700';
+      twctx.font = '9px Space Mono, monospace';
+      twctx.textAlign = 'center';
+      twctx.fillText(ev.label, sx, pad.top + gH + 20);
+    });
+  }
+
+  // Hover inspection
+  if (hoverX >= pad.left && hoverX <= pad.left + gW) {
+    const relI = Math.round(((hoverX - pad.left) / gW) * (slice.length - 1));
+    const hY = toScreenY(slice[relI]);
+    twctx.strokeStyle = '#00f5ff88';
+    twctx.lineWidth = 1;
+    twctx.setLineDash([4, 3]);
+    twctx.beginPath();
+    twctx.moveTo(hoverX, pad.top);
+    twctx.lineTo(hoverX, pad.top + gH);
+    twctx.stroke();
+    twctx.setLineDash([]);
+    twctx.beginPath();
+    twctx.arc(hoverX, hY, 5, 0, Math.PI * 2);
+    twctx.fillStyle = '#00f5ff';
+    twctx.fill();
+    const noveltyPct = Math.round((1 - (slice[relI] - sliceMin) / range) * 100);
+    twctx.fillStyle = '#00f5ff';
+    twctx.font = 'bold 11px Space Mono, monospace';
+    twctx.textAlign = 'center';
+    const ttX = Math.min(Math.max(hoverX, 80), W2 - 80);
+    twctx.fillRect(ttX - 55, hY - 40, 110, 28);
+    twctx.fillStyle = '#000';
+    twctx.fillText(`NOVELTY: ${noveltyPct}%`, ttX, hY - 22);
+
+    // Update meter
+    document.getElementById('novelty-fill').style.width = noveltyPct + '%';
+    document.getElementById('novelty-val').textContent = noveltyPct + '%';
+  }
+
+  // Axis
+  twctx.strokeStyle = '#5b0fa855';
+  twctx.lineWidth = 1;
+  twctx.beginPath();
+  twctx.moveTo(pad.left, pad.top);
+  twctx.lineTo(pad.left, pad.top + gH + 1);
+  twctx.lineTo(pad.left + gW, pad.top + gH + 1);
+  twctx.stroke();
+
+  // Title
+  twctx.fillStyle = '#8b1fff';
+  twctx.font = '10px Space Mono, monospace';
+  twctx.textAlign = 'left';
+  twctx.fillText('TIMEWAVE ZERO — ' + cfg.label, pad.left, pad.top - 16);
+
+  if (animating) requestAnimationFrame(drawTimewave);
+}
+
+twCanvas.addEventListener('mousemove', e => {
+  const rect = twCanvas.getBoundingClientRect();
+  hoverX = e.clientX - rect.left;
+  if (!animating) drawTimewave();
+});
+twCanvas.addEventListener('mouseleave', () => {
+  hoverX = -1;
+  if (!animating) drawTimewave();
+});
+
+function setView(v) {
+  viewMode = v;
+  document.querySelectorAll('.ctrl-btn').forEach((b,i) => {
+    if (i < 4) b.classList.toggle('active', b.textContent.toLowerCase().includes(v.split('')[0]));
+  });
+  drawTimewave();
+}
+
+function toggleAnimate() {
+  animating = !animating;
+  document.getElementById('anim-btn').textContent = animating ? '⏹ Stop' : '▶ Animate';
+  if (animating) drawTimewave();
+}
+
+drawTimewave();
+
+// =====================
+// TABS
+// =====================
+function switchTab(name) {
+  document.querySelectorAll('#math .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#math .tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function switchStudyTab(name) {
+  document.querySelectorAll('#study .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#study .tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('study-' + name).classList.add('active');
+}
+
+// =====================
+// GLOSSARY
+// =====================
+function toggleGloss(el) {
+  el.classList.toggle('open');
+}
+
+// =====================
+// SCROLL REVEAL
+// =====================
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+revealEls.forEach(el => observer.observe(el));
+
+// =====================
+// QUIZ
+// =====================
+const questions = [
+  {
+    q: "What is the core claim of Terence McKenna's Novelty Theory?",
+    opts: [
+      "Time is a flat, neutral medium through which events flow randomly",
+      "Time has a measurable 'texture' that oscillates between novelty and habit following a mathematical pattern",
+      "The universe is fundamentally static and only appears to change due to human perception",
+      "Novelty increases randomly with no underlying structure"
+    ],
+    answer: 1,
+    explain: "McKenna's central claim was that time itself has a measurable quality — novelty — that oscillates between periods of maximum complexity (novelty) and repetition (habit), following a mathematical pattern derivable from the I Ching."
+  },
+  {
+    q: "What ancient text did McKenna use as the mathematical foundation for his Timewave?",
+    opts: [
+      "The Egyptian Book of the Dead",
+      "The Mayan Popol Vuh",
+      "The Chinese I Ching (King Wen sequence)",
+      "The Hindu Vedas"
+    ],
+    answer: 2,
+    explain: "McKenna based his mathematical wave on the King Wen sequence — the traditional ordering of the 64 I Ching hexagrams. He analyzed the difference (number of changing lines) between adjacent hexagrams to generate his core numerical array."
+  },
+  {
+    q: "In the Timewave graph, what does a LOWER wave value represent?",
+    opts: [
+      "More habit and repetition",
+      "Higher tension in historical events",
+      "More novelty and complexity",
+      "A period of historical stagnation"
+    ],
+    answer: 2,
+    explain: "Counter-intuitively, McKenna's wave is inverted: lower values on the graph represent MORE novelty (more interesting, complex, connected times), while higher values represent more habit (repetition, stasis)."
+  },
+  {
+    q: "What is the 'difference array' W(n) in McKenna's mathematical framework?",
+    opts: [
+      "A list of historically significant years and their novelty scores",
+      "The number of lines that differ between each adjacent pair of I Ching hexagrams",
+      "The difference between McKenna's wave and historical reality",
+      "A sequence derived from planetary orbital periods"
+    ],
+    answer: 1,
+    explain: "W(n) is computed by comparing each adjacent pair of hexagrams in the King Wen sequence and counting how many of the 6 lines differ between them. This produces a 64-element array with values from 0–6, which is the raw mathematical data for the entire Timewave."
+  },
+  {
+    q: "What is the fractal scaling ratio between adjacent levels of the Timewave?",
+    opts: [
+      "10× (the decimal ratio)",
+      "13× (the Mayan calendar ratio)",
+      "64× (the number of I Ching hexagrams)",
+      "360× (the degrees in a circle)"
+    ],
+    answer: 2,
+    explain: "Each level of the Timewave is exactly 64× larger than the one below it — the same number as the I Ching hexagrams. This fractal ratio means the same pattern repeats from a day (personal scale) up to 72 billion years (cosmic scale)."
+  },
+  {
+    q: "What historical event did McKenna use as an anchor point to calibrate when the Timewave zero would occur?",
+    opts: [
+      "The signing of the Magna Carta",
+      "The invention of the printing press",
+      "The atomic bombing of Hiroshima (August 6, 1945)",
+      "The Moon landing of 1969"
+    ],
+    answer: 2,
+    explain: "McKenna identified the atomic bombing of Hiroshima on August 6, 1945 as the most novel event of the 20th century — a moment of unprecedented destructive and transformative power. Working from this anchor with his fractal ratios, he derived the zero date."
+  },
+  {
+    q: "What does 'Eschaton' mean in McKenna's theory?",
+    opts: [
+      "A type of mathematical function used in chaos theory",
+      "The terminal singularity where time approaches infinite novelty",
+      "The period of lowest novelty in human history",
+      "McKenna's term for a psychedelic experience of timelessness"
+    ],
+    answer: 1,
+    explain: "Eschaton comes from Greek 'éskhatos' (last). McKenna used it for the terminal point where the Timewave asymptotically approaches zero — a singularity of infinite novelty. He saw it not as 'the end of the world' but as the end of time as a linear medium."
+  },
+  {
+    q: "How does the Timewave approach the 'zero' point mathematically?",
+    opts: [
+      "It reaches zero suddenly in a single moment",
+      "It approaches zero linearly, decreasing at a constant rate",
+      "It approaches zero asymptotically, getting infinitely close but technically never reaching it",
+      "It reaches zero gradually over a period of thousands of years"
+    ],
+    answer: 2,
+    explain: "The Timewave approaches zero asymptotically — meaning it gets infinitely close to zero but, in strict mathematical terms, never actually reaches it. McKenna interpreted this as a collapse of the boundary between possibility and actuality at the terminal moment."
+  },
+  {
+    q: "McKenna claimed the Timewave was 'fractal.' What does this mean in this context?",
+    opts: [
+      "The wave's mathematical complexity increases over time",
+      "The same pattern of novelty repeats at every temporal scale, from days to cosmic ages",
+      "The wave was computed using fractal geometry software",
+      "Novelty increases fractionally (in small steps) rather than smoothly"
+    ],
+    answer: 1,
+    explain: "Fractal self-similarity means the same pattern repeats at every scale of time. A period of high novelty within a personal year mirrors, proportionally, a period of high novelty within a historical epoch. The pattern is the same; only the scale changes, by the ratio of 64 each time."
+  },
+  {
+    q: "What is the most fair and accurate assessment of Novelty Theory's scientific status?",
+    opts: [
+      "It is a fully verified scientific theory with extensive peer-reviewed support",
+      "It is a compelling philosophical and mathematical framework, but not scientifically verifiable; the 2012 prediction did not occur",
+      "It was proven false immediately after McKenna proposed it in the 1970s",
+      "It accurately predicted events through 2012 and has since been extended"
+    ],
+    answer: 1,
+    explain: "Novelty Theory is best understood as a speculative philosophical-mathematical framework. It lacks scientific falsifiability in the conventional sense. The 2012 Eschaton did not produce a singularity. McKenna himself acknowledged this uncertainty and valued the theory more as a map of concepts than as a literal prediction engine."
+  }
+];
+
+let currentQ = 0;
+let score = 0;
+let answered = false;
+
+function renderQuestion() {
+  const q = questions[currentQ];
+  const pct = (currentQ / questions.length) * 100;
+  document.getElementById('quiz-progress').style.width = pct + '%';
+
+  const letters = ['A','B','C','D'];
+  document.getElementById('quiz-body').innerHTML = `
+    <div class="question-card">
+      <div class="q-number">QUESTION ${currentQ + 1} OF ${questions.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">
+        ${q.opts.map((opt, i) => `
+          <button class="q-option" onclick="selectAnswer(${i})" id="opt-${i}">
+            <span class="opt-letter">${letters[i]}</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="q-explanation" id="q-explain">
+        <strong style="color:var(--cyan)">✦ Explanation:</strong> ${q.explain}
+      </div>
+      <div class="quiz-nav">
+        <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;">Score: ${score}/${currentQ}</span>
+        <button class="btn btn-outline" id="next-btn" onclick="nextQuestion()" style="display:none;">
+          ${currentQ < questions.length - 1 ? 'Next Question →' : 'See Results →'}
+        </button>
+      </div>
+    </div>
+  `;
+  answered = false;
+}
+
+function selectAnswer(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQ];
+  const opts = document.querySelectorAll('.q-option');
+
+  opts.forEach((o, idx) => {
+    o.classList.add('disabled');
+    if (idx === q.answer) o.classList.add('correct');
+    else if (idx === i && i !== q.answer) o.classList.add('incorrect');
+  });
+
+  if (i === q.answer) {
+    score++;
+    // Burst effect
+    opts[i].style.position = 'relative';
+  }
+
+  document.getElementById('q-explain').classList.add('show');
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length) {
+    showScore();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showScore() {
+  const pct = Math.round((score / questions.length) * 100);
+  document.getElementById('quiz-progress').style.width = '100%';
+
+  const messages = [
+    [0, 30, "The timewave is just beginning to reach you. Study, explore, return."],
+    [31, 60, "A decent grasp on the archaic revival. The spiral deepens."],
+    [61, 80, "You think in novelty now. McKenna would nod with approval."],
+    [81, 100, "You have surfed the timewave to its terminus. Infinite novelty achieved."]
+  ];
+
+  const msg = messages.find(m => pct >= m[0] && pct <= m[1]);
+
+  document.getElementById('quiz-body').innerHTML = `
+    <div class="question-card score-display">
+      <div class="q-number" style="margin-bottom:24px;">QUIZ COMPLETE</div>
+      <span class="score-number">${score}/${questions.length}</span>
+      <div class="score-label">${pct}% NOVELTY ACHIEVED</div>
+      <div class="score-message">"${msg[2]}"</div>
+      <div style="margin-top:48px;">
+        <button class="btn btn-primary" onclick="restartQuiz()">Restart Quiz</button>
+      </div>
+    </div>
+  `;
+}
+
+function restartQuiz() {
+  currentQ = 0;
+  score = 0;
+  renderQuestion();
+}
+
+renderQuestion();
+</script>
+</body>
+</html>

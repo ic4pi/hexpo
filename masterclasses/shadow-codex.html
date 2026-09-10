@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Shadow Codex — An Immersive Journey of Integration</title>
+<style>
+  :root {
+    --bg-deep: #07060b;
+    --bg-mid: #0f0d16;
+    --bg-card: #16131f;
+    --bg-elevated: #1e1a2a;
+    --accent-gold: #c9a227;
+    --accent-gold-soft: #e8d48b;
+    --accent-violet: #7b5cff;
+    --accent-violet-dim: #5a3fcf;
+    --accent-crimson: #c23b5a;
+    --accent-teal: #2dd4bf;
+    --text-primary: #f0ebe3;
+    --text-secondary: #a89f91;
+    --text-muted: #6b6358;
+    --border-subtle: rgba(201, 162, 39, 0.15);
+    --border-strong: rgba(201, 162, 39, 0.35);
+    --glow-gold: 0 0 40px rgba(201, 162, 39, 0.25);
+    --glow-violet: 0 0 50px rgba(123, 92, 255, 0.3);
+    --font-display: 'Georgia', 'Times New Roman', serif;
+    --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --radius: 16px;
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ===== CANVAS BACKGROUND ===== */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  /* ===== LAYOUT SHELL ===== */
+  .app-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ===== SIDEBAR NAV ===== */
+  .sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
+    border-right: 1px solid var(--border-subtle);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: transform var(--transition);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .logo-area {
+    text-align: center;
+    padding: 1rem 0 1.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1.25rem;
+  }
+
+  .logo-mark {
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    letter-spacing: 0.12em;
+    color: var(--accent-gold);
+    text-shadow: 0 0 20px rgba(201, 162, 39, 0.4);
+  }
+
+  .logo-sub {
+    font-size: 0.7rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+  }
+
+  .nav-list {
+    list-style: none;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .nav-item {
+    margin-bottom: 0.35rem;
+  }
+
+  .nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: left;
+  }
+
+  .nav-btn:hover {
+    background: rgba(201, 162, 39, 0.08);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+  }
+
+  .nav-btn.active {
+    background: linear-gradient(135deg, rgba(201, 162, 39, 0.18), rgba(123, 92, 255, 0.12));
+    border-color: var(--border-strong);
+    color: var(--accent-gold-soft);
+    box-shadow: var(--glow-gold);
+  }
+
+  .nav-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    flex-shrink: 0;
+  }
+
+  .nav-btn.active .nav-num {
+    background: var(--accent-gold);
+    color: var(--bg-deep);
+  }
+
+  .progress-panel {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .progress-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-track {
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-violet), var(--accent-gold));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.6s ease;
+  }
+
+  .progress-pct {
+    font-size: 0.8rem;
+    color: var(--accent-gold);
+    margin-top: 0.4rem;
+    text-align: right;
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main {
+    flex: 1;
+    margin-left: 280px;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-gold);
+    font-size: 1.3rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    display: none;
+    padding: 2.5rem 3rem 4rem;
+    max-width: 920px;
+    margin: 0 auto;
+    animation: fadeInUp 0.55s ease;
+  }
+
+  .section.active {
+    display: block;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  .section-num {
+    font-family: var(--font-display);
+    font-size: 4.5rem;
+    font-weight: 400;
+    color: rgba(201, 162, 39, 0.12);
+    position: absolute;
+    top: -1.5rem;
+    left: -0.5rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 2.35rem;
+    font-weight: 400;
+    color: var(--accent-gold-soft);
+    letter-spacing: 0.02em;
+    margin-bottom: 0.5rem;
+    position: relative;
+  }
+
+  .section-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* ===== TYPOGRAPHY & CONTENT ===== */
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--accent-gold);
+    margin: 2rem 0 0.85rem;
+    letter-spacing: 0.03em;
+  }
+
+  h4 {
+    font-size: 1.05rem;
+    color: var(--accent-gold-soft);
+    margin: 1.5rem 0 0.6rem;
+  }
+
+  p {
+    margin-bottom: 1.1rem;
+    color: var(--text-primary);
+  }
+
+  .lead {
+    font-size: 1.12rem;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--accent-violet);
+    padding-left: 1.15rem;
+    margin: 1.5rem 0;
+  }
+
+  .quote {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--accent-gold-soft);
+    text-align: center;
+    padding: 1.75rem 2rem;
+    margin: 2rem 0;
+    background: linear-gradient(135deg, rgba(201, 162, 39, 0.06), rgba(123, 92, 255, 0.06));
+    border-radius: var(--radius);
+    border: 1px solid var(--border-subtle);
+    position: relative;
+  }
+
+  .quote::before {
+    content: '"';
+    font-size: 3.5rem;
+    color: var(--accent-gold);
+    opacity: 0.3;
+    position: absolute;
+    top: 0.2rem;
+    left: 0.8rem;
+    line-height: 1;
+  }
+
+  .quote-attr {
+    display: block;
+    font-size: 0.85rem;
+    font-style: normal;
+    color: var(--text-muted);
+    margin-top: 0.75rem;
+  }
+
+  ul, ol {
+    margin: 0.8rem 0 1.2rem 1.4rem;
+  }
+
+  li {
+    margin-bottom: 0.45rem;
+    color: var(--text-primary);
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 1.5rem 1.65rem;
+    margin: 1.5rem 0;
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--glow-gold);
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--accent-gold);
+    margin-bottom: 0.7rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  /* ===== INTERACTIVE EXERCISE BLOCKS ===== */
+  .exercise {
+    background: linear-gradient(160deg, var(--bg-elevated), var(--bg-card));
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    margin: 2rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .exercise::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-violet), var(--accent-gold), var(--accent-teal));
+  }
+
+  .exercise-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(123, 92, 255, 0.2);
+    color: var(--accent-violet);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    margin-bottom: 0.9rem;
+  }
+
+  .exercise-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--accent-gold-soft);
+    margin-bottom: 0.6rem;
+  }
+
+  .exercise-desc {
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .exercise textarea,
+  .exercise input[type="text"],
+  .exercise input[type="number"] {
+    width: 100%;
+    background: var(--bg-deep);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-primary);
+    padding: 0.85rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    resize: vertical;
+    transition: border-color var(--transition);
+  }
+
+  .exercise textarea:focus,
+  .exercise input:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+  }
+
+  .exercise textarea {
+    min-height: 110px;
+  }
+
+  .exercise label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0.9rem 0 0.35rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.3rem;
+    border-radius: 10px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-gold), #a8841c);
+    color: var(--bg-deep);
+  }
+
+  .btn-primary:hover {
+    box-shadow: var(--glow-gold);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--accent-gold-soft);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(201, 162, 39, 0.1);
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.1rem;
+    flex-wrap: wrap;
+  }
+
+  .saved-note {
+    margin-top: 0.85rem;
+    padding: 0.7rem 1rem;
+    background: rgba(45, 212, 191, 0.1);
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 8px;
+    color: var(--accent-teal);
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .saved-note.show {
+    display: block;
+    animation: fadeInUp 0.3s ease;
+  }
+
+  /* ===== GLOSSARY ===== */
+  .glossary-grid {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .glossary-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color var(--transition);
+  }
+
+  .glossary-item:hover {
+    border-color: var(--border-strong);
+  }
+
+  .glossary-term {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: transparent;
+    border: none;
+    color: var(--accent-gold-soft);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .glossary-term span.arrow {
+    transition: transform var(--transition);
+    color: var(--text-muted);
+  }
+
+  .glossary-item.open .glossary-term span.arrow {
+    transform: rotate(180deg);
+  }
+
+  .glossary-def {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+    padding: 0 1.2rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .glossary-item.open .glossary-def {
+    max-height: 400px;
+    padding: 0 1.2rem 1.2rem;
+  }
+
+  /* ===== JOURNAL LOCAL STORAGE ===== */
+  .journal-entry {
+    background: var(--bg-deep);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .journal-entry time {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  /* ===== CHECKLIST / PROGRESS ===== */
+  .check-list {
+    list-style: none;
+    margin: 1rem 0;
+  }
+
+  .check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .check-list input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-strong);
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all var(--transition);
+  }
+
+  .check-list input[type="checkbox"]:checked {
+    background: var(--accent-gold);
+    border-color: var(--accent-gold);
+  }
+
+  .check-list input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--bg-deep);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  /* ===== INTERACTIVE REVEAL ===== */
+  .reveal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    padding: 1.4rem;
+    margin: 1rem 0;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+  }
+
+  .reveal-card:hover {
+    border-color: var(--accent-violet);
+    box-shadow: var(--glow-violet);
+  }
+
+  .reveal-card .hidden-content {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.45s ease, opacity 0.35s ease, margin 0.3s;
+    margin-top: 0;
+  }
+
+  .reveal-card.revealed .hidden-content {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: 1rem;
+  }
+
+  .reveal-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+
+  /* ===== RATING / SLIDER ===== */
+  .slider-group {
+    margin: 1.25rem 0;
+  }
+
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+  }
+
+  /* ===== STORY / NARRATIVE BLOCKS ===== */
+  .story {
+    background: linear-gradient(180deg, rgba(123, 92, 255, 0.08), transparent);
+    border-left: 3px solid var(--accent-violet);
+    padding: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+
+  .story strong {
+    color: var(--accent-gold-soft);
+    font-style: normal;
+  }
+
+  /* ===== SAFETY / NOTICE ===== */
+  .notice {
+    background: rgba(194, 59, 90, 0.12);
+    border: 1px solid rgba(194, 59, 90, 0.35);
+    border-radius: 12px;
+    padding: 1.15rem 1.35rem;
+    margin: 1.5rem 0;
+    font-size: 0.92rem;
+    color: #e8a0b0;
+  }
+
+  .notice strong {
+    color: var(--accent-crimson);
+  }
+
+  /* ===== PART NAV FOOTER ===== */
+  .part-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3.5rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ===== FLOATING JOURNAL ===== */
+  .journal-fab {
+    position: fixed;
+    bottom: 1.75rem;
+    right: 1.75rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-violet-dim));
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: var(--glow-violet);
+    z-index: 150;
+    transition: transform var(--transition);
+  }
+
+  .journal-fab:hover {
+    transform: scale(1.08);
+  }
+
+  .journal-panel {
+    position: fixed;
+    bottom: 5.5rem;
+    right: 1.75rem;
+    width: 360px;
+    max-height: 480px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    z-index: 140;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .journal-panel.open {
+    display: flex;
+    animation: fadeInUp 0.3s ease;
+  }
+
+  .journal-panel-header {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .journal-panel-header h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .journal-panel-body {
+    padding: 1rem 1.2rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .journal-panel textarea {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg-deep);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+
+  /* ===== INTRO HERO ===== */
+  .hero {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    color: var(--accent-gold);
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 40px rgba(201, 162, 39, 0.35);
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 520px;
+    margin: 0 auto 2rem;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .main {
+      margin-left: 0;
+    }
+    .mobile-toggle {
+      display: flex;
+    }
+    .section {
+      padding: 2rem 1.25rem 3rem;
+    }
+    .grid-2, .grid-3 {
+      grid-template-columns: 1fr;
+    }
+    .hero-title {
+      font-size: 2.2rem;
+    }
+    .journal-panel {
+      width: calc(100vw - 2rem);
+      right: 1rem;
+    }
+  }
+
+  /* ===== PARTICLE CURSOR GLOW ===== */
+  .cursor-glow {
+    position: fixed;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(123, 92, 255, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s;
+  }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">☰</button>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo-area">
+      <div class="logo-mark">SHADOW CODEX</div>
+      <div class="logo-sub">Integration · Wholeness</div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item"><button class="nav-btn active" data-section="intro"><span class="nav-num">0</span> Threshold</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part1"><span class="nav-num">1</span> Recognition</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part2"><span class="nav-num">2</span> Mapping</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part3"><span class="nav-num">3</span> Origins</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part4"><span class="nav-num">4</span> Dialogue</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part5"><span class="nav-num">5</span> Integration</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="part6"><span class="nav-num">6</span> Embodiment</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="glossary"><span class="nav-num">✦</span> Glossary</button></li>
+      <li class="nav-item"><button class="nav-btn" data-section="resources"><span class="nav-num">◈</span> Resources</button></li>
+    </ul>
+    <div class="progress-panel">
+      <div class="progress-label">Journey Progress</div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-pct" id="progressPct">0%</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ========== INTRO / THRESHOLD ========== -->
+    <section class="section active" id="intro">
+      <div class="hero">
+        <h1 class="hero-title">The Shadow Codex</h1>
+        <p class="hero-sub">An immersive six-part journey into the hidden architecture of the self — recognition, mapping, origin, dialogue, integration, and embodiment.</p>
+      </div>
+
+      <div class="quote">
+        Until you make the unconscious conscious, it will direct your life and you will call it fate.
+        <span class="quote-attr">— Carl Gustav Jung</span>
+      </div>
+
+      <p class="lead">This is not a self-help checklist. It is a structured descent into the parts of you that were never allowed to speak — the qualities you rejected, the emotions you were taught to hide, the power you buried so you could belong. Shadow work is the deliberate practice of bringing those exiled aspects into conscious relationship so they stop running your life from the dark.</p>
+
+      <h3>What This Experience Is</h3>
+      <p>Shadow work, rooted in the analytical psychology of Carl Jung, is the process of acknowledging, exploring, and integrating the disowned parts of the personality. The “shadow” is not pure evil; it is everything the conscious ego refuses to claim — rage and tenderness, greed and generosity, ambition and vulnerability, creativity and envy. What is rejected does not vanish. It operates unconsciously through projection, compulsion, and self-sabotage.</p>
+      <p>This interactive codex is designed as a complete experiential arc. Each of the six parts is roughly equal in depth and length. You may move through them sequentially over days or weeks, or linger in one part until it feels complete. There is no required pace. Consistency matters more than intensity.</p>
+
+      <div class="card">
+        <div class="card-title">How to Use This Codex</div>
+        <ul>
+          <li><strong>Sequential path:</strong> Work through Parts 1–6 in order. Each builds on the previous.</li>
+          <li><strong>Journaling:</strong> Use the floating journal button (bottom-right) or the exercise text areas. Entries are saved locally in your browser.</li>
+          <li><strong>Checkboxes &amp; progress:</strong> Mark exercises complete; the progress bar updates automatically.</li>
+          <li><strong>Safety first:</strong> If material feels overwhelming, pause, ground, and seek professional support. This is educational, not therapy.</li>
+          <li><strong>Return:</strong> Revisit any part. Integration is cyclical, not linear.</li>
+        </ul>
+      </div>
+
+      <div class="notice">
+        <strong>Important:</strong> Shadow work can surface strong emotions, memories, and bodily sensations. If you have a history of trauma, dissociation, or mental health conditions, consider working with a qualified therapist (ideally Jungian or trauma-informed) alongside or instead of self-guided practice. Stop if you feel flooded. Grounding practices appear throughout.
+      </div>
+
+      <h3>The Six-Part Arc</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">1 · Recognition</div>
+          <p>Learning to notice the shadow in action — through triggers, projections, and emotional charge — without yet trying to change anything.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">2 · Mapping</div>
+          <p>Cataloguing the qualities, patterns, and people that carry your disowned material. Building a living inventory of the shadow landscape.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">3 · Origins</div>
+          <p>Tracing how specific traits were exiled — family rules, cultural messages, early shame — so the “why” becomes visible.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">4 · Dialogue</div>
+          <p>Active imagination, personification, and the 3-2-1 process: speaking with the shadow instead of about it.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">5 · Integration</div>
+          <p>Reclaiming the energy and gifts of the shadow. Owning projections. Finding conscious expression for what was repressed.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">6 · Embodiment</div>
+          <p>Living the integrated self in daily life — relationships, boundaries, creativity, and ongoing practice.</p>
+        </div>
+      </div>
+
+      <h3>Orientation Checklist</h3>
+      <ul class="check-list" data-progress-group="intro">
+        <li><input type="checkbox" id="c0a"> I understand that the shadow includes both “dark” and “golden” (positive but disowned) material.</li>
+        <li><input type="checkbox" id="c0b"> I have a private space and time I can protect for this work.</li>
+        <li><input type="checkbox" id="c0c"> I know how to ground myself (breath, body, environment) if I become activated.</li>
+        <li><input type="checkbox" id="c0d"> I accept that this process is ongoing and not a one-time fix.</li>
+      </ul>
+
+      <div class="part-nav">
+        <span></span>
+        <button class="btn btn-primary" onclick="goTo('part1')">Enter Part 1 · Recognition →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 1: RECOGNITION ========== -->
+    <section class="section" id="part1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Recognition</h2>
+        <p class="section-subtitle">Noticing the shadow where it already lives — in reaction, projection, and the body.</p>
+      </div>
+
+      <p class="lead">You cannot integrate what you cannot see. The first movement of shadow work is pure observation: catching the moments when something in you is activated beyond the size of the event. Recognition is the art of catching the unconscious in the act.</p>
+
+      <div class="quote">
+        The shadow is a moral problem that challenges the whole ego-personality… To become conscious of it involves recognizing the dark aspects of the personality as present and real.
+        <span class="quote-attr">— C. G. Jung</span>
+      </div>
+
+      <h3>What Recognition Actually Means</h3>
+      <p>Recognition is not self-criticism. It is neutral, almost scientific noticing. When someone cuts you off in traffic and you erupt with disproportionate rage, the rage is data. When a friend’s success leaves a bitter taste you refuse to name, the bitterness is data. When you feel an inexplicable pull toward a person or a lifestyle you consciously reject, that pull is data.</p>
+      <p>Jung observed that we most readily see the shadow in others. This is <em>projection</em>: the psyche’s way of externalizing what it will not own. The stronger the emotional charge (contempt, envy, idealization, disgust), the more likely the quality belongs, at least partly, to you.</p>
+
+      <div class="story">
+        <strong>A short story.</strong> Elena prided herself on being the calm one. In meetings she never raised her voice. At home she absorbed her partner’s moods without complaint. One afternoon a colleague made a mild criticism of her report. Elena felt heat rise in her chest, a flash of “How dare you,” and then an immediate shame that she had felt anything at all. That night she wrote: “I am not an angry person.” The sentence sat on the page like a locked door. Recognition begins when she notices the heat, names the flash, and allows the possibility that anger lives in her — even if it has nowhere to go.
+      </div>
+
+      <h3>Signs the Shadow Is Operating</h3>
+      <div class="grid-2">
+        <div class="reveal-card" onclick="this.classList.toggle('revealed')">
+          <strong>Disproportionate reaction</strong>
+          <div class="reveal-hint">Click to expand</div>
+          <div class="hidden-content">
+            The intensity of the feeling does not match the size of the trigger. A small slight produces a large wound. A minor delay produces fury. The excess is the shadow’s signature.
+          </div>
+        </div>
+        <div class="reveal-card" onclick="this.classList.toggle('revealed')">
+          <strong>Repetitive patterns</strong>
+          <div class="reveal-hint">Click to expand</div>
+          <div class="hidden-content">
+            The same type of conflict, the same type of person, the same type of self-sabotage appears across different contexts. The outer form changes; the inner drama does not.
+          </div>
+        </div>
+        <div class="reveal-card" onclick="this.classList.toggle('revealed')">
+          <strong>Absolute language</strong>
+          <div class="reveal-hint">Click to expand</div>
+          <div class="hidden-content">
+            “They always…”, “People never…”, “I am the kind of person who would never…” Absolutes often protect a disowned opposite.
+          </div>
+        </div>
+        <div class="reveal-card" onclick="this.classList.toggle('revealed')">
+          <strong>Body signals</strong>
+          <div class="reveal-hint">Click to expand</div>
+          <div class="hidden-content">
+            Tight throat, clenched jaw, sudden fatigue, heat in the chest or face, a hollow stomach. The body often registers the shadow before the mind has a story about it.
+          </div>
+        </div>
+      </div>
+
+      <h3>Exercise 1.1 — The Trigger Inventory</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Core Practice</div>
+        <div class="exercise-title">Seven-Day Trigger Log</div>
+        <p class="exercise-desc">For the next seven days, keep a simple log every time you experience a charged emotional reaction (irritation, envy, contempt, shame, idealization, sudden withdrawal). Do not analyze yet. Just capture.</p>
+        <label>Today’s entry — Situation (facts only)</label>
+        <textarea id="ex1_situation" placeholder="What happened? Who was involved? Stick to observable facts."></textarea>
+        <label>Emotion &amp; intensity (1–10)</label>
+        <input type="text" id="ex1_emotion" placeholder="e.g. Anger 8, Shame 6, Envy 5">
+        <label>Body location</label>
+        <input type="text" id="ex1_body" placeholder="Where did you feel it? Chest, jaw, stomach…">
+        <label>The story you told yourself</label>
+        <textarea id="ex1_story" placeholder="What did your mind say about them / you / the situation?"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex1')">Save Entry</button>
+          <button class="btn btn-secondary" onclick="clearExercise('ex1')">Clear</button>
+        </div>
+        <div class="saved-note" id="ex1_saved">Entry saved to your local journal.</div>
+        <div id="ex1_history"></div>
+      </div>
+
+      <h3>Exercise 1.2 — Projection Spotting</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Awareness</div>
+        <div class="exercise-title">Three People, One Quality</div>
+        <p class="exercise-desc">Name three people who reliably trigger a strong negative (or intensely positive) reaction in you. For each, name the specific quality that bothers or attracts you. Then ask: “Where might a version of this quality live in me — even in a subtle, private, or historical form?”</p>
+        <label>Person 1 + quality</label>
+        <input type="text" id="ex1b_p1" placeholder="Name / quality (e.g. 'Boss — arrogance')">
+        <label>Possible place in me</label>
+        <textarea id="ex1b_p1r" placeholder="Even a little? In the past? In a different form?"></textarea>
+        <label>Person 2 + quality</label>
+        <input type="text" id="ex1b_p2" placeholder="Name / quality">
+        <label>Possible place in me</label>
+        <textarea id="ex1b_p2r" placeholder="Even a little? In the past? In a different form?"></textarea>
+        <label>Person 3 + quality</label>
+        <input type="text" id="ex1b_p3" placeholder="Name / quality">
+        <label>Possible place in me</label>
+        <textarea id="ex1b_p3r" placeholder="Even a little? In the past? In a different form?"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex1b')">Save</button>
+        </div>
+        <div class="saved-note" id="ex1b_saved">Saved.</div>
+      </div>
+
+      <h3>Grounding Practice</h3>
+      <div class="card">
+        <div class="card-title">5-4-3-2-1 Sensory Reset</div>
+        <p>When recognition floods you, return to the senses: name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, 1 you taste. Then place both feet on the floor and take three slow breaths, extending the exhale.</p>
+      </div>
+
+      <h3>Part 1 Checklist</h3>
+      <ul class="check-list" data-progress-group="part1">
+        <li><input type="checkbox" id="c1a"> I have begun a trigger log and made at least one entry.</li>
+        <li><input type="checkbox" id="c1b"> I can name at least one quality I strongly reject in others.</li>
+        <li><input type="checkbox" id="c1c"> I have practiced noticing body signals during emotional charge.</li>
+        <li><input type="checkbox" id="c1d"> I understand that recognition is observation, not self-attack.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('intro')">← Threshold</button>
+        <button class="btn btn-primary" onclick="goTo('part2')">Part 2 · Mapping →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 2: MAPPING ========== -->
+    <section class="section" id="part2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Mapping</h2>
+        <p class="section-subtitle">Charting the territory of the disowned self — traits, roles, and the golden shadow.</p>
+      </div>
+
+      <p class="lead">Once you can notice the shadow in motion, the next work is to map it. Mapping turns scattered reactions into a coherent landscape: which qualities live in the dark, which roles you refuse, which strengths you have also exiled.</p>
+
+      <h3>Personal Shadow vs. Collective Shadow</h3>
+      <p>Your personal shadow is unique — shaped by your family, culture, temperament, and history. The collective shadow is shared: the things a whole culture refuses to own (violence, greed, vulnerability, certain forms of desire). Mapping begins with the personal, because that is where you have the most leverage, but it remains aware of the larger field.</p>
+
+      <h3>The Persona and the Shadow</h3>
+      <p>Jung described the <em>persona</em> as the social mask — the roles and traits we present to be accepted. The shadow is often the inverse of the persona. If the persona is “the nice one,” the shadow may hold aggression, ambition, or the need to take up space. If the persona is “the tough one,” the shadow may hold softness, need, or fear. Mapping asks: What does my mask require me to hide?</p>
+
+      <div class="story">
+        <strong>A short story.</strong> Marcus was known as the reliable friend — always available, never complaining. When he mapped his shadow he listed: resentment, the wish to be chosen first, the desire to say no without explanation. He also discovered a golden shadow: a fierce creative drive he had buried because “artists are selfish.” Mapping did not make him less reliable; it showed him the cost of reliability without boundaries.
+      </div>
+
+      <h3>Exercise 2.1 — Shadow Sentence Completions</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Inventory</div>
+        <div class="exercise-title">Uncensored Completions</div>
+        <p class="exercise-desc">Complete each sentence as quickly as possible. Do not edit for kindness or consistency. The first answer is often the most revealing.</p>
+        <label>If people really knew me, they would discover that I…</label>
+        <textarea id="ex2_s1"></textarea>
+        <label>The part of myself I most try to hide is…</label>
+        <textarea id="ex2_s2"></textarea>
+        <label>I secretly judge people who…</label>
+        <textarea id="ex2_s3"></textarea>
+        <label>What I can’t stand in others is…</label>
+        <textarea id="ex2_s4"></textarea>
+        <label>The emotions I refuse to feel are…</label>
+        <textarea id="ex2_s5"></textarea>
+        <label>A quality I deny having is…</label>
+        <textarea id="ex2_s6"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex2')">Save Completions</button>
+        </div>
+        <div class="saved-note" id="ex2_saved">Saved to local journal.</div>
+      </div>
+
+      <h3>Exercise 2.2 — Strengths and Their Shadows</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Shadow Mapping</div>
+        <div class="exercise-title">Inversion of Strengths</div>
+        <p class="exercise-desc">List three qualities you consider personal strengths. For each, ask: What weakness, fear, or avoided trait might this strength help me not to face? What opposite quality have I pushed away?</p>
+        <label>Strength 1</label>
+        <input type="text" id="ex2b_str1" placeholder="e.g. Disciplined">
+        <label>Possible shadow / avoided trait</label>
+        <textarea id="ex2b_sh1" placeholder="e.g. Fear of chaos; denied spontaneity or creativity"></textarea>
+        <label>Strength 2</label>
+        <input type="text" id="ex2b_str2">
+        <label>Possible shadow / avoided trait</label>
+        <textarea id="ex2b_sh2"></textarea>
+        <label>Strength 3</label>
+        <input type="text" id="ex2b_str3">
+        <label>Possible shadow / avoided trait</label>
+        <textarea id="ex2b_sh3"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex2b')">Save Map</button>
+        </div>
+        <div class="saved-note" id="ex2b_saved">Saved.</div>
+      </div>
+
+      <h3>The Golden Shadow</h3>
+      <p>Not everything in the shadow is “negative.” Jung and later writers note the <em>golden shadow</em>: talents, desires, and positive capacities we disowned because they threatened belonging or identity. Envy of someone’s creativity, confidence, or freedom often points to a golden shadow. Mapping must include what you admire and secretly long for, not only what you despise.</p>
+
+      <div class="exercise">
+        <div class="exercise-badge">✦ Golden Shadow</div>
+        <div class="exercise-title">Three Admirations</div>
+        <p class="exercise-desc">Name three people (known or public) you deeply admire or envy. List the specific qualities. Then ask: Why don’t I allow myself to express these? What would it cost me to claim them?</p>
+        <label>Person / qualities / cost of claiming them</label>
+        <textarea id="ex2c" placeholder="e.g. Friend X — unapologetic ambition. Cost: fear of being seen as selfish; family rule against 'showing off'."></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex2c')">Save</button>
+        </div>
+        <div class="saved-note" id="ex2c_saved">Saved.</div>
+      </div>
+
+      <h3>Part 2 Checklist</h3>
+      <ul class="check-list" data-progress-group="part2">
+        <li><input type="checkbox" id="c2a"> I have completed the sentence-completion inventory.</li>
+        <li><input type="checkbox" id="c2b"> I can name at least one strength and its possible shadow side.</li>
+        <li><input type="checkbox" id="c2c"> I have identified at least one golden-shadow quality I admire in others.</li>
+        <li><input type="checkbox" id="c2d"> I understand the difference between persona and shadow.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part1')">← Part 1</button>
+        <button class="btn btn-primary" onclick="goTo('part3')">Part 3 · Origins →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 3: ORIGINS ========== -->
+    <section class="section" id="part3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Origins</h2>
+        <p class="section-subtitle">Tracing how and when the exile happened — family, culture, and the forming of the mask.</p>
+      </div>
+
+      <p class="lead">The shadow is not random. Most of what we disown was once acceptable — or at least present — until it was met with shame, punishment, neglect, or the quiet message that “this is not who we are.” Origins work is archaeological: not to prosecute the past, but to understand the logic of the exile.</p>
+
+      <h3>How Traits Become Shadow</h3>
+      <p>In childhood we learn which parts of us receive love, attention, or safety, and which parts cost connection. A child who is praised for being quiet may push loudness and anger into the shadow. A child who is punished for crying may exile sadness and need. A child who is told “don’t be selfish” may bury healthy self-interest and ambition. Over time the ego identifies with the accepted traits and treats the rest as “not me.”</p>
+      <p>Cultural and collective messages amplify this: gender norms, class expectations, religious rules, racial and social hierarchies all prescribe which emotions and powers are allowed for whom. Origins work asks both “What happened in my family?” and “What was the larger story I inherited?”</p>
+
+      <div class="story">
+        <strong>A short story.</strong> When Sofia was seven, she threw a tantrum because her younger brother broke her drawing. Her mother said, “Good girls don’t make scenes.” Sofia stopped making scenes. Decades later she could not negotiate a raise, could not leave a relationship that drained her, and felt a mysterious emptiness when others expressed anger freely. In origins work she recovered the sentence and the moment. The anger had never left; it had only lost its voice and its permission.
+      </div>
+
+      <h3>Exercise 3.1 — Family Rules Inventory</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Origins</div>
+        <div class="exercise-title">Spoken and Unspoken Rules</div>
+        <p class="exercise-desc">List the explicit and implicit rules of your family of origin about emotion, success, conflict, need, and self-expression. Which parts of you were welcomed? Which were dangerous?</p>
+        <label>Rules about anger / conflict</label>
+        <textarea id="ex3_anger" placeholder="e.g. Anger was not allowed; silence was peace."></textarea>
+        <label>Rules about need / vulnerability</label>
+        <textarea id="ex3_need"></textarea>
+        <label>Rules about ambition / standing out</label>
+        <textarea id="ex3_ambition"></textarea>
+        <label>Rules about pleasure / desire</label>
+        <textarea id="ex3_desire"></textarea>
+        <label>What was celebrated? What was shamed?</label>
+        <textarea id="ex3_shame"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex3')">Save Inventory</button>
+        </div>
+        <div class="saved-note" id="ex3_saved">Saved.</div>
+      </div>
+
+      <h3>Exercise 3.2 — The Moment of Exile</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Deep Dive</div>
+        <div class="exercise-title">One Trait, One Memory</div>
+        <p class="exercise-desc">Choose one quality from your shadow map (Part 2). Ask: When did I first learn this was unacceptable? Write the earliest memory you can find — even if incomplete. What was said or done? How did you adapt?</p>
+        <label>The quality</label>
+        <input type="text" id="ex3b_quality" placeholder="e.g. Anger, neediness, showiness, laziness">
+        <label>The memory / scene</label>
+        <textarea id="ex3b_memory" placeholder="Age, place, who was there, what happened, what you concluded about yourself."></textarea>
+        <label>The adaptation (how you protected yourself afterward)</label>
+        <textarea id="ex3b_adapt" placeholder="e.g. I became the peacemaker; I stopped asking for help; I only created in private."></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex3b')">Save</button>
+        </div>
+        <div class="saved-note" id="ex3b_saved">Saved.</div>
+      </div>
+
+      <h3>Compassion for the Exile</h3>
+      <p>The child who hid a part of themselves was not weak. They were adaptive. The shadow often formed as a survival strategy. Origins work includes thanking the strategy for what it protected, even as you prepare to update it. Without this compassion, recognition and mapping can turn into another form of self-attack — which only deepens the split.</p>
+
+      <div class="card">
+        <div class="card-title">A Note on Trauma</div>
+        <p>If exploring origins brings up intense trauma material, flashbacks, or dissociation, pause. Professional support is appropriate. You do not have to excavate everything alone or all at once. Safety and pacing are part of the work.</p>
+      </div>
+
+      <h3>Part 3 Checklist</h3>
+      <ul class="check-list" data-progress-group="part3">
+        <li><input type="checkbox" id="c3a"> I have listed key family rules about emotion and expression.</li>
+        <li><input type="checkbox" id="c3b"> I have connected at least one shadow quality to an early memory or message.</li>
+        <li><input type="checkbox" id="c3c"> I can hold the idea that the exile was once adaptive.</li>
+        <li><input type="checkbox" id="c3d"> I know when to pause or seek support if material is overwhelming.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part2')">← Part 2</button>
+        <button class="btn btn-primary" onclick="goTo('part4')">Part 4 · Dialogue →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 4: DIALOGUE ========== -->
+    <section class="section" id="part4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Dialogue</h2>
+        <p class="section-subtitle">Speaking with the shadow — active imagination, personification, and the 3-2-1 process.</p>
+      </div>
+
+      <p class="lead">Recognition and mapping still keep the shadow at a distance — as “it.” Dialogue is the turn toward relationship. Jung’s primary method for engaging unconscious content was <em>active imagination</em>: entering a conscious, imaginative conversation with figures, feelings, or images that arise from the depths. The goal is not to dominate the shadow but to hear what it wants and what it has been protecting.</p>
+
+      <h3>Active Imagination in Practice</h3>
+      <p>Find a quiet space. Close your eyes or soften your gaze. Bring to mind a quality, a dream figure, a bodily sensation, or a person who carries a projection. Allow an image or a presence to form. Then speak to it — aloud or on the page — and listen for a response. Do not force; stay curious. Write the dialogue if that helps. The unconscious often answers in image, feeling, or unexpected phrase rather than logical argument.</p>
+
+      <div class="quote">
+        The shadow is a living part of the personality and therefore wants to live with it in some form. It cannot be argued out of existence or rationalized into harmlessness.
+        <span class="quote-attr">— C. G. Jung</span>
+      </div>
+
+      <h3>The 3-2-1 Shadow Process</h3>
+      <p>Developed in integral psychology (Ken Wilber and others) and rooted in Jungian insight, the 3-2-1 process systematically reclaims projected material by shifting perspective:</p>
+      <ol>
+        <li><strong>3rd person (Face it):</strong> Describe the person or quality as “he/she/it.” Name what bothers or attracts you. Express the feeling fully.</li>
+        <li><strong>2nd person (Talk to it):</strong> Address the quality or person as “you.” Ask questions. Listen for answers. Allow a dialogue.</li>
+        <li><strong>1st person (Be it):</strong> Speak as the quality: “I am…” Own it as a part of you. Feel it from the inside. Notice what shifts.</li>
+      </ol>
+
+      <div class="exercise">
+        <div class="exercise-badge">✦ Core Technique</div>
+        <div class="exercise-title">3-2-1 Process — Full Cycle</div>
+        <p class="exercise-desc">Choose one charged person or quality from your earlier work. Move through all three perspectives in writing.</p>
+        <label>3rd person — “He / She / It is…” (describe fully, uncensored)</label>
+        <textarea id="ex4_3rd" placeholder="Describe the quality or person and your reaction."></textarea>
+        <label>2nd person — “You…” (questions and imagined responses)</label>
+        <textarea id="ex4_2nd" placeholder="Why do you…? What do you want? What are you protecting? (Include both sides of the dialogue.)"></textarea>
+        <label>1st person — “I am…” (own it as a part of you)</label>
+        <textarea id="ex4_1st" placeholder="I am the part that… I feel… I need… What I offer is…"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex4')">Save Dialogue</button>
+        </div>
+        <div class="saved-note" id="ex4_saved">Saved.</div>
+      </div>
+
+      <h3>Exercise 4.2 — Letter from the Shadow</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Personification</div>
+        <div class="exercise-title">Write as the Disowned Part</div>
+        <p class="exercise-desc">Personify one shadow quality. Give it a voice. Write a letter <em>from</em> that part to your everyday self. What does it want you to know? What has it been trying to do for you? What does it need?</p>
+        <label>Letter from the shadow part</label>
+        <textarea id="ex4b" style="min-height:160px" placeholder="Dear [your name], I am the part of you that… For years I have…"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex4b')">Save Letter</button>
+        </div>
+        <div class="saved-note" id="ex4b_saved">Saved.</div>
+      </div>
+
+      <h3>Working with Resistance</h3>
+      <p>Dialogue often meets resistance: “This is silly,” “Nothing comes,” “I already know this.” Resistance is information. It may be the ego protecting the status quo, or a protector part (in Internal Family Systems language) that fears what will happen if the exile is heard. Treat resistance with the same curiosity you bring to the shadow itself. Ask: What are you protecting me from?</p>
+
+      <h3>Part 4 Checklist</h3>
+      <ul class="check-list" data-progress-group="part4">
+        <li><input type="checkbox" id="c4a"> I have completed at least one full 3-2-1 cycle in writing.</li>
+        <li><input type="checkbox" id="c4b"> I have written (or spoken) a letter from a shadow part.</li>
+        <li><input type="checkbox" id="c4c"> I can distinguish dialogue from analysis or self-criticism.</li>
+        <li><input type="checkbox" id="c4d"> I have noticed resistance and treated it as information.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part3')">← Part 3</button>
+        <button class="btn btn-primary" onclick="goTo('part5')">Part 5 · Integration →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 5: INTEGRATION ========== -->
+    <section class="section" id="part5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">Integration</h2>
+        <p class="section-subtitle">Reclaiming the energy of the shadow — ownership, conscious expression, and the end of projection.</p>
+      </div>
+
+      <p class="lead">Integration is not the elimination of the shadow. It is the inclusion of its energy into conscious life so that it no longer needs to act out through projection, compulsion, or self-sabotage. The goal is a larger, more flexible ego that can hold both light and dark without splitting.</p>
+
+      <h3>What Integration Looks Like</h3>
+      <p>When a quality is integrated, you can feel it without being overrun by it, and you can express a mature form of it when appropriate. Anger becomes clear boundary and assertion rather than explosion or silence. Need becomes the ability to ask and receive rather than cling or deny. Ambition becomes directed energy rather than hidden rivalry. The golden shadow’s gifts — creativity, power, sensuality, leadership — become available without the old fear of exile.</p>
+      <p>Integration is gradual and often incomplete. New layers appear. Old triggers still fire, but with more space around them. You catch the projection earlier. You apologize differently. You create differently. The relationship with the shadow becomes ongoing rather than a single breakthrough.</p>
+
+      <div class="story">
+        <strong>A short story.</strong> After months of dialogue with his “arrogant” shadow, Daniel noticed that the colleagues he had labeled arrogant were often simply clear about their needs. He practiced one small change: stating his preference in meetings instead of waiting to be asked. The first times felt naked. Over weeks the charge lessened. He still preferred collaboration, but he no longer needed others to carry his disowned assertiveness.
+      </div>
+
+      <h3>Exercise 5.1 — Reclaiming the Projection</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Integration</div>
+        <div class="exercise-title">From “They Are” to “I Have”</div>
+        <p class="exercise-desc">Take one quality you have projected. Write the old sentence (“They are so…”). Then rewrite it as ownership: “I have a capacity for… / I sometimes… / A part of me…” Find a concrete, adult way this quality could be expressed in your life without harm.</p>
+        <label>Old projection sentence</label>
+        <input type="text" id="ex5_old" placeholder="e.g. She is so selfish and self-centered.">
+        <label>Ownership sentence</label>
+        <textarea id="ex5_own" placeholder="e.g. I have a need for my own time and priorities. A part of me wants to put myself first sometimes."></textarea>
+        <label>Conscious expression (one small action or practice)</label>
+        <textarea id="ex5_action" placeholder="e.g. Once a week I will decline a request without over-explaining, and notice what happens."></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex5')">Save Reclamation</button>
+        </div>
+        <div class="saved-note" id="ex5_saved">Saved.</div>
+      </div>
+
+      <h3>Exercise 5.2 — Thank-You to the Shadow</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Relationship</div>
+        <div class="exercise-title">Gratitude for the Protector</div>
+        <p class="exercise-desc">Write a short thank-you to a shadow part for what it protected, even if the method was costly. Then state what you are ready to offer it instead (voice, place, conscious channel).</p>
+        <label>Thank-you letter / statement</label>
+        <textarea id="ex5b" style="min-height:120px" placeholder="Thank you for… You kept me safe by… I am ready to give you…"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex5b')">Save</button>
+        </div>
+        <div class="saved-note" id="ex5b_saved">Saved.</div>
+      </div>
+
+      <h3>Integration Is Not Acting Out</h3>
+      <p>Owning a shadow quality does not mean enacting it in its raw, childhood, or destructive form. Integration means finding the adult, proportionate expression. The energy is reclaimed; the behavior is chosen. This distinction protects both you and others and keeps the work ethical.</p>
+
+      <div class="card">
+        <div class="card-title">Signs of Integration in Progress</div>
+        <ul>
+          <li>Triggers still arise but recover faster and with more insight.</li>
+          <li>You can laugh (gently) at patterns that once felt like fate.</li>
+          <li>You stop needing certain people to carry your disowned traits.</li>
+          <li>Creativity, boundaries, or desire feel more available.</li>
+          <li>Compassion for yourself and others increases without bypassing accountability.</li>
+        </ul>
+      </div>
+
+      <h3>Part 5 Checklist</h3>
+      <ul class="check-list" data-progress-group="part5">
+        <li><input type="checkbox" id="c5a"> I have rewritten at least one projection as ownership.</li>
+        <li><input type="checkbox" id="c5b"> I have identified one concrete way to express a reclaimed quality.</li>
+        <li><input type="checkbox" id="c5c"> I have written a thank-you to a protective shadow part.</li>
+        <li><input type="checkbox" id="c5d"> I understand that integration ≠ raw acting-out.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part4')">← Part 4</button>
+        <button class="btn btn-primary" onclick="goTo('part6')">Part 6 · Embodiment →</button>
+      </div>
+    </section>
+
+    <!-- ========== PART 6: EMBODIMENT ========== -->
+    <section class="section" id="part6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title">Embodiment</h2>
+        <p class="section-subtitle">Living the integrated self — daily practice, relationships, and the long arc of individuation.</p>
+      </div>
+
+      <p class="lead">Shadow work is incomplete if it remains only on the page or in the session. Embodiment is the transfer of insight into lived behavior, relationships, and identity over time. Jung called the larger process <em>individuation</em>: becoming the unique whole that you already potentially are, rather than the fragment the persona allowed.</p>
+
+      <h3>Daily and Weekly Practices</h3>
+      <p>A sustainable practice is more valuable than occasional intensity. Many people find a rhythm such as:</p>
+      <ul>
+        <li><strong>Morning:</strong> Brief note of any dream fragment or residual feeling from sleep.</li>
+        <li><strong>Evening:</strong> 10–15 minutes with one prompt, trigger review, or dialogue.</li>
+        <li><strong>Weekly:</strong> Review the week’s charges; choose one for deeper 3-2-1 or active imagination.</li>
+        <li><strong>Closing ritual:</strong> A consistent way to end a session (breath, grounding phrase, brief walk) so the psyche knows the container is closed.</li>
+      </ul>
+
+      <div class="exercise">
+        <div class="exercise-badge">✦ Embodiment</div>
+        <div class="exercise-title">Design Your Ongoing Practice</div>
+        <p class="exercise-desc">Define a realistic weekly rhythm you can keep for the next month. Specificity increases follow-through.</p>
+        <label>My daily / weekly commitment</label>
+        <textarea id="ex6_practice" placeholder="e.g. 10 min evening journal 4 nights/week; Sunday 30-min review of triggers; one 3-2-1 per month."></textarea>
+        <label>My closing ritual</label>
+        <input type="text" id="ex6_ritual" placeholder="e.g. Three breaths, feet on floor, phrase: 'I am more than this, and I welcome its gifts.'">
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex6')">Save Practice Design</button>
+        </div>
+        <div class="saved-note" id="ex6_saved">Saved.</div>
+      </div>
+
+      <h3>Relationships as Mirrors</h3>
+      <p>Intimate relationships, friendships, and work dynamics continue to show you the shadow. The difference after intentional work is that you can use those mirrors more consciously: “What is this reaction showing me about myself?” rather than only “What is wrong with them?” Boundaries, repair, and the capacity to stay present during conflict become living laboratories of integration.</p>
+
+      <h3>Exercise 6.2 — The Integration Review</h3>
+      <div class="exercise">
+        <div class="exercise-badge">✦ Review</div>
+        <div class="exercise-title">What Has Shifted?</div>
+        <p class="exercise-desc">Look back over the material you have written in this codex (and in life). Name three shifts — however small — in how you relate to a trigger, a quality, or a relationship.</p>
+        <label>Shift 1</label>
+        <textarea id="ex6b_1"></textarea>
+        <label>Shift 2</label>
+        <textarea id="ex6b_2"></textarea>
+        <label>Shift 3</label>
+        <textarea id="ex6b_3"></textarea>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveExercise('ex6b')">Save Review</button>
+        </div>
+        <div class="saved-note" id="ex6b_saved">Saved.</div>
+      </div>
+
+      <h3>The Long Arc</h3>
+      <p>Individuation is lifelong. The shadow does not empty; it deepens and changes as you change. New life stages, losses, successes, and relationships will activate new material. The skills of recognition, mapping, dialogue, and integration remain available. Wholeness is not a final state but a direction: less fragmentation, more choice, more capacity to hold contradiction without collapsing into one side.</p>
+
+      <div class="quote">
+        One does not become enlightened by imagining figures of light, but by making the darkness conscious.
+        <span class="quote-attr">— C. G. Jung</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">When to Seek Professional Support</div>
+        <p>Self-guided shadow work has limits. Consider a Jungian analyst, depth-oriented therapist, or trauma-informed practitioner if: material is consistently overwhelming; you have a trauma history that needs containment; relationships are in crisis; or you want a skilled other to hold the process with you. This codex is a companion, not a substitute for care when care is needed.</p>
+      </div>
+
+      <h3>Part 6 Checklist</h3>
+      <ul class="check-list" data-progress-group="part6">
+        <li><input type="checkbox" id="c6a"> I have designed a realistic ongoing practice.</li>
+        <li><input type="checkbox" id="c6b"> I have named at least one shift from this work so far.</li>
+        <li><input type="checkbox" id="c6c"> I understand embodiment as lived behavior, not only insight.</li>
+        <li><input type="checkbox" id="c6d"> I know when professional support is appropriate.</li>
+      </ul>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part5')">← Part 5</button>
+        <button class="btn btn-primary" onclick="goTo('glossary')">Glossary →</button>
+      </div>
+    </section>
+
+    <!-- ========== GLOSSARY ========== -->
+    <section class="section" id="glossary">
+      <div class="section-header">
+        <span class="section-num">✦</span>
+        <h2 class="section-title">Glossary</h2>
+        <p class="section-subtitle">Key terms for the journey — precise language supports precise work.</p>
+      </div>
+
+      <div class="glossary-grid" id="glossaryGrid">
+        <!-- Populated by JS for cleaner structure -->
+      </div>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('part6')">← Part 6</button>
+        <button class="btn btn-primary" onclick="goTo('resources')">Resources →</button>
+      </div>
+    </section>
+
+    <!-- ========== RESOURCES ========== -->
+    <section class="section" id="resources">
+      <div class="section-header">
+        <span class="section-num">◈</span>
+        <h2 class="section-title">Resources &amp; Continuity</h2>
+        <p class="section-subtitle">Further reading, practice supports, and how to keep the work alive.</p>
+      </div>
+
+      <h3>Foundational Reading</h3>
+      <div class="card">
+        <ul>
+          <li><strong>C. G. Jung</strong> — Selections on the shadow in <em>Aion</em>, <em>Two Essays on Analytical Psychology</em>, and the collected works. Start with accessible introductions rather than the densest volumes.</li>
+          <li><strong>Robert A. Johnson</strong> — <em>Owning Your Own Shadow</em>: a short, clear classic on personal shadow work.</li>
+          <li><strong>Connie Zweig &amp; Jeremiah Abrams</strong> — <em>Meeting the Shadow</em> (anthology) and Zweig’s later work on shadow in spirituality and aging.</li>
+          <li><strong>Ken Wilber / Integral Life Practice</strong> — The 3-2-1 process and broader integral framing of shadow.</li>
+          <li><strong>Internal Family Systems (Richard Schwartz)</strong> — A complementary model of “parts” and exiles that many find practical alongside Jungian language.</li>
+        </ul>
+      </div>
+
+      <h3>Practice Supports</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Dream Work</div>
+          <p>Keep a notebook by the bed. Record fragments immediately. Look for recurring figures, settings, and emotions. Ask: “What in me is this figure?” rather than only “What does this mean about my day?”</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Body &amp; Somatic</div>
+          <p>Shadow material often lives in the body. Gentle tracking of sensation during emotional charge (without forcing release) supports recognition and integration. Trauma-informed somatic practices can help if activation is high.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Creative Expression</div>
+          <p>Art, movement, music, and writing that are not “about” the shadow but allow it to move can open channels that pure analysis cannot. Mandala drawing, free painting, and unstructured movement are traditional Jungian supports.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Community &amp; Therapy</div>
+          <p>Trusted others and skilled practitioners provide mirrors and containment. Group process and individual depth work can accelerate what solo journaling begins.</p>
+        </div>
+      </div>
+
+      <h3>Your Local Journal</h3>
+      <p>Everything you save in the exercises is stored in this browser’s local storage. Use the floating journal button to add free notes anytime. To clear all saved data, use the button below (this cannot be undone).</p>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="exportJournal()">Export Journal as Text</button>
+        <button class="btn btn-secondary" onclick="if(confirm('Clear all saved shadow-work data from this browser?')) clearAllData()">Clear All Saved Data</button>
+      </div>
+      <div id="exportArea" style="margin-top:1rem;display:none">
+        <textarea id="exportText" style="width:100%;min-height:200px;background:var(--bg-deep);border:1px solid var(--border-subtle);border-radius:10px;color:var(--text-primary);padding:1rem;font-size:0.85rem"></textarea>
+      </div>
+
+      <div class="notice" style="margin-top:2rem">
+        <strong>Closing reminder:</strong> This codex is an educational and reflective tool. It is not psychotherapy, medical advice, or a crisis resource. If you are in distress, contact local emergency services or a crisis line in your region.
+      </div>
+
+      <div class="part-nav">
+        <button class="btn btn-secondary" onclick="goTo('glossary')">← Glossary</button>
+        <button class="btn btn-primary" onclick="goTo('intro')">Return to Threshold</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FLOATING JOURNAL -->
+<button class="journal-fab" id="journalFab" title="Open journal">✎</button>
+<div class="journal-panel" id="journalPanel">
+  <div class="journal-panel-header">
+    <h3>Quick Journal</h3>
+    <button class="btn btn-secondary" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="document.getElementById('journalPanel').classList.remove('open')">✕</button>
+  </div>
+  <div class="journal-panel-body">
+    <textarea id="quickJournal" placeholder="Capture a trigger, insight, or feeling…"></textarea>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveQuickJournal()">Save Note</button>
+    </div>
+    <div id="quickHistory"></div>
+  </div>
+</div>
+
+<script>
+// ===== BACKGROUND CANVAS — ambient particles =====
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const COUNT = 55;
+  for (let i = 0; i < COUNT; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.8 + 0.4,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      a: Math.random() * 0.4 + 0.1
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201, 162, 39, ${p.a})`;
+      ctx.fill();
+    }
+    // soft connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const a = particles[i], b = particles[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 120) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(123, 92, 255, ${0.08 * (1 - d / 120)})`;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ===== CURSOR GLOW =====
+(function() {
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+})();
+
+// ===== NAVIGATION =====
+function goTo(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.section === id);
+  });
+  window.scrollTo(0, 0);
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  updateProgress();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => goTo(btn.dataset.section));
+});
+
+document.getElementById('mobileToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+// ===== PROGRESS =====
+function updateProgress() {
+  const checks = document.querySelectorAll('.check-list input[type="checkbox"]');
+  const total = checks.length;
+  let done = 0;
+  checks.forEach(c => { if (c.checked) done++; });
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  // persist
+  const state = {};
+  checks.forEach(c => { state[c.id] = c.checked; });
+  localStorage.setItem('shadow_checks', JSON.stringify(state));
+}
+
+document.querySelectorAll('.check-list input[type="checkbox"]').forEach(c => {
+  c.addEventListener('change', updateProgress);
+});
+
+// restore checks
+(function() {
+  try {
+    const state = JSON.parse(localStorage.getItem('shadow_checks') || '{}');
+    Object.keys(state).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = state[id];
+    });
+    updateProgress();
+  } catch (e) {}
+})();
+
+// ===== EXERCISE SAVE / LOAD =====
+function saveExercise(key) {
+  const data = {};
+  document.querySelectorAll(`[id^="${key}_"], [id="${key}"]`).forEach(el => {
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+      data[el.id] = el.value;
+    }
+  });
+  // also capture numbered variants like ex1b_p1
+  document.querySelectorAll(`[id^="${key}"]`).forEach(el => {
+    if ((el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') && !data[el.id]) {
+      data[el.id] = el.value;
+    }
+  });
+  const store = JSON.parse(localStorage.getItem('shadow_exercises') || '{}');
+  store[key] = { data, ts: new Date().toISOString() };
+  // for trigger log, append history
+  if (key === 'ex1') {
+    const hist = store.ex1_history || [];
+    hist.unshift({ ...data, ts: new Date().toISOString() });
+    store.ex1_history = hist.slice(0, 30);
+    renderEx1History(store.ex1_history);
+  }
+  localStorage.setItem('shadow_exercises', JSON.stringify(store));
+  const note = document.getElementById(key + '_saved');
+  if (note) {
+    note.classList.add('show');
+    setTimeout(() => note.classList.remove('show'), 2500);
+  }
+}
+
+function clearExercise(key) {
+  document.querySelectorAll(`[id^="${key}"]`).forEach(el => {
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = '';
+  });
+}
+
+function renderEx1History(hist) {
+  const box = document.getElementById('ex1_history');
+  if (!box || !hist || !hist.length) return;
+  box.innerHTML = '<h4 style="margin-top:1.25rem">Previous entries</h4>' + hist.map(h => `
+    <div class="journal-entry">
+      <time>${new Date(h.ts).toLocaleString()}</time>
+      <div><strong>Situation:</strong> ${esc(h.ex1_situation || '')}</div>
+      <div><strong>Emotion:</strong> ${esc(h.ex1_emotion || '')}</div>
+      <div><strong>Body:</strong> ${esc(h.ex1_body || '')}</div>
+      <div><strong>Story:</strong> ${esc(h.ex1_story || '')}</div>
+    </div>
+  `).join('');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// restore exercises
+(function() {
+  try {
+    const store = JSON.parse(localStorage.getItem('shadow_exercises') || '{}');
+    Object.keys(store).forEach(key => {
+      if (key === 'ex1_history') {
+        renderEx1History(store[key]);
+        return;
+      }
+      const entry = store[key];
+      if (entry && entry.data) {
+        Object.keys(entry.data).forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = entry.data[id];
+        });
+      }
+    });
+  } catch (e) {}
+})();
+
+// ===== QUICK JOURNAL =====
+document.getElementById('journalFab').addEventListener('click', () => {
+  document.getElementById('journalPanel').classList.toggle('open');
+});
+
+function saveQuickJournal() {
+  const ta = document.getElementById('quickJournal');
+  const text = ta.value.trim();
+  if (!text) return;
+  const store = JSON.parse(localStorage.getItem('shadow_quick') || '[]');
+  store.unshift({ text, ts: new Date().toISOString() });
+  localStorage.setItem('shadow_quick', JSON.stringify(store.slice(0, 50)));
+  ta.value = '';
+  renderQuickHistory();
+}
+
+function renderQuickHistory() {
+  const store = JSON.parse(localStorage.getItem('shadow_quick') || '[]');
+  const box = document.getElementById('quickHistory');
+  box.innerHTML = store.slice(0, 10).map(h => `
+    <div class="journal-entry">
+      <time>${new Date(h.ts).toLocaleString()}</time>
+      ${esc(h.text)}
+    </div>
+  `).join('');
+}
+renderQuickHistory();
+
+// ===== EXPORT / CLEAR =====
+function exportJournal() {
+  const exercises = JSON.parse(localStorage.getItem('shadow_exercises') || '{}');
+  const quick = JSON.parse(localStorage.getItem('shadow_quick') || '[]');
+  const checks = JSON.parse(localStorage.getItem('shadow_checks') || '{}');
+  let out = '=== SHADOW CODEX JOURNAL EXPORT ===\n';
+  out += 'Exported: ' + new Date().toISOString() + '\n\n';
+  out += '--- CHECKLIST STATE ---\n' + JSON.stringify(checks, null, 2) + '\n\n';
+  out += '--- EXERCISES ---\n' + JSON.stringify(exercises, null, 2) + '\n\n';
+  out += '--- QUICK NOTES ---\n' + JSON.stringify(quick, null, 2) + '\n';
+  document.getElementById('exportArea').style.display = 'block';
+  document.getElementById('exportText').value = out;
+}
+
+function clearAllData() {
+  localStorage.removeItem('shadow_exercises');
+  localStorage.removeItem('shadow_quick');
+  localStorage.removeItem('shadow_checks');
+  location.reload();
+}
+
+// ===== GLOSSARY =====
+const glossaryTerms = [
+  { term: 'Active Imagination', def: 'Jung’s method of consciously engaging images, figures, and feelings that arise from the unconscious through dialogue, visualization, or creative expression, while remaining awake and reflective.' },
+  { term: 'Anima / Animus', def: 'In Jungian psychology, the inner feminine aspect in men (anima) and inner masculine aspect in women (animus). Related to but distinct from the personal shadow; often appears in dreams and projections onto others.' },
+  { term: 'Collective Unconscious', def: 'Jung’s concept of a shared layer of the psyche containing archetypes and patterns common to humanity, distinct from the personal unconscious formed by individual experience.' },
+  { term: 'Golden Shadow', def: 'Positive capacities, talents, and desires that have been disowned or repressed — often because they threatened belonging or contradicted the persona. Envy and idealization frequently point to the golden shadow.' },
+  { term: 'Individuation', def: 'The lifelong process of becoming a unique, integrated whole — differentiating from collective norms and integrating unconscious contents (including the shadow) into conscious life.' },
+  { term: 'Persona', def: 'The social mask or role-self presented to the world. Necessary for adaptation, but when over-identified with, it excludes the shadow and creates a one-sided personality.' },
+  { term: 'Projection', def: 'The unconscious attribution of one’s own disowned qualities to another person or group. Strong emotional charge (positive or negative) is a common clue that projection is active.' },
+  { term: 'Shadow', def: 'The repressed, suppressed, or unacknowledged aspects of the personality — both “dark” (aggression, envy, shame) and “golden” (talent, power, desire). Not purely evil; a necessary part of the whole self.' },
+  { term: '3-2-1 Process', def: 'A structured integration technique: (3) describe the shadow quality in third person, (2) dialogue with it in second person, (1) own and speak as it in first person. Moves material from projected object to integrated aspect of self.' },
+  { term: 'Trigger', def: 'A stimulus (person, situation, word, sensation) that produces a strong emotional reaction disproportionate to the present event — often because it touches disowned or unprocessed material.' }
+];
+
+(function() {
+  const grid = document.getElementById('glossaryGrid');
+  grid.innerHTML = glossaryTerms.map((g, i) => `
+    <div class="glossary-item" id="gloss${i}">
+      <button class="glossary-term" onclick="document.getElementById('gloss${i}').classList.toggle('open')">
+        ${g.term} <span class="arrow">▼</span>
+      </button>
+      <div class="glossary-def">${g.def}</div>
+    </div>
+  `).join('');
+})();
+</script>
+</body>
+</html>
