@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hexposition — Level Asset Kit</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0b0710;color:#e6dcf5;font-family:'Courier New',monospace;padding:2rem 1.5rem 4rem}
+h1{font-size:1.5rem;letter-spacing:.25em;text-transform:uppercase;color:#fff;text-shadow:0 0 30px rgba(232,25,106,.7)}
+h1::before{content:'// '}
+.sub{color:#9b72cf;font-size:.75rem;letter-spacing:.08em;margin-top:.6rem;max-width:60ch;line-height:1.7}
+h2{font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:#e8196a;margin:2.5rem 0 .9rem;border-bottom:1px solid rgba(232,25,106,.25);padding-bottom:.5rem}
+h2::before{content:'// '}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem}
+.card{border:1px solid rgba(155,114,207,.28);background:rgba(255,255,255,.02);border-radius:3px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+.card:hover{border-color:#e8196a;box-shadow:0 0 22px rgba(232,25,106,.22)}
+.view{width:100%;aspect-ratio:1/1;display:block}
+.meta{padding:.6rem .7rem .7rem;border-top:1px solid rgba(155,114,207,.18)}
+.nm{font-size:.72rem;color:#fff;letter-spacing:.05em;word-break:break-all}
+.st{font-size:.62rem;color:#7b6a92;margin-top:.35rem;line-height:1.5}
+.tag{display:inline-block;font-size:.55rem;letter-spacing:.06em;padding:.12rem .4rem;border:1px solid rgba(155,114,207,.4);color:#c4b5fd;margin-top:.4rem;border-radius:2px}
+#atlas{display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;border:1px solid rgba(155,114,207,.28);padding:1rem;border-radius:3px;background:rgba(255,255,255,.02)}
+#atlas img{width:180px;image-rendering:pixelated;border:1px solid rgba(155,114,207,.3)}
+.legend{font-size:.66rem;color:#9b8bb0;line-height:1.9}
+.legend b{color:#e8196a;font-weight:normal}
+a.back{display:inline-block;margin-top:2.5rem;color:rgba(232,25,106,.6);font-size:.7rem;text-decoration:none;letter-spacing:.08em}
+a.back:hover{color:#e8196a}
+a.back::before{content:'← '}
+#err{color:#ff6b6b;font-size:.7rem;margin-top:1rem;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Level Asset Kit</h1>
+<p class="sub">Every model available for building the Broomstick Run level, rendered live from the same
+files the game would load. All city-kit pieces share one 8-column palette atlas, regenerated in the
+game's neon palette — so re-skinning the whole set is a single PNG edit.</p>
+
+<h2>Shared palette atlas</h2>
+<div id="atlas">
+  <img src="assets/kit/Textures/colormap.png" alt="colormap atlas">
+  <div class="legend">
+    <b>col 0</b> building walls, path base<br>
+    <b>col 1</b> tree canopy, roof trim<br>
+    <b>col 2</b> tyres, character body<br>
+    <b>col 3</b> vehicle primary (magenta)<br>
+    <b>col 4</b> fence, tree trunk (brass)<br>
+    <b>col 5</b> debris, kart shell (purple)<br>
+    <b>col 6</b> warm highlight<br>
+    <b>col 7</b> cyan accent
+  </div>
+</div>
+
+<h2>Models</h2>
+<div id="grid"></div>
+<div id="err"></div>
+
+<a class="back" href="game.html">back to the game</a>
+
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/GLTFLoader.js"></script>
+<script>
+const ASSETS = [
+  ['broom.glb','player'],
+  ['building-type-a.glb','scenery'],
+  ['building-type-d.glb','scenery'],
+  ['building-type-f.glb','scenery'],
+  ['tree-small.glb','scenery'],
+  ['tree-large.glb','scenery'],
+  ['fence.glb','scenery'],
+  ['fence-1x2.glb','scenery'],
+  ['path-short.glb','scenery'],
+  ['debris-plate-a.glb','obstacle'],
+  ['firetruck.glb','obstacle'],
+  ['garbage-truck.glb','obstacle'],
+  ['kart-ooli.glb','racer'],
+  ['kart-oodi.glb','racer'],
+  ['race-future.glb','racer'],
+];
+
+// One renderer, many scissored viewports — 15 separate WebGL contexts would
+// blow past the browser's context limit.
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,0);
+renderer.domElement.style.cssText='position:fixed;top:0;left:0;pointer-events:none;z-index:-1';
+document.body.appendChild(renderer.domElement);
+
+const views = [];
+const grid = document.getElementById('grid');
+const loader = new THREE.GLTFLoader();
+
+function makeCard(file, tag){
+  const card=document.createElement('div'); card.className='card';
+  const el=document.createElement('div'); el.className='view';
+  const meta=document.createElement('div'); meta.className='meta';
+  meta.innerHTML=`<div class="nm">${file}</div><div class="st">loading…</div><span class="tag">${tag}</span>`;
+  card.appendChild(el); card.appendChild(meta); grid.appendChild(card);
+  return {el, stat:meta.querySelector('.st')};
+}
+
+for(const [file,tag] of ASSETS){
+  const {el,stat} = makeCard(file,tag);
+  const scene=new THREE.Scene();
+  scene.add(new THREE.AmbientLight(0x8878aa, 1.6));
+  const key=new THREE.DirectionalLight(0xffffff,2.1); key.position.set(3,5,4); scene.add(key);
+  const rim=new THREE.DirectionalLight(0xe8196a,2.4); rim.position.set(-4,2,-3); scene.add(rim);
+  const fill=new THREE.PointLight(0x7b2be2,3,20); fill.position.set(0,2,5); scene.add(fill);
+
+  const camera=new THREE.PerspectiveCamera(38,1,.01,200);
+  const pivot=new THREE.Group(); scene.add(pivot);
+  const v={el,scene,camera,pivot,ready:false};
+  views.push(v);
+
+  loader.load('assets/kit/'+file, gltf=>{
+    const root=gltf.scene;
+    let tris=0;
+    root.traverse(o=>{
+      if(!o.isMesh) return;
+      const g=o.geometry;
+      tris += g.index ? g.index.count/3 : g.attributes.position.count/3;
+      // The broom GLB carries no material at all; give it the game's neon look.
+      if(!o.material || !o.material.map){
+        o.material = new THREE.MeshStandardMaterial({
+          color:0x6b3a1a, roughness:.65, metalness:.15,
+          emissive:new THREE.Color(0x7b2be2), emissiveIntensity:.22
+        });
+      }
+      if(o.material.map){ o.material.map.generateMipmaps=false; o.material.map.minFilter=THREE.LinearFilter; }
+    });
+    // Center on origin and frame it, so wildly different source scales all read.
+    const box=new THREE.Box3().setFromObject(root);
+    const size=box.getSize(new THREE.Vector3());
+    const ctr=box.getCenter(new THREE.Vector3());
+    root.position.sub(ctr);
+    pivot.add(root);
+    // Fit the whole bounding sphere in frame with a little breathing room.
+    const radius=Math.max(size.x,size.y,size.z)*0.5 || 1;
+    const dist=(radius/Math.sin((38*Math.PI/180)/2))*1.15;
+    camera.position.set(dist*.62,dist*.45,dist*.62);
+    camera.lookAt(0,0,0);
+    v.ready=true;
+    stat.textContent=`${Math.round(tris).toLocaleString()} tris · `+
+      `${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`;
+  }, undefined, e=>{ stat.textContent='FAILED: '+e; });
+}
+
+function animate(t){
+  requestAnimationFrame(animate);
+  const w=innerWidth,h=innerHeight;
+  if(renderer.domElement.width!==w*renderer.getPixelRatio()) renderer.setSize(w,h,false);
+  renderer.setScissorTest(true);
+  for(const v of views){
+    const r=v.el.getBoundingClientRect();
+    if(r.bottom<0||r.top>h||!v.ready) continue;
+    const bottom=h-r.bottom;
+    renderer.setViewport(r.left,bottom,r.width,r.height);
+    renderer.setScissor(r.left,bottom,r.width,r.height);
+    v.camera.aspect=r.width/r.height; v.camera.updateProjectionMatrix();
+    v.pivot.rotation.y=t*0.0004;
+    renderer.render(v.scene,v.camera);
+  }
+  renderer.setScissorTest(false);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
