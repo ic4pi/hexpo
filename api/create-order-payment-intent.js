@@ -23,10 +23,14 @@ const APPAREL_PRICE_IDS = {
   'Occupied Skies Ugly Sweater': {
     default: 'price_1UDbp3ALwINGiotHWI1JKHRx',
   },
+  'Pizza Arcade Ugly Sweater': {
+    default: 'price_1UEa2yALwINGiotHXbHF6bT3',
+  },
 };
 
 const APPAREL_SIZES = {
   'Occupied Skies Ugly Sweater': ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
+  'Pizza Arcade Ugly Sweater': ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
 };
 
 function apparelPriceId(name, size) {
