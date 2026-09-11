@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Hexposed — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#050302; --deep:#0c0704; --pink:#c9932e; --purple:#5b3a8f;
+  --muted:#8a7860; --text:#d6c9b0; --white:#f2e8d5;
+  --card-bg:#140d08; --card-border:rgba(201,147,46,.3);
+  --mono:'Space Mono',monospace; --display:'Cinzel',Georgia,serif;
+  --green:#4ade80; --red:#e8196a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--black);color:var(--text);font-family:var(--mono);font-size:.82rem;line-height:1.6;min-height:100vh}
+a{color:var(--pink)}
+
+/* ── login ── */
+#login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;padding:2rem}
+.brand{font-family:var(--display);font-size:1.1rem;letter-spacing:.35em;text-transform:uppercase;color:var(--white)}
+.sub{font-size:.7rem;color:var(--muted);letter-spacing:.08em}
+#login form{display:flex;flex-direction:column;gap:.7rem;width:100%;max-width:320px;margin-top:.6rem}
+input,select,textarea{background:var(--deep);border:1px solid var(--card-border);color:var(--white);
+  font-family:var(--mono);font-size:.82rem;padding:.7rem .8rem;border-radius:2px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pink)}
+textarea{resize:vertical;min-height:90px}
+button{background:none;border:1px solid var(--pink);color:var(--pink);font-family:var(--mono);
+  font-size:.76rem;letter-spacing:.08em;padding:.7rem 1.4rem;border-radius:2px;cursor:pointer;transition:background .25s}
+button:hover:not(:disabled){background:rgba(201,147,46,.14)}
+button:disabled{opacity:.45;cursor:default}
+.err{color:var(--red);font-size:.72rem;min-height:1.1em}
+
+/* ── shell ── */
+#app{display:none}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;
+  padding:1rem 1.4rem;border-bottom:1px solid var(--card-border);position:sticky;top:0;background:var(--black);z-index:5}
+nav{display:flex;gap:.4rem;flex-wrap:wrap}
+.tab{background:none;border:1px solid transparent;color:var(--muted);padding:.45rem .9rem;font-size:.74rem}
+.tab.on{color:var(--pink);border-color:var(--card-border);background:var(--card-bg)}
+main{padding:1.4rem;max-width:1200px;margin:0 auto}
+h2{font-family:var(--display);font-weight:400;font-size:1rem;letter-spacing:.18em;text-transform:uppercase;color:var(--white);margin-bottom:.9rem}
+.panel{display:none}
+.panel.on{display:block}
+
+/* ── stats ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-bottom:1.6rem}
+.stat{background:var(--card-bg);border:1px solid var(--card-border);border-radius:3px;padding:.9rem}
+.stat .k{font-size:.64rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.stat .v{font-size:1.4rem;color:var(--white);margin-top:.3rem;font-family:var(--display)}
+
+/* ── lists ── */
+.row{background:var(--card-bg);border:1px solid var(--card-border);border-radius:3px;padding:.85rem 1rem;margin-bottom:.6rem}
+.row-top{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:baseline}
+.row-name{color:var(--white)}
+.row-amt{color:var(--pink);white-space:nowrap}
+.row-meta{font-size:.7rem;color:var(--muted);margin-top:.3rem;word-break:break-word}
+.pill{display:inline-block;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:.1rem .45rem;border-radius:2px;border:1px solid currentColor;margin-left:.4rem}
+.pill.paid{color:var(--green)} .pill.unpaid{color:var(--muted)} .pill.soon{color:var(--pink)}
+.empty{color:var(--muted);font-size:.75rem;padding:1.2rem 0}
+.loading{color:var(--muted);font-size:.75rem}
+
+/* ── products ── */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin-bottom:2rem}
+.prod{background:var(--card-bg);border:1px solid var(--card-border);border-radius:3px;overflow:hidden}
+.prod img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--deep)}
+.prod .body{padding:.7rem .8rem}
+form.add{display:grid;gap:.7rem;max-width:560px}
+label{font-size:.68rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.3rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.hint{font-size:.66rem;color:var(--muted);margin-top:.25rem;line-height:1.5}
+.ok{color:var(--green);font-size:.74rem}
+@media (max-width:520px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login">
+  <div class="brand">Hexposed</div>
+  <div class="sub">// admin //</div>
+  <form id="loginForm" autocomplete="off">
+    <input type="password" id="pw" placeholder="password" autocomplete="current-password" required>
+    <button type="submit" id="loginBtn">sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="app">
+  <header>
+    <div class="brand" style="font-size:.85rem">Hexposed <span style="color:var(--pink)">admin</span></div>
+    <nav>
+      <button class="tab on" data-panel="overview">overview</button>
+      <button class="tab" data-panel="orders">orders</button>
+      <button class="tab" data-panel="bookings">bookings</button>
+      <button class="tab" data-panel="products">products</button>
+    </nav>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <a href="index.html" style="font-size:.7rem;text-decoration:none">view site</a>
+      <button id="logout" style="padding:.4rem .8rem;font-size:.7rem">sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel on" id="p-overview">
+      <h2>Overview</h2>
+      <div class="stats" id="stats"><div class="loading">loading…</div></div>
+      <h2>Next up</h2>
+      <div id="nextUp" class="loading">loading…</div>
+    </section>
+
+    <section class="panel" id="p-orders">
+      <h2>Orders</h2>
+      <div id="orders" class="loading">loading…</div>
+    </section>
+
+    <section class="panel" id="p-bookings">
+      <h2>Bookings</h2>
+      <div id="bookings" class="loading">loading…</div>
+    </section>
+
+    <section class="panel" id="p-products">
+      <h2>Products</h2>
+      <div class="prod-grid" id="products"></div>
+      <h2>Add a product</h2>
+      <form class="add" id="addForm" autocomplete="off">
+        <div class="two">
+          <div><label for="f-name">Name</label><input id="f-name" required placeholder="Pizza Arcade Ugly Sweater"></div>
+          <div><label for="f-kind">Kind</label>
+            <select id="f-kind"><option value="apparel">apparel</option><option value="spell">spell jar</option></select></div>
+        </div>
+        <div class="two">
+          <div><label for="f-price">Price (USD)</label><input id="f-price" required placeholder="44.00" inputmode="decimal"></div>
+          <div><label for="f-sizes">Sizes</label><input id="f-sizes" placeholder="S, M, L, XL, 2XL, 3XL, 4XL, 5XL"></div>
+        </div>
+        <div><label for="f-tagline">Tagline</label><input id="f-tagline" placeholder="Neon, cheese and high scores."></div>
+        <div><label for="f-image">Image URL</label><input id="f-image" placeholder="https://… or images/thing.jpg"></div>
+        <div>
+          <label for="f-skus">Merchize SKUs (paste the whole block)</label>
+          <textarea id="f-skus" placeholder="SKU: 1C-…-02CZ&#10;size: S&#10;All-over Print Knitted Sweater&#10;SKU: KNSWVN000000AA01&#10;…"></textarea>
+          <div class="hint">Paste the variant list straight from Merchize. It keeps your listing's own
+            <code>1C-…</code> codes and ignores the shared <code>KNSWVN…</code> blank-garment codes.</div>
+        </div>
+        <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
+          <button type="submit" id="addBtn">create product</button>
+          <span class="err" id="addErr"></span><span class="ok" id="addOk"></span>
+        </div>
+        <div class="hint">Creates a Stripe product and price. Because Stripe is what actually charges the
+          customer, the price shown on the site can never drift from the price billed.</div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script>
+const KEY='hexposed_admin_token';
+let token=sessionStorage.getItem(KEY)||'';
+
+async function api(action,{method='GET',body}={}){
+  const res=await fetch(`/api/admin?action=${action}`,{
+    method,
+    headers:{...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},
+    body:body?JSON.stringify(body):undefined,
+  });
+  const data=await res.json().catch(()=>({error:'Bad response'}));
+  if(res.status===401 && action!=='login'){ signOut(); throw new Error('Session expired — sign in again.'); }
+  if(!res.ok) throw new Error(data.error||'Request failed');
+  return data;
+}
+
+function signOut(){ token=''; sessionStorage.removeItem(KEY);
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='flex'; }
+
+document.getElementById('logout').onclick=signOut;
+
+document.getElementById('loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn'), err=document.getElementById('loginErr');
+  err.textContent=''; btn.disabled=true; btn.textContent='checking…';
+  try{
+    const r=await api('login',{method:'POST',body:{password:document.getElementById('pw').value}});
+    token=r.token; sessionStorage.setItem(KEY,token);
+    document.getElementById('pw').value='';
+    enter();
+  }catch(ex){ err.textContent=ex.message; }
+  finally{ btn.disabled=false; btn.textContent='sign in'; }
+};
+
+function enter(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadOverview(); loadOrders(); loadBookings(); loadProducts();
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.panel));
+});
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const when=ms=>ms?new Date(ms).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):'—';
+
+async function loadOverview(){
+  const el=document.getElementById('stats'), next=document.getElementById('nextUp');
+  try{
+    const s=await api('summary');
+    el.innerHTML=[
+      ['revenue (all)',s.revenueAll.display],['revenue (30d)',s.revenue30.display],
+      ['paid orders',s.orderCount],['paid bookings',s.bookingCount],
+      ['upcoming sessions',s.upcomingCount],['unfinished checkouts',s.abandoned],
+    ].map(([k,v])=>`<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');
+    const b=await api('bookings');
+    const up=b.bookings.filter(x=>x.paid&&x.upcoming).sort((x,y)=>x.slotStart-y.slotStart).slice(0,5);
+    next.innerHTML=up.length?up.map(bookingRow).join(''):'<div class="empty">No upcoming sessions.</div>';
+  }catch(ex){ el.innerHTML=`<div class="err">${esc(ex.message)}</div>`; next.innerHTML=''; }
+}
+
+function orderRow(o){
+  const ship=o.shipping?`${o.shipping.name} — ${o.shipping.line1}${o.shipping.line2?' '+o.shipping.line2:''}, ${o.shipping.city} ${o.shipping.state} ${o.shipping.postal} ${o.shipping.country}`:'no address';
+  return `<div class="row"><div class="row-top">
+    <span class="row-name">${esc(o.items||'(no items recorded)')}<span class="pill ${o.paid?'paid':'unpaid'}">${o.paid?'paid':esc(o.status)}</span></span>
+    <span class="row-amt">${esc(o.amount.display)}</span></div>
+    <div class="row-meta">${esc(o.email)} · ${esc(when(o.created))}</div>
+    <div class="row-meta">${esc(ship)}</div></div>`;
+}
+function bookingRow(b){
+  return `<div class="row"><div class="row-top">
+    <span class="row-name">${esc(b.reading||'Reading')}<span class="pill ${b.paid?'paid':'unpaid'}">${b.paid?'paid':esc(b.status)}</span>${b.upcoming?'<span class="pill soon">upcoming</span>':''}</span>
+    <span class="row-amt">${esc(b.amount.display)}</span></div>
+    <div class="row-meta">${esc(b.slotLabel||when(b.slotStart))} ${esc(b.timezone)} · ${esc(b.email)}</div>
+    ${b.question?`<div class="row-meta">“${esc(b.question)}”</div>`:''}</div>`;
+}
+
+async function loadOrders(){
+  const el=document.getElementById('orders');
+  try{ const d=await api('orders');
+    el.innerHTML=d.orders.length?d.orders.map(orderRow).join(''):'<div class="empty">No orders yet.</div>';
+  }catch(ex){ el.innerHTML=`<div class="err">${esc(ex.message)}</div>`; }
+}
+async function loadBookings(){
+  const el=document.getElementById('bookings');
+  try{ const d=await api('bookings');
+    el.innerHTML=d.bookings.length?d.bookings.map(bookingRow).join(''):'<div class="empty">No bookings yet.</div>';
+  }catch(ex){ el.innerHTML=`<div class="err">${esc(ex.message)}</div>`; }
+}
+async function loadProducts(){
+  const el=document.getElementById('products');
+  try{ const d=await api('products');
+    el.innerHTML=d.products.length?d.products.map(p=>`
+      <div class="prod">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:''}
+      <div class="body"><div class="row-name">${esc(p.name)}</div>
+      <div class="row-meta">${esc(p.amount.display)} · ${esc(p.kind)}${p.sizes.length?' · '+esc(p.sizes.join('/')):''}</div>
+      <div class="row-meta">${Object.keys(p.skus).length?Object.keys(p.skus).length+' SKUs wired':'no SKUs — manual fulfilment'}</div>
+      </div></div>`).join('')
+      :'<div class="empty">No products added here yet. The original spell jars and the two sweaters still live in the site code.</div>';
+  }catch(ex){ el.innerHTML=`<div class="err">${esc(ex.message)}</div>`; }
+}
+
+document.getElementById('addForm').onsubmit=async e=>{
+  e.preventDefault();
+  const btn=document.getElementById('addBtn'), err=document.getElementById('addErr'), ok=document.getElementById('addOk');
+  err.textContent=''; ok.textContent='';
+  const dollars=Number(String(document.getElementById('f-price').value).replace(/[^0-9.]/g,''));
+  if(!Number.isFinite(dollars)||dollars<=0){ err.textContent='Enter a price like 44.00'; return; }
+  btn.disabled=true; btn.textContent='creating…';
+  try{
+    const r=await api('create-product',{method:'POST',body:{
+      name:document.getElementById('f-name').value,
+      kind:document.getElementById('f-kind').value,
+      priceCents:Math.round(dollars*100),
+      tagline:document.getElementById('f-tagline').value,
+      image:document.getElementById('f-image').value,
+      sizes:document.getElementById('f-sizes').value.split(',').map(s=>s.trim()).filter(Boolean),
+      skuBlock:document.getElementById('f-skus').value,
+    }});
+    ok.textContent=`Created — ${r.skusParsed} SKUs parsed.`;
+    e.target.reset(); loadProducts();
+  }catch(ex){ err.textContent=ex.message; }
+  finally{ btn.disabled=false; btn.textContent='create product'; }
+};
+
+if(token) enter();
+</script>
+</body>
+</html>

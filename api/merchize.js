@@ -67,6 +67,21 @@ function skuFor(name, size) {
   return (sizes && sizes[size]) || '';
 }
 
+// Products added through /admin keep their SKUs in Stripe product metadata
+// rather than in the map above, so fulfilment has to check both.
+async function skuForAsync(name, size) {
+  const local = skuFor(name, size);
+  if (local) return local;
+  try {
+    const { findByName } = require('./_catalog');
+    const dynamic = await findByName(name);
+    return (dynamic && dynamic.skus && dynamic.skus[size]) || '';
+  } catch (err) {
+    console.warn('dynamic SKU lookup failed for', name, size, err.message);
+    return '';
+  }
+}
+
 /* Builds the create-order request body.
 
    NOTE: this shape follows Merchize's documented order-import fields, but
@@ -89,7 +104,7 @@ function buildMerchizeOrderPayload({ externalNumber, email, shipping, items }) {
       phone: shipping.phone || '',
     },
     line_items: items.map((item) => ({
-      sku: skuFor(item.name, item.size),
+      sku: item.sku,
       quantity: item.qty,
       variant: { size: item.size },
     })),
@@ -115,7 +130,15 @@ async function createMerchizeOrder({ externalNumber, email, shipping, items }) {
     return { ok: false, reason: 'not_configured' };
   }
 
-  const missingSku = items.filter((item) => !skuFor(item.name, item.size));
+  // Resolve each SKU once, up front: the map in this file first, then the
+  // Stripe metadata of anything added through /admin.
+  const resolved = [];
+  for (const item of items) {
+    resolved.push({ ...item, sku: await skuForAsync(item.name, item.size) });
+  }
+  items = resolved;
+
+  const missingSku = items.filter((item) => !item.sku);
   if (missingSku.length) {
     console.warn('Merchize SKU missing, fulfil these by hand:', missingSku);
   }
@@ -151,4 +174,4 @@ async function createMerchizeOrder({ externalNumber, email, shipping, items }) {
   }
 }
 
-module.exports = { createMerchizeOrder, MERCHIZE_SKUS, skuFor };
+module.exports = { createMerchizeOrder, MERCHIZE_SKUS, skuFor, skuForAsync };

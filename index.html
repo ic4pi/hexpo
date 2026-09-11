@@ -1066,11 +1066,12 @@ const comingSoon = {
 
 const RC={common:'r-common',rare:'r-rare',legendary:'r-legendary'};
 const sg=document.getElementById('spellsGrid');
-spells.forEach(sp=>{
+function renderSpell(sp){
   const el=document.createElement('div');el.className='spell-card';
-  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${sp.img}" alt="${sp.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity ${RC[sp.rarity]}">${sp.rarity}</span><div class="spell-name">${sp.name}</div><div class="spell-desc">${sp.desc}</div><div class="spell-bundle">${sp.bundle}</div><div class="spell-tags">${sp.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="spell-footer"><span class="spell-price">${sp.price}</span><button class="btn-add" onclick="handleSpell(this,'${sp.name}')">add to bag</button></div></div>`;
+  el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${sp.img}" alt="${sp.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity ${RC[sp.rarity]}">${sp.rarity}</span><div class="spell-name">${sp.name}</div><div class="spell-desc">${sp.desc}</div><div class="spell-bundle">${sp.bundle}</div><div class="spell-tags">${sp.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="spell-footer"><span class="spell-price">${sp.price}</span><button class="btn-add" onclick="handleSpell(this,'${jsAttr(sp.name)}')">add to bag</button></div></div>`;
   sg.appendChild(el);
-});
+}
+spells.forEach(renderSpell);
 (function(){
   const el=document.createElement('div');el.className='spell-card coming-soon';
   el.innerHTML=`<div class="spell-image-wrap"><img class="spell-image" src="${comingSoon.img}" alt="${comingSoon.name}" loading="lazy"></div><div class="spell-body"><span class="spell-rarity r-soon">coming soon</span><div class="spell-name">${comingSoon.name}</div><div class="spell-desc">${comingSoon.desc}</div><div class="soon-note">// follow the shop or check back — new jars post here first //</div></div>`;
@@ -1114,14 +1115,59 @@ const shirts = [
 ];
 
 const shg=document.getElementById('shirtsGrid');
-shirts.forEach(sh=>{
+function renderShirt(sh){
   const el=document.createElement('div');el.className='shirt-card';
   const preview=sh.img
     ? `<img class="shirt-image" src="${sh.img}" alt="${sh.name}" loading="lazy">`
     : sh.emoji;
   el.innerHTML=`<div class="shirt-preview" style="background:${sh.bg}">${preview}</div><div class="shirt-body"><div class="shirt-name">${sh.name}</div><div class="shirt-tagline">${sh.tagline}</div><div class="shirt-fulfil">// fulfilled &amp; shipped by our print partner //</div><div class="size-row">${sh.sizes.map(s=>`<button class="size-btn" onclick="selectSize(this)">${s}</button>`).join('')}</div><div class="size-note"></div><div class="shirt-footer"><span class="shirt-price">${sh.price}</span><button class="btn-add" onclick="handleApparel(this,'${jsAttr(sh.name)}')">add to bag</button></div></div>`;
   shg.appendChild(el);
-});
+}
+shirts.forEach(renderShirt);
+
+/* ── PRODUCTS ADDED THROUGH /admin ──
+   Rendered in addition to the built-in ones above, matched by name so a
+   product that exists in both places is not listed twice. If the endpoint
+   is unreachable the shop simply shows its built-in catalog — a catalog
+   fetch must never be able to take the storefront down. */
+async function loadDynamicProducts(){
+  let data;
+  try{
+    const res = await fetch('/api/products');
+    if(!res.ok) return;
+    data = await res.json();
+  }catch(_){ return; }
+  if(!data || !Array.isArray(data.products)) return;
+
+  const haveSpell = new Set(spells.map(s=>s.name));
+  const haveShirt = new Set(shirts.map(s=>s.name));
+
+  for(const p of data.products){
+    if(p.kind === 'apparel'){
+      if(haveShirt.has(p.name)) continue;
+      const sh = {
+        emoji:'\u2728', bg:'linear-gradient(135deg,#140d08,#201033)',
+        name:p.name, tagline:p.tagline||'',
+        sizes:(p.sizes&&p.sizes.length)?p.sizes:['S','M','L','XL','2XL','3XL','4XL','5XL'],
+        price:p.price, img:p.image||''
+      };
+      shirts.push(sh);
+      APPAREL_PRICE_CENTS[p.name] = p.priceCents;
+      renderShirt(sh);
+    } else {
+      if(haveSpell.has(p.name)) continue;
+      const sp = {
+        img:p.image||'images/more-jars-coming-soon.webp', name:p.name, rarity:'rare',
+        desc:p.tagline||'', tags:[], price:p.price, bundle:''
+      };
+      spells.push(sp);
+      SPELL_PRICE_CENTS[p.name] = p.priceCents;
+      renderSpell(sp);
+    }
+  }
+}
+loadDynamicProducts();
+
 function selectSize(btn){
   btn.closest('.size-row').querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
