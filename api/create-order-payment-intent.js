@@ -1,4 +1,5 @@
 const Stripe = require('stripe');
+const { findByName } = require('./_catalog');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -102,11 +103,36 @@ module.exports = async (req, res) => {
       const size = item && item.size;
       const qty = Number(item && item.qty);
       const isApparel = Boolean(APPAREL_PRICE_IDS[name]);
-      if (!isApparel) hasSpellItems = true;
+      // Only a jar from the map below is known to be a spell here. A product
+      // added through /admin sets this from its own kind further down —
+      // assuming "not apparel means spell" would bill shipping on an
+      // apparel-only order.
+      if (SPELL_PRICE_IDS[name]) hasSpellItems = true;
 
       if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
         res.status(400).json({ error: 'Invalid item in bag' });
         return;
+      }
+
+      // Products added through /admin live in Stripe, not in the maps above.
+      // Look them up by name and take their own price and size list.
+      if (!isApparel && !SPELL_PRICE_IDS[name]) {
+        const dynamic = await findByName(name);
+        if (dynamic) {
+          if (dynamic.sizes.length) {
+            if (!dynamic.sizes.includes(size)) {
+              res.status(400).json({ error: 'Pick a size for ' + name });
+              return;
+            }
+          }
+          const dp = await stripe.prices.retrieve(dynamic.priceId);
+          amount += dp.unit_amount * qty;
+          currency = dp.currency;
+          lineItems.push(size ? `${name} [${size}] x${qty}` : `${name} x${qty}`);
+          if (dynamic.kind === 'apparel') apparelItems.push({ name, size, qty });
+          else hasSpellItems = true;
+          continue;
+        }
       }
 
       let priceId;

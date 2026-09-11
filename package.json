@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "description": "Hexposed — A Witch's Boutique by New Earth Frequency",
   "dependencies": {
-    "stripe": "^17.4.0"
+    "stripe": "^17.7.0"
   }
 }
