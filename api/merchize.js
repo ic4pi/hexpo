@@ -44,16 +44,21 @@ function sendAuthHeader(key) {
 // generic blank code would risk printing an undecorated sweater.
 // CONFIRM WITH YOUR FIRST TEST ORDER: if Merchize prints the wrong thing
 // (blank, or another design), swap these for the KNSWVN... codes instead.
+//
+// These SKUs carry the listing id, so they change if the product is
+// re-created in Merchize rather than edited. The previous set
+// (1C-YSNXES-1788583163P95H2-...) belonged to an earlier listing and was
+// stale — an order against it would not have matched a live variant.
 const MERCHIZE_SKUS = {
   'Occupied Skies Ugly Sweater': {
-    S: '1C-YSNXES-1788583163P95H2-06ML',
-    M: '1C-YSNXES-1788583163P95H2-06MM',
-    L: '1C-YSNXES-1788583163P95H2-06MN',
-    XL: '1C-YSNXES-1788583163P95H2-06MO',
-    '2XL': '1C-YSNXES-1788583163P95H2-06MP',
-    '3XL': '1C-YSNXES-1788583163P95H2-06MQ',
-    '4XL': '1C-YSNXES-1788583163P95H2-06MR',
-    '5XL': '1C-YSNXES-1788583163P95H2-06MS',
+    S: '1C-YSNXES-1789067450OO1BH-02CZ',
+    M: '1C-YSNXES-1789067450OO1BH-02D0',
+    L: '1C-YSNXES-1789067450OO1BH-02D1',
+    XL: '1C-YSNXES-1789067450OO1BH-02D2',
+    '2XL': '1C-YSNXES-1789067450OO1BH-02D3',
+    '3XL': '1C-YSNXES-1789067450OO1BH-02D4',
+    '4XL': '1C-YSNXES-1789067450OO1BH-02D5',
+    '5XL': '1C-YSNXES-1789067450OO1BH-02D6',
   },
 };
 
