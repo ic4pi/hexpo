@@ -1,5 +1,13 @@
 const Stripe = require('stripe');
-const { validateSlot, readingDuration, shopTimeLabel, TIMEZONE, HOLD_MINUTES } = require('./_availability');
+const {
+  validateSlot,
+  readingDuration,
+  registerReadingDuration,
+  shopTimeLabel,
+  TIMEZONE,
+  HOLD_MINUTES,
+} = require('./_availability');
+const { findByName } = require('./_catalog');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -20,7 +28,23 @@ module.exports = async (req, res) => {
   }
 
   const { reading, email, question, slotStart } = req.body || {};
-  const priceId = READING_PRICE_IDS[reading];
+  let priceId = READING_PRICE_IDS[reading];
+
+  // A reading added through /admin lives in Stripe rather than the map
+  // above. Its length is registered before the slot is validated, since
+  // the calendar cannot place a session of unknown length.
+  if (!priceId) {
+    let dynamic = null;
+    try {
+      dynamic = await findByName(reading);
+    } catch (_) {
+      dynamic = null;
+    }
+    if (dynamic && dynamic.kind === 'reading' && dynamic.priceId) {
+      registerReadingDuration(reading, dynamic.durationMinutes || 60);
+      priceId = dynamic.priceId;
+    }
+  }
 
   if (!priceId || !readingDuration(reading)) {
     res.status(400).json({ error: 'This reading isn’t available for checkout yet.' });

@@ -303,7 +303,7 @@ footer{padding:3rem 2rem;border-top:1px solid rgba(201,147,46,.1);display:flex;a
       <h2 class="section-title">Tarot Readings</h2>
       <p class="section-desc">Live, one-on-one over Zoom. Celtic Cross, three-card, and our signature dual reading. Always honest.</p>
     </div>
-    <div class="readings-grid">
+    <div class="readings-grid" id="readingsGrid">
 
       <div class="reading-card featured">
         <div class="reading-triptych">
@@ -1141,7 +1141,25 @@ async function loadDynamicProducts(){
   const haveSpell = new Set(spells.map(s=>s.name));
   const haveShirt = new Set(shirts.map(s=>s.name));
 
+  const rg=document.getElementById('readingsGrid');
+  const haveReading = new Set(
+    [...document.querySelectorAll('#readingsGrid .reading-name')].map(el=>el.textContent.trim())
+  );
+
   for(const p of data.products){
+    if(p.kind === 'reading'){
+      // Readings are booked, not bagged — same card and same modal as the
+      // three built-in ones, so the calendar and checkout need no special
+      // case for a reading that was added through /admin.
+      if(!rg || haveReading.has(p.name)) continue;
+      const card=document.createElement('div');
+      card.className='reading-card';
+      const mins=p.durationMinutes||60;
+      card.innerHTML=`${p.image?`<div class="reading-triptych"><div class="triptych-img"><img src="${p.image}" alt="${p.name}" loading="lazy"></div></div>`:''}<div class="reading-type">reading</div><div class="reading-name">${p.name}</div><div class="reading-desc">${p.tagline||''}</div><div class="reading-meta"><div><div class="reading-price">${p.price}</div><div class="reading-duration">// ${mins} min · live via zoom · pick your time at checkout //</div></div><button class="btn-book">book &amp; pay</button></div>`;
+      card.querySelector('.btn-book').onclick=()=>openModal(p.name,p.price,p.tagline||'');
+      rg.appendChild(card);
+      continue;
+    }
     if(p.kind === 'apparel'){
       if(haveShirt.has(p.name)) continue;
       const sh = {

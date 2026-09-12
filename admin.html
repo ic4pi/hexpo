@@ -71,6 +71,9 @@ h2{font-family:var(--display);font-weight:400;font-size:1rem;letter-spacing:.18e
 .prod img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--deep)}
 .prod .body{padding:.7rem .8rem}
 form.add{display:grid;gap:.7rem;max-width:560px}
+.when{display:none}
+.when.on{display:block}
+.opt{color:var(--muted);letter-spacing:.04em;text-transform:none;font-size:.62rem;opacity:.8}
 label{font-size:.68rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.3rem}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
 .hint{font-size:.66rem;color:var(--muted);margin-top:.25rem;line-height:1.5}
@@ -132,27 +135,45 @@ label{font-size:.68rem;color:var(--muted);letter-spacing:.08em;text-transform:up
       <form class="add" id="addForm" autocomplete="off">
         <div class="two">
           <div><label for="f-name">Name</label><input id="f-name" required placeholder="Pizza Arcade Ugly Sweater"></div>
-          <div><label for="f-kind">Kind</label>
-            <select id="f-kind"><option value="apparel">apparel</option><option value="spell">spell jar</option></select></div>
+          <div><label for="f-kind">Section &mdash; where it goes on the site</label>
+            <select id="f-kind">
+              <option value="apparel">Wear the Mark &mdash; apparel</option>
+              <option value="spell">The Spell Market &mdash; spell jars</option>
+              <option value="reading">Tarot Readings &mdash; booked sessions</option>
+            </select></div>
         </div>
         <div class="two">
-          <div><label for="f-price">Price (USD)</label><input id="f-price" required placeholder="44.00" inputmode="decimal"></div>
-          <div><label for="f-sizes">Sizes</label><input id="f-sizes" placeholder="S, M, L, XL, 2XL, 3XL, 4XL, 5XL"></div>
+          <div><label for="f-price">Price (USD)</label><input id="f-price" placeholder="44.00" inputmode="decimal"></div>
+          <div><label for="f-priceid">Stripe Price ID <span class="opt">optional</span></label><input id="f-priceid" placeholder="price_1ABC… — leave blank to create one"></div>
         </div>
         <div><label for="f-tagline">Tagline</label><input id="f-tagline" placeholder="Neon, cheese and high scores."></div>
         <div><label for="f-image">Image URL</label><input id="f-image" placeholder="https://… or images/thing.jpg"></div>
-        <div>
-          <label for="f-skus">Merchize SKUs (paste the whole block)</label>
+
+        <div class="when when-apparel">
+          <label for="f-sizes">Sizes</label>
+          <input id="f-sizes" placeholder="S, M, L, XL, 2XL, 3XL, 4XL, 5XL">
+        </div>
+
+        <div class="when when-reading">
+          <label for="f-duration">Session length (minutes)</label>
+          <input id="f-duration" placeholder="60" inputmode="numeric">
+          <div class="hint">How long to block out on the booking calendar. Defaults to 60.</div>
+        </div>
+
+        <div class="when when-apparel">
+          <label for="f-skus">Merchize SKUs <span class="opt">only if Merchize prints it</span></label>
           <textarea id="f-skus" placeholder="SKU: 1C-…-02CZ&#10;size: S&#10;All-over Print Knitted Sweater&#10;SKU: KNSWVN000000AA01&#10;…"></textarea>
           <div class="hint">Paste the variant list straight from Merchize. It keeps your listing's own
-            <code>1C-…</code> codes and ignores the shared <code>KNSWVN…</code> blank-garment codes.</div>
+            <code>1C-…</code> codes and ignores the shared <code>KNSWVN…</code> blank-garment codes.
+            Leave it empty if this isn't a Merchize product &mdash; it will still sell, and the order
+            shows up under Orders for you to fulfil yourself.</div>
         </div>
+
         <div style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
           <button type="submit" id="addBtn">create product</button>
           <span class="err" id="addErr"></span><span class="ok" id="addOk"></span>
         </div>
-        <div class="hint">Creates a Stripe product and price. Because Stripe is what actually charges the
-          customer, the price shown on the site can never drift from the price billed.</div>
+        <div class="hint" id="addHint"></div>
       </form>
     </section>
   </main>
@@ -263,25 +284,50 @@ async function loadProducts(){
   }catch(ex){ el.innerHTML=`<div class="err">${esc(ex.message)}</div>`; }
 }
 
+/* Show only the fields the chosen section actually has. A spell jar has no
+   sizes and nothing to print; a reading has a length instead. Hiding them
+   beats showing boxes that must be left blank. */
+const kindSel=document.getElementById('f-kind');
+function syncKind(){
+  const k=kindSel.value;
+  document.querySelectorAll('.when').forEach(el=>{
+    el.classList.toggle('on', el.classList.contains('when-'+k));
+  });
+  document.getElementById('addHint').innerHTML = k==='reading'
+    ? 'Appears under Tarot Readings with a live booking calendar, priced from Stripe.'
+    : 'Appears in the shop and sells through the bag, priced from Stripe.';
+}
+kindSel.onchange=syncKind;
+syncKind();
+
 document.getElementById('addForm').onsubmit=async e=>{
   e.preventDefault();
   const btn=document.getElementById('addBtn'), err=document.getElementById('addErr'), ok=document.getElementById('addOk');
   err.textContent=''; ok.textContent='';
+  const kind=kindSel.value;
+  const priceId=document.getElementById('f-priceid').value.trim();
   const dollars=Number(String(document.getElementById('f-price').value).replace(/[^0-9.]/g,''));
-  if(!Number.isFinite(dollars)||dollars<=0){ err.textContent='Enter a price like 44.00'; return; }
-  btn.disabled=true; btn.textContent='creating…';
+  // One of the two has to be there: a price to create, or a price to connect.
+  if(!priceId && (!Number.isFinite(dollars)||dollars<=0)){
+    err.textContent='Enter a price like 44.00, or paste a Stripe Price ID to connect.'; return;
+  }
+  btn.disabled=true; btn.textContent=priceId?'connecting…':'creating…';
   try{
     const r=await api('create-product',{method:'POST',body:{
       name:document.getElementById('f-name').value,
-      kind:document.getElementById('f-kind').value,
-      priceCents:Math.round(dollars*100),
+      kind,
+      priceId,
+      priceCents:Number.isFinite(dollars)&&dollars>0?Math.round(dollars*100):0,
       tagline:document.getElementById('f-tagline').value,
       image:document.getElementById('f-image').value,
-      sizes:document.getElementById('f-sizes').value.split(',').map(s=>s.trim()).filter(Boolean),
-      skuBlock:document.getElementById('f-skus').value,
+      sizes:kind==='apparel'?document.getElementById('f-sizes').value.split(',').map(s=>s.trim()).filter(Boolean):[],
+      skuBlock:kind==='apparel'?document.getElementById('f-skus').value:'',
+      durationMinutes:kind==='reading'?Number(document.getElementById('f-duration').value)||60:0,
     }});
-    ok.textContent=`Created — ${r.skusParsed} SKUs parsed.`;
-    e.target.reset(); loadProducts();
+    const where={apparel:'Wear the Mark',spell:'The Spell Market',reading:'Tarot Readings'}[kind];
+    ok.textContent=`${r.connected?'Connected':'Created'} — live in ${where}`
+      + (kind==='apparel' ? ` — ${r.skusParsed} SKUs` + (r.skusParsed?' parsed.':' (you fulfil this one yourself).') : '.');
+    e.target.reset(); syncKind(); loadProducts();
   }catch(ex){ err.textContent=ex.message; }
   finally{ btn.disabled=false; btn.textContent='create product'; }
 };

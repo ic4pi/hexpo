@@ -112,6 +112,18 @@ function parseHM(hm) {
 
 /* ── Slot generation ─────────────────────────────────────────── */
 
+/* A reading added through /admin isn't in the table above — its length is
+   stored on the Stripe product and registered here for the life of the
+   request, before anything asks how long the session runs. Registering is
+   per-invocation, so it can never quietly redefine a built-in reading. */
+function registerReadingDuration(reading, minutes) {
+  const mins = Math.round(Number(minutes));
+  if (!reading || !Number.isInteger(mins) || mins < 15 || mins > 240) return false;
+  if (READING_DURATIONS[reading]) return true;
+  READING_DURATIONS[reading] = mins;
+  return true;
+}
+
 function readingDuration(reading) {
   return READING_DURATIONS[reading];
 }
@@ -261,6 +273,7 @@ module.exports = {
   BOOKING_WINDOW_DAYS,
   HOLD_MINUTES,
   readingDuration,
+  registerReadingDuration,
   scheduledSlots,
   bookedSessions,
   openSlots,

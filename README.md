@@ -289,6 +289,45 @@ Vercel logs with the address needed to place it manually.
 
 ---
 
+## Adding Products Yourself — `/admin`
+
+`/admin` (password in the `ADMIN_PASSWORD` environment variable, set in
+Vercel — never in this repo) has an **Add a product** form so new products
+go up without a code change.
+
+**Pick the section it belongs in.** That one choice decides where the card
+appears and how it is bought:
+
+| Section | Where it lands | How it sells |
+| --- | --- | --- |
+| Wear the Mark | apparel grid | size picker → bag → Stripe checkout |
+| The Spell Market | spell jar grid | bag → Stripe checkout, jar shipping applies |
+| Tarot Readings | readings grid | booking calendar → Stripe checkout |
+
+**Then fill in what that section actually needs** — the form hides the rest
+rather than showing boxes you have to leave empty:
+
+- **Price** — either type an amount and the form creates the Stripe price,
+  or paste an existing **Stripe Price ID** to connect a price you already
+  made. Connecting adopts the Stripe product that price is already on, so
+  you don't end up with a duplicate beside it in the dashboard.
+- **Image URL** — a full `https://…` URL or a file in `images/`.
+- **Sizes** *(apparel)* — comma separated.
+- **Merchize SKUs** *(apparel)* — paste the variant list straight from the
+  Merchize dashboard; it keeps your listing's own `1C-…` codes and ignores
+  the shared `KNSWVN…` blank-garment codes. **Leave it empty if Merchize
+  doesn't print it** — the product still sells, and the order shows up
+  under Orders for you to fulfil by hand.
+- **Session length** *(readings)* — minutes to block out on the calendar,
+  60 if you don't say.
+
+Products added this way live in Stripe, tagged `hexposed`, and the
+storefront picks them up on load from `/api/products`. If that request
+fails the site just shows its built-in catalog — a catalog fetch can never
+take the shop down.
+
+---
+
 ## The Game — What's In It (Current State)
 
 The game (`game.html`) uses **Three.js r128** (loaded from CDN) and is fully self-contained. It currently builds everything from primitives:

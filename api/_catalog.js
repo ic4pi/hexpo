@@ -27,12 +27,16 @@ function parseJSON(raw, fallback) {
   }
 }
 
+// The three places a product can appear on the storefront. Anything
+// unrecognised falls back to a spell jar rather than vanishing.
+const KINDS = ['spell', 'apparel', 'reading'];
+
 function shape(p) {
   const price = p.default_price && typeof p.default_price === 'object' ? p.default_price : null;
   return {
     id: p.id,
     name: p.name,
-    kind: p.metadata.kind === 'apparel' ? 'apparel' : 'spell',
+    kind: KINDS.includes(p.metadata.kind) ? p.metadata.kind : 'spell',
     tagline: p.description || '',
     image: (p.images && p.images[0]) || '',
     sizes: parseJSON(p.metadata.sizes, []) || [],
@@ -40,6 +44,9 @@ function shape(p) {
     priceId: price ? price.id : '',
     priceCents: price ? price.unit_amount : 0,
     currency: price ? price.currency : 'usd',
+    // Readings only: how long the session runs, so the booking calendar
+    // can lay it out without the length being hardcoded in the site.
+    durationMinutes: Number(p.metadata.duration_minutes) || 0,
   };
 }
 
@@ -66,6 +73,7 @@ function publicFields(p) {
     sizes: p.sizes,
     priceCents: p.priceCents,
     price: `$${(p.priceCents / 100).toFixed(2)}`,
+    durationMinutes: p.durationMinutes,
   };
 }
 
@@ -74,4 +82,4 @@ async function findByName(name) {
   return all.find((p) => p.name === name) || null;
 }
 
-module.exports = { listCatalog, publicFields, findByName, TAG };
+module.exports = { listCatalog, publicFields, findByName, TAG, KINDS };

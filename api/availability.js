@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
-const { openSlots, readingDuration, TIMEZONE, MIN_LEAD_HOURS } = require('./_availability');
+const { openSlots, readingDuration, registerReadingDuration, TIMEZONE, MIN_LEAD_HOURS } = require('./_availability');
+const { findByName } = require('./_catalog');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -13,6 +14,20 @@ module.exports = async (req, res) => {
   }
 
   const reading = (req.query && req.query.reading) || '';
+  // A reading added through /admin keeps its length in Stripe, so look it
+  // up before deciding the reading is unknown — otherwise its picker would
+  // come back empty and the booking could never be started.
+  if (!readingDuration(reading)) {
+    let dynamic = null;
+    try {
+      dynamic = await findByName(reading);
+    } catch (_) {
+      dynamic = null;
+    }
+    if (dynamic && dynamic.kind === 'reading') {
+      registerReadingDuration(reading, dynamic.durationMinutes || 60);
+    }
+  }
   if (!readingDuration(reading)) {
     res.status(400).json({ error: 'Unknown reading.' });
     return;

@@ -164,6 +164,7 @@ function shapeProduct(p) {
     skus,
     priceId: price ? price.id : '',
     amount: price ? money(price.unit_amount, price.currency) : money(0),
+    durationMinutes: Number(p.metadata.duration_minutes) || 0,
   };
 }
 
@@ -200,27 +201,93 @@ function parseSkuBlock(text) {
   return out;
 }
 
+// Which storefront section the product lands in. These are the three
+// grids on the site, and the value decides where the card is rendered and
+// how it is bought — a jar and a sweater go through the bag, a reading
+// goes through the booking calendar.
+const KINDS = ['spell', 'apparel', 'reading'];
+
+// Only apparel printed by Merchize has SKUs. A jar you pack yourself or a
+// reading you deliver over Zoom has nothing to print, so there is nothing
+// to look up, and asking for one would be asking for a number that does
+// not exist.
+function takesSkus(kind) {
+  return kind === 'apparel';
+}
+
 async function createProduct(body) {
   const name = String(body.name || '').trim();
-  const kind = body.kind === 'apparel' ? 'apparel' : 'spell';
-  const cents = Math.round(Number(body.priceCents));
+  const kind = KINDS.includes(body.kind) ? body.kind : 'spell';
+  const image = String(body.image || '').trim();
+  const tagline = String(body.tagline || '').slice(0, 300);
+  const givenPriceId = String(body.priceId || '').trim();
+
   if (!name) return { error: 'Name is required' };
-  if (!Number.isInteger(cents) || cents < 50) return { error: 'Price must be at least $0.50' };
+  if (givenPriceId && !/^price_[A-Za-z0-9]+$/.test(givenPriceId)) {
+    return { error: 'A Stripe Price ID looks like price_1ABC… — check that one.' };
+  }
 
   const sizes = Array.isArray(body.sizes) ? body.sizes.filter((s) => typeof s === 'string' && s) : [];
-  const skus = parseSkuBlock(body.skuBlock || '');
-  const image = String(body.image || '').trim();
+  const skus = takesSkus(kind) ? parseSkuBlock(body.skuBlock || '') : {};
+
+  // A reading is booked into a calendar, so its length has to be known
+  // before a slot can be offered. Default to an hour if none is given.
+  const duration = kind === 'reading' ? Math.round(Number(body.durationMinutes)) || 60 : 0;
+  if (kind === 'reading' && (duration < 15 || duration > 240)) {
+    return { error: 'A reading runs between 15 and 240 minutes.' };
+  }
+
+  const metadata = {
+    [TAG]: '1',
+    kind,
+    sizes: JSON.stringify(sizes).slice(0, 500),
+    skus: JSON.stringify(skus).slice(0, 500),
+    duration_minutes: duration ? String(duration) : '',
+  };
+
+  // Connecting an existing price. The Price already belongs to a Stripe
+  // product, and a Price cannot be moved between products — so the thing
+  // to do is adopt the product it is already on rather than make a second
+  // one that would sit alongside it in the dashboard as a duplicate.
+  if (givenPriceId) {
+    let price;
+    try {
+      price = await stripe.prices.retrieve(givenPriceId);
+    } catch (_) {
+      return { error: 'No Stripe price with that ID. Copy it from the price, not the product.' };
+    }
+    if (price.active === false) {
+      return { error: 'That price is archived in Stripe. Pick an active one.' };
+    }
+    if (!price.unit_amount) {
+      return { error: 'That price has no fixed amount, so the site cannot show a price on the card.' };
+    }
+    const productId = typeof price.product === 'string' ? price.product : price.product.id;
+    const updated = await stripe.products.update(productId, {
+      name,
+      description: tagline || undefined,
+      images: image ? [image] : undefined,
+      default_price: price.id,
+      metadata,
+    });
+    return {
+      product: shapeProduct({ ...updated, default_price: price }),
+      skusParsed: Object.keys(skus).length,
+      connected: true,
+    };
+  }
+
+  // No price given, so make one. This is the common path.
+  const cents = Math.round(Number(body.priceCents));
+  if (!Number.isInteger(cents) || cents < 50) {
+    return { error: 'Enter a price of at least $0.50, or paste an existing Stripe Price ID.' };
+  }
 
   const product = await stripe.products.create({
     name,
-    description: String(body.tagline || '').slice(0, 300) || undefined,
+    description: tagline || undefined,
     images: image ? [image] : undefined,
-    metadata: {
-      [TAG]: '1',
-      kind,
-      sizes: JSON.stringify(sizes).slice(0, 500),
-      skus: JSON.stringify(skus).slice(0, 500),
-    },
+    metadata,
   });
   const price = await stripe.prices.create({
     product: product.id,
@@ -232,6 +299,7 @@ async function createProduct(body) {
   return {
     product: shapeProduct({ ...product, default_price: price }),
     skusParsed: Object.keys(skus).length,
+    connected: false,
   };
 }
 
