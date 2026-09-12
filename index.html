@@ -571,10 +571,10 @@ async function postJSON(url, body){
 /* ── CART / SPELL ORDER CHECKOUT ──
    Real cart, kept in memory as { productName: quantity }. Prices below
    are display-only (for the bag subtotal before checkout) — the source of
-   truth is each product's Stripe Price ID in SPELL_PRICE_IDS on the
-   Vercel backend (api/create-order-payment-intent.js), which fetches the
-   real amount from Stripe and recomputes the total server-side, so a
-   tampered client request can't change what's actually charged.
+   truth is SPELL_PRICE_CENTS on the Vercel backend
+   (api/create-order-payment-intent.js), which recomputes the total
+   server-side, so a tampered client request can't change what's
+   actually charged. Every jar is $22.
 ── */
 const SPELL_PRICE_CENTS = {
   'Love Spell No. 4': 2200,
@@ -1086,10 +1086,9 @@ spells.forEach(renderSpell);
    ship, and you keep the difference between your price and their base
    cost + shipping.
 
-   `price` here is display-only. What is actually charged comes from the
-   Stripe Price ID in APPAREL_PRICE_IDS in
-   api/create-order-payment-intent.js — keep the two in step so the bag
-   subtotal doesn't drift from the real total.
+   `price` here is display-only. What is actually charged comes from
+   APPAREL_PRICE_CENTS in api/create-order-payment-intent.js — keep the
+   two in step so the bag subtotal doesn't drift from the real total.
 
    `img` (optional) = product mockup image, either a direct image URL
    (ending .jpg/.png/.webp) or a file dropped in images/. Without it the

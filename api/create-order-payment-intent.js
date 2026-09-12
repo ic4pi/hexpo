@@ -3,29 +3,46 @@ const { findByName } = require('./_catalog');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Product name -> Stripe Price ID. Amounts are fetched live from Stripe
-// (via prices.retrieve below) rather than hardcoded, so a client-sent
-// price can never be trusted or tampered with — Stripe is the one source
-// of truth for what each jar actually costs.
-const SPELL_PRICE_IDS = {
-  'Love Spell No. 4': 'price_1U87I5ALwINGiotH4ii8KNGn',
-  'Protection Spell': 'price_1U87PyALwINGiotHkVyXIvDl',
-  'Success Spell': 'price_1U87TVALwINGiotHQTp8Sxkv',
+// Product name -> what a jar costs, in cents. Every jar is $22.
+//
+// These were priced from Stripe Price IDs until now. That went wrong: the
+// storefront moved to $22 in September, but a Stripe Price object is
+// immutable, so those IDs still held the launch amounts ($28.99 / $19.99 /
+// $34.99). The card said $22 and checkout billed the old price. Replacing
+// a Price can only be done from the Stripe dashboard, which this code
+// cannot reach, so the amount it charges lives here instead.
+//
+// This is still server-side, so a price sent from the browser is never
+// trusted — that property came from computing the total here, not from
+// where the number was read.
+//
+// Keep in step with SPELL_PRICE_CENTS in index.html (display-only) and
+// with the Price objects in the Stripe dashboard, so the receipt, the
+// dashboard and the card all read the same.
+const SPELL_PRICE_CENTS = {
+  'Love Spell No. 4': 2200,
+  'Protection Spell': 2200,
+  'Success Spell': 2200,
 };
 
 // Apparel is sold here, not on a Merchize storefront — Merchize's hosted
-// store is their paid product, while fulfillment is free. So the shirt is
-// priced in Stripe exactly like a spell jar, and api/webhook.js hands the
+// store is their paid product, while fulfillment is free. So the sweater
+// is priced here exactly like a spell jar, and api/webhook.js hands the
 // paid order to Merchize to print and ship.
 //
+// In cents, for the same reason as the jars above: a Stripe Price object
+// is immutable, so anything priced through one silently keeps charging
+// whatever it was created with, however often the card is edited. Nothing
+// in the built-in catalog depends on a Price object any more.
+//
 // `default` covers every size at one price. Add a size key alongside it
-// (e.g. '2XL': 'price_...') only if you charge more for that size.
-const APPAREL_PRICE_IDS = {
+// (e.g. '2XL': 5200) only if you charge more for that size.
+const APPAREL_PRICE_CENTS = {
   'Occupied Skies Ugly Sweater': {
-    default: 'price_1UDbp3ALwINGiotHWI1JKHRx',
+    default: 4400,
   },
   'Pizza Arcade Ugly Sweater': {
-    default: 'price_1UEa2yALwINGiotHXbHF6bT3',
+    default: 4400,
   },
 };
 
@@ -34,10 +51,10 @@ const APPAREL_SIZES = {
   'Pizza Arcade Ugly Sweater': ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'],
 };
 
-function apparelPriceId(name, size) {
-  const entry = APPAREL_PRICE_IDS[name];
-  if (!entry) return '';
-  return entry[size] || entry.default || '';
+function apparelCents(name, size) {
+  const entry = APPAREL_PRICE_CENTS[name];
+  if (!entry) return 0;
+  return entry[size] || entry.default || 0;
 }
 
 // ── SHIPPING ──
@@ -102,12 +119,12 @@ module.exports = async (req, res) => {
       const name = item && item.name;
       const size = item && item.size;
       const qty = Number(item && item.qty);
-      const isApparel = Boolean(APPAREL_PRICE_IDS[name]);
+      const isApparel = Boolean(APPAREL_PRICE_CENTS[name]);
       // Only a jar from the map below is known to be a spell here. A product
       // added through /admin sets this from its own kind further down —
       // assuming "not apparel means spell" would bill shipping on an
       // apparel-only order.
-      if (SPELL_PRICE_IDS[name]) hasSpellItems = true;
+      if (SPELL_PRICE_CENTS[name]) hasSpellItems = true;
 
       if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
         res.status(400).json({ error: 'Invalid item in bag' });
@@ -116,7 +133,7 @@ module.exports = async (req, res) => {
 
       // Products added through /admin live in Stripe, not in the maps above.
       // Look them up by name and take their own price and size list.
-      if (!isApparel && !SPELL_PRICE_IDS[name]) {
+      if (!isApparel && !SPELL_PRICE_CENTS[name]) {
         const dynamic = await findByName(name);
         if (dynamic) {
           if (dynamic.sizes.length) {
@@ -135,31 +152,30 @@ module.exports = async (req, res) => {
         }
       }
 
-      let priceId;
-      if (isApparel) {
-        if (!(APPAREL_SIZES[name] || []).includes(size)) {
-          res.status(400).json({ error: 'Pick a size for ' + name });
+      if (!isApparel) {
+        const jarCents = SPELL_PRICE_CENTS[name];
+        if (!jarCents) {
+          res.status(400).json({ error: 'Invalid item in bag' });
           return;
         }
-        priceId = apparelPriceId(name, size);
-        if (!priceId) {
-          res.status(400).json({ error: name + ' isn\u2019t available for purchase yet.' });
-          return;
-        }
-      } else {
-        priceId = SPELL_PRICE_IDS[name];
+        amount += jarCents * qty;
+        lineItems.push(`${name} x${qty}`);
+        continue;
       }
 
-      if (!priceId) {
-        res.status(400).json({ error: 'Invalid item in bag' });
+      if (!(APPAREL_SIZES[name] || []).includes(size)) {
+        res.status(400).json({ error: 'Pick a size for ' + name });
+        return;
+      }
+      const unitCents = apparelCents(name, size);
+      if (!unitCents) {
+        res.status(400).json({ error: name + ' isn\u2019t available for purchase yet.' });
         return;
       }
 
-      const price = await stripe.prices.retrieve(priceId);
-      amount += price.unit_amount * qty;
-      currency = price.currency;
-      lineItems.push(isApparel ? `${name} [${size}] x${qty}` : `${name} x${qty}`);
-      if (isApparel) apparelItems.push({ name, size, qty });
+      amount += unitCents * qty;
+      lineItems.push(`${name} [${size}] x${qty}`);
+      apparelItems.push({ name, size, qty });
     }
   } catch (err) {
     console.error('create-order-payment-intent price lookup failed:', err.message);

@@ -180,22 +180,39 @@ since these are physical products:
 1. **`index.html`** — `cart` tracks `{ productName: quantity }`. The bag
    modal lets you adjust quantities, then collects email + shipping
    address, then mounts a second Payment Element for the order total.
-2. **`api/create-order-payment-intent.js`** — looks up each cart item's
-   Stripe Price ID in `SPELL_PRICE_IDS`, fetches the real amount from
-   Stripe *server-side* for each (never trusts cart contents/prices sent
-   from the browser), sums the order total, and creates the PaymentIntent
+2. **`api/create-order-payment-intent.js`** — prices each cart item
+   *server-side* (never trusts cart contents/prices sent from the
+   browser): a spell jar from `SPELL_PRICE_CENTS`, apparel from its
+   Stripe Price ID. It sums the order total and creates the PaymentIntent
    with the shipping address attached.
 3. **`api/webhook.js`** — same endpoint as readings, already branches on
    `metadata.kind` (`'reading'` vs `'spell_order'`) and logs orders with
    their shipping address so you can fulfill them manually for now.
 
 No extra setup beyond what's above — it reuses the same
-`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / publishable key. Product
-prices are set by Stripe Price ID in `SPELL_PRICE_IDS` in
+`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / publishable key.
+
+Spell jars are **$22 each**, set in cents in `SPELL_PRICE_CENTS` in
 `api/create-order-payment-intent.js` — that's the one place that matters
-for what's actually charged. `SPELL_PRICE_CENTS` in `index.html` is
-display-only (the bag subtotal shown before checkout), so update it too
-when a price changes so the displayed total doesn't drift from Stripe's.
+for what's actually charged. The identically named `SPELL_PRICE_CENTS` in
+`index.html` is display-only (the bag subtotal shown before checkout), so
+change both together, along with the `price:` string on each jar's card.
+
+Jars used to be priced from Stripe Price IDs, and that is what broke them.
+A Stripe Price object cannot be edited — you replace it — so when the jars
+moved to $22 the cards said $22 while checkout still billed the launch
+prices ($28.99 / $19.99 / $34.99) from Price objects nobody had replaced.
+The amount charged now comes from the code, which the site can actually
+keep in step. If you do create $22.00 Prices in the Stripe dashboard, the
+old jar Price objects are unused either way — archive them so they can't
+be picked up by mistake.
+
+Apparel is pinned the same way, in `APPAREL_PRICE_CENTS` — $44.00 for
+both sweaters, every size. Nothing in the built-in catalog reads a Stripe
+Price object any more, so no card can drift from what checkout bills.
+(Products added through `/admin` are a separate case: those are created in
+Stripe by that dashboard, so their Price is the thing you set, and they
+still price from it.)
 
 ---
 
@@ -222,7 +239,7 @@ wait on, because the customer never pays Merchize.
 ### Setup steps
 
 1. **Create a Stripe Price** for the garment (Stripe dashboard →
-   Products), then paste its `price_...` ID into `APPAREL_PRICE_IDS` in
+   Products), then set the garment's amount in `APPAREL_PRICE_CENTS` in
    `api/create-order-payment-intent.js`. `default` covers every size at
    one price; add a size key next to it (e.g. `'2XL': 'price_...'`) only
    if a size costs more.
